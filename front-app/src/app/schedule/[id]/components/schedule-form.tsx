@@ -19,13 +19,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -36,6 +29,14 @@ import { createSchedule, updateSchedule } from "./actions";
 import type { GuildChannel, ScheduledMessage } from "@/types/api-response";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Check, ChevronsUpDown, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
 
 const formSchema = z.object({
   message: z
@@ -131,6 +132,20 @@ export function ScheduleForm({
     },
   });
 
+  const [filteredChannels, setFilteredChannels] = useState(channels);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    if (searchQuery) {
+      const filtered = channels?.filter((channel) =>
+        channel.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      );
+      setFilteredChannels(filtered ?? null);
+    } else {
+      setFilteredChannels(channels ?? null);
+    }
+  }, [channels, searchQuery]);
+
   return (
     <Card>
       <CardHeader className="space-y-6">
@@ -207,25 +222,98 @@ export function ScheduleForm({
               control={form.control}
               name="channelId"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="flex flex-col">
                   <FormLabel>送信チャンネル</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="チャンネルを選択" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {channels?.map((channel) => (
-                        <SelectItem key={channel.id} value={channel.id}>
-                          #{channel.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          // biome-ignore lint/a11y/useSemanticElements: <explanation>
+                          role="combobox"
+                          className={cn(
+                            "w-full justify-between",
+                            !field.value && "text-muted-foreground",
+                          )}
+                        >
+                          {field.value
+                            ? channels?.find(
+                                (channel) => channel.id === field.value,
+                              )?.name
+                            : "チャンネルを選択"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[400px] p-0">
+                      <div className="flex flex-col">
+                        <div className="p-2">
+                          <div className="relative">
+                            <Input
+                              placeholder="チャンネルを検索..."
+                              className="w-full pr-8"
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            {searchQuery && (
+                              <button
+                                type="button"
+                                onClick={() => setSearchQuery("")}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="max-h-[300px] overflow-y-auto">
+                          {filteredChannels && filteredChannels.length > 0 ? (
+                            <div className="p-1">
+                              {filteredChannels
+                                .slice()
+                                .sort((a, b) => a.name.localeCompare(b.name))
+                                .map((channel) => (
+                                  <div
+                                    key={channel.id}
+                                    // biome-ignore lint/a11y/useSemanticElements: <explanation>
+                                    role="button"
+                                    tabIndex={0}
+                                    className={cn(
+                                      "flex items-center px-2 py-1.5 cursor-pointer rounded-sm hover:bg-accent",
+                                      channel.id === field.value && "bg-accent",
+                                    )}
+                                    onClick={() => {
+                                      form.setValue("channelId", channel.id);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter" || e.key === " ") {
+                                        form.setValue("channelId", channel.id);
+                                      }
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        channel.id === field.value
+                                          ? "opacity-100"
+                                          : "opacity-0",
+                                      )}
+                                    />
+                                    <span className="flex-1">
+                                      #{channel.name}
+                                    </span>
+                                  </div>
+                                ))}
+                            </div>
+                          ) : (
+                            <div className="p-2 text-sm text-muted-foreground">
+                              チャンネルが見つかりません
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}
