@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { logger } from "./lib/logger";
 
 const botScript = join(import.meta.dir, "index.ts");
+const RESTART_DELAY = 5000;
 
 function startBot() {
   const bot = spawn("bun", ["run", botScript], { stdio: "inherit" });
@@ -10,7 +11,11 @@ function startBot() {
   bot.on("close", (code) => {
     logger.error(`Botプロセスがコード${code}で終了しました`);
     logger.info("Botを再起動しています...");
-    startBot();
+
+    setTimeout(() => {
+      logger.info("Botを再起動しています...");
+      startBot();
+    }, RESTART_DELAY);
   });
 }
 
