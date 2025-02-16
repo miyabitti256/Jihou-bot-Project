@@ -1,0 +1,220 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Guild {
+  id          String @id @unique
+  name        String
+  memberCount Int
+  iconUrl     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  channels    GuildChannels[]
+  members     GuildMembers[]
+  roles GuildRoles[]
+  ScheduledMessage ScheduledMessage[]
+
+  @@map("guilds")
+}
+
+model GuildChannels {
+  id      String @id @unique
+  guildId String
+  name    String
+  type    String
+
+  ScheduledMessage ScheduledMessage[]
+  guild            Guild @relation(fields: [guildId], references: [id])
+
+  @@map("guild_channels")
+}
+
+model GuildRoles {
+  id      String @id @unique
+  guildId String
+  name    String
+  color   String
+  hoist   Boolean
+  position Int
+  permissions String
+  managed Boolean
+  mentionable Boolean
+
+  guild Guild @relation(fields: [guildId], references: [id])
+
+  @@map("guild_roles")
+}
+
+model GuildMembers {
+  guildId   String
+  userId    String
+  nickname  String?
+  joinedAt  DateTime
+
+  guild     Guild    @relation(fields: [guildId], references: [id])
+  user      Users    @relation(fields: [userId], references: [id])
+
+  @@id([guildId, userId])
+  @@map("guild_members")
+}
+
+model Users {
+  id            String @id @unique
+  username      String
+  discriminator String?
+  avatarUrl     String?
+  money         Int @default(1000)
+  lastDraw      DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  userSettings             UserSettings?
+  guildMembers             GuildMembers[]
+  ScheduledMessage         ScheduledMessage[] @relation("CreatedBy")
+  updatedScheduledMessages ScheduledMessage[] @relation("UpdatedBy")
+  Omikuji                  Omikuji[]
+  CoinFlip                 CoinFlip[]
+  JankenChallenger         Janken[]       @relation("challenger")
+  JankenOpponent           Janken[]       @relation("opponent")
+  JankenRoomHost           JankenRoom[] @relation("RoomHost")
+  JankenRoomGuest          JankenRoom[] @relation("RoomGuest")
+
+  @@map("users")
+}
+
+model UserSettings {
+  userId    String @unique
+  theme     theme  @default(system)
+  locale    String?
+  published Boolean @default(false)
+
+  user   Users  @relation(fields: [userId], references: [id])
+
+  @@map("user_settings")
+}
+
+enum theme {
+  system
+  light
+  dark
+}
+
+model ScheduledMessage {
+  id                String @id @unique @default(cuid())
+  guildId           String
+  channelId         String
+  message           String
+  scheduleTime      String @map("time")
+  createdUserId     String
+  lastUpdatedUserId String
+  isActive          Boolean @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  createdUser Users    @relation("CreatedBy", fields: [createdUserId], references: [id])
+  updatedUser Users     @relation("UpdatedBy", fields: [lastUpdatedUserId], references: [id])
+  guild       Guild     @relation(fields: [guildId], references: [id])
+  channel     GuildChannels @relation(fields: [channelId], references: [id])
+
+  @@map("scheduled_messages")
+}
+
+model Omikuji {
+  id        String @id @unique @default(cuid())
+  userId    String
+  result    String
+  createdAt DateTime @default(now())
+
+  user Users @relation(fields: [userId], references: [id])
+
+  @@map("omikuji")
+}
+
+model CoinFlip {
+  id           String @id @unique @default(cuid())
+  userId       String
+  bet          Int
+  win          Boolean
+  updatedMoney Int
+  createdAt    DateTime @default(now())
+
+  user Users @relation(fields: [userId], references: [id])
+
+  @@map("coin_flip")
+}
+
+model Janken {
+  id             String @id @unique @default(cuid())
+  bet            Boolean
+  challengerId   String
+  opponentId     String
+  challengerHand String
+  opponentHand   String
+  challengerBet  Int?
+  opponentBet    Int?
+  winnerUserId   String?
+  createdAt      DateTime @default(now())
+
+  challenger Users @relation("challenger", fields: [challengerId], references: [id])
+  opponent    Users @relation("opponent", fields: [opponentId], references: [id])
+
+  @@map("janken")
+  @@index([challengerId], name: "challenger_id_idx")
+  @@index([opponentId], name: "opponent_id_idx")
+}
+
+model JankenRoom {
+  id            String   @id @unique @default(cuid())
+  roomCode      String   @unique
+  name          String?
+  description   String?
+  platform      platform
+  channelId     String?
+  status        RoomStatus
+  isPrivate     Boolean  @default(false)
+  hostId        String
+  guestId       String?
+  bet           Boolean
+  betAmount     Int?
+  currentRound  Int      @default(0)
+  hostWins      Int      @default(0)
+  guestWins     Int      @default(0)
+  draws         Int      @default(0)
+  hostReady     Boolean  @default(false)
+  guestReady    Boolean  @default(false)
+  lastActivity  DateTime @default(now())
+  lastUpdated   DateTime @default(now()) @updatedAt
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  host          Users    @relation("RoomHost", fields: [hostId], references: [id])
+  guest         Users?   @relation("RoomGuest", fields: [guestId], references: [id])
+
+  @@map("janken_rooms")
+  @@index([status], name: "status_idx")
+  @@index([lastUpdated], name: "last_updated_idx")
+}
+
+enum platform {
+  WEB
+  DISCORD
+}
+
+enum RoomStatus {
+  WAITING
+  PLAYING
+  FINISHED
+  CANCELLED
+}
