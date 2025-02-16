@@ -9,7 +9,10 @@ export const flipCoin = async (
     `${process.env.NEXT_PUBLIC_API_URL}/api/minigame/coinflip/play`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": process.env.API_KEY as string,
+      },
       body: JSON.stringify({
         userId,
         bet,

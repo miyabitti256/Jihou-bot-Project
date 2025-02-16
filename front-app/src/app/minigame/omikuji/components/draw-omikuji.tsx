@@ -36,7 +36,7 @@ export default function DrawOmikuji({ userId }: Props) {
       if (data.status === "success") {
         setOmikuji(data);
       } else {
-        toast.error(data.error?.message);
+        toast.error(data.error?.message ?? 'エラーが発生しました')
       }
       setIsDrawing(false);
     }, 3000);
