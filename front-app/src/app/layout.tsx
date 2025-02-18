@@ -12,7 +12,8 @@ const noto_sans_jp = Noto_Sans_JP({
 
 export const metadata: Metadata = {
   title: "Jihou-Bot-App",
-  description: "Jihou-Bot-App",
+  description:
+    "Discordサーバーを楽しく便利に。おみくじ、じゃんけん、コインフリップなどのミニゲームや、定期メッセージ配信機能を備えたDiscordボットの管理ダッシュボード",
 };
 
 export default function RootLayout({

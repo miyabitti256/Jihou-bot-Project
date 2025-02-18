@@ -25,11 +25,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API request failed: ${response.status} ${errorText}`);
-    }
-
     const result = await response.json();
 
     if (result.status === "error") {
