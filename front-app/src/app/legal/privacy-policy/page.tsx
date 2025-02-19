@@ -13,7 +13,7 @@ export default function Privacy() {
       <Card>
         <CardHeader>
           <CardTitle>プライバシーポリシー</CardTitle>
-          <CardDescription>最終更新日: 2024年1月1日</CardDescription>
+          <CardDescription>最終更新日: 2025年2月16日</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <section>
