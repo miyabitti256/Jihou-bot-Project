@@ -147,29 +147,31 @@ export function ScheduleForm({
   }, [channels, searchQuery]);
 
   return (
-    <Card>
-      <CardHeader className="space-y-6">
-        <div className="flex flex-col items-center space-y-4">
-          <CardTitle className="text-2xl font-bold">
+    <Card className="w-full max-w-[95vw] sm:max-w-[600px] mx-auto">
+      <CardHeader className="space-y-4 sm:space-y-6">
+        <div className="flex flex-col items-center space-y-2 sm:space-y-4">
+          <CardTitle className="text-xl sm:text-2xl font-bold text-center">
             {isNew ? "定期メッセージの新規作成" : "定期メッセージの編集"}
           </CardTitle>
-          <CardDescription className="text-center text-muted-foreground">
+          <CardDescription className="text-center text-sm sm:text-base text-muted-foreground">
             {isNew
               ? "定期的に送信するメッセージを設定します"
               : "定期メッセージの設定を編集します"}
           </CardDescription>
         </div>
 
-        <div className="flex items-center justify-center gap-4 p-4 bg-muted rounded-lg">
+        <div className="flex items-center justify-center gap-3 sm:gap-4 p-3 sm:p-4 bg-muted rounded-lg">
           {guildData.icon && (
-            <Avatar className="h-12 w-12">
+            <Avatar className="h-10 w-10 sm:h-12 sm:w-12">
               <AvatarImage src={guildData.icon} alt={guildData.name} />
               <AvatarFallback>{guildData.name[0]}</AvatarFallback>
             </Avatar>
           )}
           <div className="flex flex-col">
-            <span className="font-semibold">{guildData.name}</span>
-            <span className="text-sm text-muted-foreground">
+            <span className="font-semibold text-sm sm:text-base">
+              {guildData.name}
+            </span>
+            <span className="text-xs sm:text-sm text-muted-foreground">
               サーバーID: {guildData.id}
             </span>
           </div>
@@ -180,7 +182,7 @@ export function ScheduleForm({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleSubmit)}
-            className="space-y-8"
+            className="space-y-6 sm:space-y-8"
           >
             <FormField
               control={form.control}
@@ -326,7 +328,7 @@ export function ScheduleForm({
                 control={form.control}
                 name="isActive"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-lg border p-3 sm:p-4">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base">
                         メッセージの有効化
@@ -346,15 +348,20 @@ export function ScheduleForm({
               />
             )}
 
-            <div className="flex justify-end gap-4">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
               <Button
                 variant="outline"
                 type="button"
                 onClick={() => history.back()}
+                className="w-full sm:w-auto"
               >
                 キャンセル
               </Button>
-              <Button type="submit" disabled={isPending}>
+              <Button
+                type="submit"
+                disabled={isPending}
+                className="w-full sm:w-auto"
+              >
                 {isNew ? "作成" : "更新"}
               </Button>
             </div>

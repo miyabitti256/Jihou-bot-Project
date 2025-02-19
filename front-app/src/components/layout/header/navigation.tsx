@@ -7,7 +7,7 @@ import {
   NavigationMenuList,
   NavigationMenuItem,
 } from "@/components/ui/navigation-menu";
-import { Menu } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 type NavItem = {
   href: string;
@@ -31,6 +32,7 @@ const navItems: NavItem[] = [
 
 export default function Navigation() {
   const pathname = `/${usePathname().split("/")[1]}`;
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
@@ -56,13 +58,17 @@ export default function Navigation() {
       </nav>
 
       <div className="lg:hidden">
-        <DropdownMenu>
+        <DropdownMenu onOpenChange={(open) => setIsOpen(open)}>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
-              <Menu className="h-6 w-6" />
+              {isOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="center" className="w-48">
+          <DropdownMenuContent align="start" className="w-48">
             {navItems.map(({ href, label }) => (
               <DropdownMenuItem key={href} asChild>
                 <Link

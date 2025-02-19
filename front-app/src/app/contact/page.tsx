@@ -43,7 +43,7 @@ export default function Contact() {
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
               ソースコードは
               <Link
-                href="https://github.com/miyabitti256/Jihou-Bot-TS-Replace"
+                href="https://github.com/miyabitti256/Jihou-bot-Project"
                 className="text-blue-600 dark:text-blue-400 hover:underline ml-1"
                 target="_blank"
                 rel="noopener noreferrer"

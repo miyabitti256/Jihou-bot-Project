@@ -20,10 +20,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import Link from "next/link";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { FaPlus } from "react-icons/fa";
 import DeleteButton from "./components/delete-button";
+import Link from "next/link";
+import { FaPlus } from "react-icons/fa";
 
 export default async function SchedulePage() {
   const session = await auth();
@@ -64,87 +71,174 @@ export default async function SchedulePage() {
       {guildsData.map((guild) => (
         <Card key={guild.data.id} className="mb-8">
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center gap-4">
                 {guild.data.iconUrl && (
                   <img
                     src={guild.data.iconUrl}
                     alt={guild.data.name}
-                    className="w-12 h-12 rounded-full"
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full"
                   />
                 )}
                 <div>
-                  <CardTitle>{guild.data.name}</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-lg sm:text-xl">
+                    {guild.data.name}
+                  </CardTitle>
+                  <CardDescription className="text-sm">
                     メンバー数: {guild.data.memberCount}
                   </CardDescription>
                 </div>
               </div>
               <Link href={`/schedule/new?guildId=${guild.data.id}`}>
-                <Button>
+                <Button className="w-full sm:w-auto">
                   <FaPlus className="h-2 w-2 mr-2" />
                   新規作成
                 </Button>
               </Link>
             </div>
           </CardHeader>
+
           <CardContent>
             {guild.data.ScheduledMessage &&
             guild.data.ScheduledMessage.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>メッセージ</TableHead>
-                    <TableHead>チャンネル</TableHead>
-                    <TableHead>実行時間</TableHead>
-                    <TableHead>ステータス</TableHead>
-                    <TableHead>操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {guild.data.ScheduledMessage.sort(
-                    (a: ScheduledMessage, b: ScheduledMessage) =>
-                      a.scheduleTime.localeCompare(b.scheduleTime),
-                  ).map((message: ScheduledMessage) => (
-                    <TableRow key={message.id}>
-                      <TableCell className="max-w-xs truncate">
-                        {message.message}
-                      </TableCell>
-                      <TableCell>
-                        #
-                        {guild.data.channels.find(
-                          (c: GuildChannel) => c.id === message.channelId,
-                        )?.name || "Unknown"}
-                      </TableCell>
-                      <TableCell>{message.scheduleTime}</TableCell>
-
-                      <TableCell>
-                        <span
-                          className={
-                            message.isActive ? "text-green-600" : "text-red-600"
-                          }
-                        >
-                          {message.isActive ? "🟢" : "🔴"}
-                          {message.isActive ? "有効" : "無効"}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Link href={`schedule/${message.id}`}>
-                            <Button variant="outline" size="sm">
-                              編集
-                            </Button>
-                          </Link>
-                          <DeleteButton
-                            messageId={message.id}
-                            guildId={message.guildId}
-                          />
-                        </div>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[200px] md:w-auto">
+                        メッセージ
+                      </TableHead>
+                      <TableHead className="min-w-[120px]">
+                        チャンネル
+                      </TableHead>
+                      <TableHead className="min-w-[100px]">実行時間</TableHead>
+                      <TableHead className="min-w-[120px]">
+                        ステータス
+                      </TableHead>
+                      <TableHead className="min-w-[120px]">操作</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {guild.data.ScheduledMessage.sort(
+                      (a: ScheduledMessage, b: ScheduledMessage) =>
+                        a.scheduleTime.localeCompare(b.scheduleTime),
+                    ).map((message: ScheduledMessage) => (
+                      <TableRow key={message.id}>
+                        <TableCell className="max-w-[150px] whitespace-nowrap">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <button
+                                type="button"
+                                className="text-left w-full"
+                              >
+                                <div className="truncate max-w-[150px] md:max-w-xs block">
+                                  {message.message}
+                                </div>
+                              </button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-[90vw] sm:max-w-[600px]">
+                              <DialogHeader>
+                                <DialogTitle className="text-xl font-bold">
+                                  スケジュール詳細
+                                </DialogTitle>
+                              </DialogHeader>
+                              <div className="mt-6 space-y-6">
+                                <div className="">
+                                  <h4 className="text-sm font-semibold mb-2">
+                                    メッセージ内容
+                                  </h4>
+                                  <p className="break-words whitespace-pre-wrap text-base">
+                                    {message.message}
+                                  </p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-1">
+                                    <h4 className="text-sm font-semibold text-muted-foreground">
+                                      送信チャンネル
+                                    </h4>
+                                    <p className="text-base">
+                                      #
+                                      {
+                                        guild.data.channels.find(
+                                          (c: GuildChannel) =>
+                                            c.id === message.channelId,
+                                        )?.name
+                                      }
+                                    </p>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <h4 className="text-sm font-semibold text-muted-foreground">
+                                      実行時間
+                                    </h4>
+                                    <p className="text-base">
+                                      {message.scheduleTime}
+                                    </p>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <h4 className="text-sm font-semibold text-muted-foreground">
+                                      ステータス
+                                    </h4>
+                                    <p
+                                      className={`text-base ${message.isActive ? "text-green-600" : "text-red-600"}`}
+                                    >
+                                      {message.isActive ? "🟢 有効" : "🔴 無効"}
+                                    </p>
+                                  </div>
+                                  <div className="mt-4 flex justify-end gap-4">
+                                    <Link href={`schedule/${message.id}`}>
+                                      <Button variant="outline" size={"sm"}>編集</Button>
+                                    </Link>
+                                    <DeleteButton
+                                      messageId={message.id}
+                                      guildId={message.guildId}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </TableCell>
+
+                        <TableCell className="whitespace-nowrap">
+                          #
+                          {guild.data.channels.find(
+                            (c: GuildChannel) => c.id === message.channelId,
+                          )?.name || "Unknown"}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {message.scheduleTime}
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={
+                              message.isActive
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }
+                          >
+                            {message.isActive ? "🟢" : "🔴"}
+                            {message.isActive ? "有効" : "無効"}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Link href={`schedule/${message.id}`}>
+                              <Button variant="outline" size="sm">
+                                編集
+                              </Button>
+                            </Link>
+                            <DeleteButton
+                              messageId={message.id}
+                              guildId={message.guildId}
+                            />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             ) : (
               <p className="text-center text-gray-500 py-4">
                 予定されているメッセージはありません
