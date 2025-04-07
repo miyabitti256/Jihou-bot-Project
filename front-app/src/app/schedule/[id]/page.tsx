@@ -1,6 +1,4 @@
-import { Suspense } from "react";
 import { ScheduleForm } from "./components/schedule-form";
-import { Skeleton } from "@/components/ui/skeleton";
 import { auth } from "@/lib/auth";
 import NoAuthRedirect from "@/components/noAuthRedirect";
 import type {
@@ -61,19 +59,17 @@ export default async function SchedulePage({
 
   return (
     <div className="container max-w-2xl mx-auto py-8">
-      <Suspense fallback={<Skeleton className="w-full h-[600px]" />}>
-        <ScheduleForm
-          initialData={scheduleData}
-          isNew={isNew}
-          guildData={{
-            id: guildId ?? "",
-            name: guildData?.name ?? "",
-            icon: guildData?.iconUrl ?? "",
-          }}
-          channels={channelData ?? []}
-          userId={session.user.id}
-        />
-      </Suspense>
+      <ScheduleForm
+        initialData={scheduleData}
+        isNew={isNew}
+        guildData={{
+          id: guildId ?? "",
+          name: guildData?.name ?? "",
+          icon: guildData?.iconUrl ?? "",
+        }}
+        channels={channelData ?? []}
+        userId={session.user.id}
+      />
     </div>
   );
 }
