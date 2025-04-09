@@ -1,9 +1,12 @@
 import { logger } from "@lib/logger";
-import type { Message, MessageEditOptions, TextChannel } from "discord.js";
+import type { Message, TextChannel } from "discord.js";
 import { ThreadChannel as ThreadChannelClass, EmbedBuilder } from "discord.js";
 import { prisma } from "@lib/prisma";
 import rateLimitManager from "../handler/rate-limit-handler";
-import { splitMessage } from "@lib/utils";
+import {
+  splitMessage,
+  splitStreamingMessage,
+} from "@lib/utils";
 
 const CONSTANTS = {
   API_ENDPOINT: "http://localhost:3001/api/chat",
@@ -11,6 +14,53 @@ const CONSTANTS = {
 
 // 更新間隔（文字数）
 const UPDATE_INTERVAL = 100;
+
+/**
+ * メッセージが分割された場合、後続のメッセージを送信する
+ * @param channel メッセージを送信するチャンネル
+ * @param chunks メッセージチャンク配列（最初のチャンクは除く）
+ * @param useEmbed 埋め込みメッセージを使用するかどうか
+ * @param embedOptions 埋め込みメッセージのオプション
+ */
+async function sendRemainingChunks(
+  channel: TextChannel,
+  chunks: string[],
+  useEmbed = false,
+  embedOptions?: {
+    color?: number;
+    authorName?: string;
+    authorIconURL?: string;
+  },
+): Promise<void> {
+  if (!chunks || chunks.length === 0) return;
+
+  logger.debug(
+    `[sendRemainingChunks] Sending ${chunks.length} remaining chunks`,
+  );
+
+  for (const chunk of chunks) {
+    try {
+      if (useEmbed && embedOptions) {
+        const newEmbed = new EmbedBuilder()
+          .setDescription(chunk)
+          .setColor(embedOptions.color || 0x000000);
+
+        if (embedOptions.authorName) {
+          newEmbed.setAuthor({
+            name: embedOptions.authorName,
+            iconURL: embedOptions.authorIconURL,
+          });
+        }
+
+        await channel.send({ embeds: [newEmbed] });
+      } else {
+        await channel.send(chunk);
+      }
+    } catch (error) {
+      logger.error(`[sendRemainingChunks] Error sending chunk: ${error}`);
+    }
+  }
+}
 
 /**
  * ストリーミングレスポンスを処理し、Discordメッセージを更新する
@@ -21,7 +71,7 @@ const UPDATE_INTERVAL = 100;
  */
 export async function handleStreamingResponse(
   response: Response,
-  message: Message,
+  initialMessage: Message,
   useEmbed = false,
   embedOptions?: {
     embed: EmbedBuilder;
@@ -56,9 +106,9 @@ export async function handleStreamingResponse(
 
     if (useEmbed && embedOptions) {
       embedOptions.embed.setDescription(errorMsg);
-      await message.edit({ embeds: [embedOptions.embed] });
+      await initialMessage.edit({ embeds: [embedOptions.embed] });
     } else {
-      await message.edit(errorMsg);
+      await initialMessage.edit(errorMsg);
     }
     return;
   }
@@ -70,27 +120,60 @@ export async function handleStreamingResponse(
 
     if (useEmbed && embedOptions) {
       embedOptions.embed.setDescription(errorMsg);
-      await message.edit({ embeds: [embedOptions.embed] });
+      await initialMessage.edit({ embeds: [embedOptions.embed] });
     } else {
-      await message.edit(errorMsg);
+      await initialMessage.edit(errorMsg);
     }
     return;
   }
 
-  const reader = response.body.getReader();
+  // 処理用の状態変数
+  const MAX_TEXT_LENGTH = useEmbed ? 4000 : 1900; // 埋め込みメッセージかどうかで最大長を設定
   let fullText = "";
   let lastUpdateLength = 0;
-  const decoder = new TextDecoder();
+
+  // コードブロックの状態を追跡
+  let lastCodeBlockState = {
+    isInCodeBlock: false,
+    codeBlockType: null as string | null,
+  };
+
+  // 最後に完全にチャンク送信処理を行った位置を追跡
+  let lastProcessedLength = 0;
+
+  // メッセージ継続用のフラグと変数
+  let currentMessage = initialMessage;
+  let textChannel: TextChannel | null = null;
 
   try {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    // ストリーム読み取りループ
     while (true) {
-      const { done, value } = await reader.read();
+      let done = false;
+      let value: Uint8Array | undefined;
+
+      try {
+        const readResult = await reader.read();
+        done = readResult.done;
+        value = readResult.value;
+      } catch (readError) {
+        logger.error(
+          `[handleStreamingResponse] Error reading stream: ${readError}`,
+        );
+        break;
+      }
+
       if (done) break;
+      if (!value) continue;
 
       // 受信データをデコードし、ログに記録
       const chunk = decoder.decode(value);
       logger.debug(
-        `[handleStreamingResponse] Received chunk: ${chunk.substring(0, 100)}${chunk.length > 100 ? "..." : ""}`,
+        `[handleStreamingResponse] Received chunk: ${chunk.substring(0, 100)}${
+          chunk.length > 100 ? "..." : ""
+        }`,
       );
 
       const lines = chunk.split("\n");
@@ -120,41 +203,201 @@ export async function handleStreamingResponse(
         }
       }
 
-      // 更新間隔に達した場合または最後のチャンクの場合のみ更新
-      if (fullText.length - lastUpdateLength >= UPDATE_INTERVAL || done) {
-        // メッセージを分割して送信
-        const messages = splitMessage(fullText, useEmbed);
-        if (messages.length > 0) {
-          // 最初のメッセージは既存のメッセージを更新
-          if (useEmbed && embedOptions) {
-            embedOptions.embed.setDescription(messages[0]);
-            if (embedOptions.authorName) {
-              embedOptions.embed.setAuthor({
-                name: embedOptions.authorName,
-                iconURL: embedOptions.authorIconURL,
-              });
-            }
-            await message.edit({ embeds: [embedOptions.embed] });
-          } else {
-            await message.edit(messages[0]);
-          }
+      // テキストの長さをチェック
+      if (fullText.length > MAX_TEXT_LENGTH * 10) {
+        // テキストが極端に長くなった場合は、一部を切り捨てて再開
+        logger.warn(
+          `[handleStreamingResponse] Text too long (${fullText.length} chars), truncating...`,
+        );
+        fullText = fullText.substring(fullText.length - MAX_TEXT_LENGTH * 5);
+        lastProcessedLength = 0;
+        lastUpdateLength = 0;
+      }
 
-          // 残りのメッセージは新しいメッセージとして送信
-          const textChannel = message.channel as TextChannel;
-          for (let i = 1; i < messages.length; i++) {
+      // 更新間隔に達した場合、最後のチャンクの場合、または文字数が制限に近づいたときに更新
+      const shouldUpdate =
+        fullText.length - lastUpdateLength >= UPDATE_INTERVAL ||
+        done ||
+        fullText.length - lastProcessedLength >= MAX_TEXT_LENGTH * 0.8; // 80%に達したら更新
+
+      if (shouldUpdate) {
+        if (done) {
+          // 完了時はsplitMessageで複数メッセージに分割
+          const { chunks, wasChunked } = splitMessage(fullText, useEmbed);
+
+          if (chunks.length > 0) {
+            // 最初のメッセージは既存のメッセージを更新
             if (useEmbed && embedOptions) {
-              const newEmbed = new EmbedBuilder()
-                .setDescription(messages[i])
-                .setColor(embedOptions.embed.data.color || 0x000000);
+              embedOptions.embed.setDescription(chunks[0]);
               if (embedOptions.authorName) {
-                newEmbed.setAuthor({
+                embedOptions.embed.setAuthor({
                   name: embedOptions.authorName,
                   iconURL: embedOptions.authorIconURL,
                 });
               }
-              await textChannel.send({ embeds: [newEmbed] });
+              await currentMessage.edit({ embeds: [embedOptions.embed] });
+
+              // 残りのメッセージを別途送信（2つ目以降）
+              if (wasChunked && chunks.length > 1) {
+                textChannel = currentMessage.channel as TextChannel;
+                const remainingChunks = chunks.slice(1);
+
+                await sendRemainingChunks(
+                  textChannel,
+                  remainingChunks,
+                  useEmbed,
+                  {
+                    color: embedOptions.embed.data.color || 0x000000,
+                    authorName: embedOptions.authorName,
+                    authorIconURL: embedOptions.authorIconURL,
+                  },
+                );
+              }
             } else {
-              await textChannel.send(messages[i]);
+              await currentMessage.edit(chunks[0]);
+
+              // 残りのテキストメッセージを送信
+              if (wasChunked && chunks.length > 1) {
+                textChannel = currentMessage.channel as TextChannel;
+                const remainingChunks = chunks.slice(1);
+                await sendRemainingChunks(textChannel, remainingChunks);
+              }
+            }
+          }
+        } else {
+          // 文字数チェック: 許容最大長を超えそうな場合は途中でメッセージを分割して送信
+          if (fullText.length > lastProcessedLength + MAX_TEXT_LENGTH) {
+            logger.debug(
+              "[handleStreamingResponse] Text exceeds chunk limit, sending chunked...",
+            );
+
+            // 現在までの完全なテキストで分割を行う
+            const { chunks, wasChunked } = splitMessage(fullText, useEmbed);
+
+            if (chunks.length > 0) {
+              // 最初のチャンクを既存のメッセージに設定
+              if (useEmbed && embedOptions) {
+                embedOptions.embed.setDescription(chunks[0]);
+                if (embedOptions.authorName) {
+                  embedOptions.embed.setAuthor({
+                    name: embedOptions.authorName,
+                    iconURL: embedOptions.authorIconURL,
+                  });
+                }
+                await currentMessage.edit({ embeds: [embedOptions.embed] });
+
+                // 残りのチャンクを新しいメッセージとして送信
+                if (wasChunked && chunks.length > 1) {
+                  textChannel = currentMessage.channel as TextChannel;
+                  const remainingChunks = chunks.slice(1);
+
+                  // 最後のチャンクが「続く...」表示で終わるようにする
+                  if (remainingChunks.length > 0) {
+                    const lastIndex = remainingChunks.length - 1;
+                    remainingChunks[lastIndex] += "\n\n*続く...*";
+                  }
+
+                  await sendRemainingChunks(
+                    textChannel,
+                    remainingChunks,
+                    useEmbed,
+                    {
+                      color: embedOptions.embed.data.color || 0x000000,
+                      authorName: embedOptions.authorName,
+                      authorIconURL: embedOptions.authorIconURL,
+                    },
+                  );
+
+                  // 新しいメッセージを準備
+                  const newEmbed = new EmbedBuilder()
+                    .setDescription("*続きを受信中...*")
+                    .setColor(embedOptions?.embed?.data?.color || 0x000000);
+
+                  if (embedOptions?.authorName) {
+                    newEmbed.setAuthor({
+                      name: embedOptions.authorName,
+                      iconURL: embedOptions?.authorIconURL,
+                    });
+                  }
+
+                  // 新しいメッセージを送信
+                  const nextMessage = await textChannel.send({
+                    embeds: [newEmbed],
+                  });
+
+                  // 埋め込みを更新
+                  if (embedOptions) {
+                    embedOptions.embed = newEmbed;
+                  }
+
+                  // 処理済みとしてマーク
+                  currentMessage = nextMessage;
+                  fullText = ""; // フルテキストをリセット
+                  lastProcessedLength = 0;
+                  lastUpdateLength = 0;
+                }
+              } else {
+                await currentMessage.edit(chunks[0]);
+
+                // 残りのテキストメッセージを送信
+                if (wasChunked && chunks.length > 1) {
+                  textChannel = currentMessage.channel as TextChannel;
+                  const remainingChunks = chunks.slice(1);
+
+                  // 最後のチャンクが「続く...」表示で終わるようにする
+                  if (remainingChunks.length > 0) {
+                    const lastIndex = remainingChunks.length - 1;
+                    remainingChunks[lastIndex] += "\n\n*続く...*";
+                  }
+
+                  await sendRemainingChunks(textChannel, remainingChunks);
+
+                  // 新しいメッセージを準備
+                  const newEmbed = new EmbedBuilder()
+                    .setDescription("*続きを受信中...*")
+                    .setColor(embedOptions?.embed?.data?.color || 0x000000);
+
+                  if (embedOptions?.authorName) {
+                    newEmbed.setAuthor({
+                      name: embedOptions.authorName,
+                      iconURL: embedOptions?.authorIconURL,
+                    });
+                  }
+
+                  // 新しいメッセージを送信
+                  const nextMessage = await textChannel.send({
+                    embeds: [newEmbed],
+                  });
+
+                  // 処理済みとしてマーク
+                  currentMessage = nextMessage;
+                  fullText = ""; // フルテキストをリセット
+                  lastProcessedLength = 0;
+                  lastUpdateLength = 0;
+                }
+              }
+            }
+          } else {
+            // 通常のストリーミング更新：コードブロックなどが適切に閉じられた単一のメッセージを使用
+            const { text, codeBlockState } = splitStreamingMessage(
+              fullText,
+              useEmbed,
+            );
+
+            // 前回の状態を保存して、次回のために更新
+            lastCodeBlockState = codeBlockState;
+
+            if (useEmbed && embedOptions) {
+              embedOptions.embed.setDescription(text);
+              if (embedOptions.authorName) {
+                embedOptions.embed.setAuthor({
+                  name: embedOptions.authorName,
+                  iconURL: embedOptions.authorIconURL,
+                });
+              }
+              await currentMessage.edit({ embeds: [embedOptions.embed] });
+            } else {
+              await currentMessage.edit(text);
             }
           }
         }
@@ -164,36 +407,39 @@ export async function handleStreamingResponse(
 
     // 最終チェック - 更新されていなければ更新
     if (fullText.length > 0 && fullText.length !== lastUpdateLength) {
-      const messages = splitMessage(fullText, useEmbed);
-      if (messages.length > 0) {
+      // 完了時は常にsplitMessageを使用
+      const { chunks, wasChunked } = splitMessage(fullText, useEmbed);
+
+      if (chunks.length > 0) {
         if (useEmbed && embedOptions) {
-          embedOptions.embed.setDescription(messages[0]);
+          embedOptions.embed.setDescription(chunks[0]);
           if (embedOptions.authorName) {
             embedOptions.embed.setAuthor({
               name: embedOptions.authorName,
               iconURL: embedOptions.authorIconURL,
             });
           }
-          await message.edit({ embeds: [embedOptions.embed] });
-        } else {
-          await message.edit(messages[0]);
-        }
+          await currentMessage.edit({ embeds: [embedOptions.embed] });
 
-        const textChannel = message.channel as TextChannel;
-        for (let i = 1; i < messages.length; i++) {
-          if (useEmbed && embedOptions) {
-            const newEmbed = new EmbedBuilder()
-              .setDescription(messages[i])
-              .setColor(embedOptions.embed.data.color || 0x000000);
-            if (embedOptions.authorName) {
-              newEmbed.setAuthor({
-                name: embedOptions.authorName,
-                iconURL: embedOptions.authorIconURL,
-              });
-            }
-            await textChannel.send({ embeds: [newEmbed] });
-          } else {
-            await textChannel.send(messages[i]);
+          // 残りのメッセージを別途送信（2つ目以降）
+          if (wasChunked && chunks.length > 1) {
+            textChannel = currentMessage.channel as TextChannel;
+            const remainingChunks = chunks.slice(1);
+
+            await sendRemainingChunks(textChannel, remainingChunks, useEmbed, {
+              color: embedOptions.embed.data.color || 0x000000,
+              authorName: embedOptions.authorName,
+              authorIconURL: embedOptions.authorIconURL,
+            });
+          }
+        } else {
+          await currentMessage.edit(chunks[0]);
+
+          // 残りのテキストメッセージを送信
+          if (wasChunked && chunks.length > 1) {
+            textChannel = currentMessage.channel as TextChannel;
+            const remainingChunks = chunks.slice(1);
+            await sendRemainingChunks(textChannel, remainingChunks);
           }
         }
       }
@@ -206,9 +452,9 @@ export async function handleStreamingResponse(
 
       if (useEmbed && embedOptions) {
         embedOptions.embed.setDescription(noResponseMsg);
-        await message.edit({ embeds: [embedOptions.embed] });
+        await currentMessage.edit({ embeds: [embedOptions.embed] });
       } else {
-        await message.edit(noResponseMsg);
+        await currentMessage.edit(noResponseMsg);
       }
     }
   } catch (error) {
@@ -219,18 +465,15 @@ export async function handleStreamingResponse(
       embedOptions.embed.setDescription(
         `ストリーム処理中にエラーが発生しました: ${error}`,
       );
-      await message.edit({ embeds: [embedOptions.embed] });
+      await currentMessage.edit({ embeds: [embedOptions.embed] });
     } else {
-      await message.edit(`ストリーム処理中にエラーが発生しました: ${error}`);
-    }
-  } finally {
-    try {
-      reader.releaseLock();
-    } catch (lockError) {
-      logger.error(
-        `[handleStreamingResponse] Error releasing reader lock: ${lockError}`,
+      await currentMessage.edit(
+        `ストリーム処理中にエラーが発生しました: ${error}`,
       );
     }
+  } finally {
+    // ストリームが自動的に閉じられるため、特別なクリーンアップは不要
+    // リーダーのロック状態をチェックしてからリリースする
   }
 }
 

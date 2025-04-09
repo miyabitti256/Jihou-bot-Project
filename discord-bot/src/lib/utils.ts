@@ -204,54 +204,149 @@ export function hasDrawnToday(now: Date, lastDrawDate: Date): boolean {
 }
 
 /**
- * AIが挿入した分割マーカーでメッセージを分割する
- * 通常のメッセージは2000文字、埋め込みは4096文字まで
- * AIが "===SPLIT_MESSAGE===" マーカーを挿入している場合はそのマーカーで分割
- * マーカーがない場合や分割後も文字数が制限を超える場合は単純に文字数で分割
- * @param content 分割するメッセージ
- * @param isEmbed 埋め込みメッセージかどうか
- * @returns 分割されたメッセージの配列
+ * コードブロックの状態を追跡するヘルパー関数
+ * 文字列内のコードブロックの開始と終了をすべて検出し、最終的な状態を返す
  */
-export function splitMessage(content: string, isEmbed = false): string[] {
+export function getCodeBlockState(text: string): {
+  isInCodeBlock: boolean;
+  codeBlockType: string | null;
+} {
+  const codeBlockMatches = text.match(/```[\w]*/g) || [];
+  let isInCodeBlock = false;
+  let codeBlockType: string | null = null;
+
+  for (const match of codeBlockMatches) {
+    if (isInCodeBlock) {
+      // コードブロック終了
+      isInCodeBlock = false;
+      codeBlockType = null;
+    } else {
+      // コードブロック開始
+      isInCodeBlock = true;
+      // "```" より後の部分がコードブロックのタイプ（言語）
+      codeBlockType = match.length > 3 ? match.substring(3) : "";
+    }
+  }
+
+  return { isInCodeBlock, codeBlockType };
+}
+
+/**
+ * 指定された長さに文字列を切り詰める
+ * コードブロックなどの特殊ブロックが開いている場合は適切に閉じる
+ */
+export function truncateTextToLength(
+  text: string,
+  maxLength: number,
+): {
+  text: string;
+  wasTruncated: boolean;
+  codeBlockState: { isInCodeBlock: boolean; codeBlockType: string | null };
+} {
+  if (text.length <= maxLength) {
+    return {
+      text,
+      wasTruncated: false,
+      codeBlockState: getCodeBlockState(text),
+    };
+  }
+
+  // 最大長に切り詰める
+  const truncatedText = text.substring(0, maxLength);
+
+  // 切り詰めた後のコードブロック状態を確認
+  const codeBlockState = getCodeBlockState(truncatedText);
+
+  // コードブロックが開いたままなら閉じる
+  let finalText = truncatedText;
+  if (codeBlockState.isInCodeBlock) {
+    finalText += "\n```";
+  }
+
+  return {
+    text: finalText,
+    wasTruncated: true,
+    codeBlockState,
+  };
+}
+
+/**
+ * 安全なストリーミングレスポンス用のメッセージ分割
+ * 途中のメッセージでもコードブロックが適切に閉じられていることを保証し、
+ * 最大長を超えないように調整します
+ */
+export function splitStreamingMessage(
+  content: string,
+  isEmbed = false,
+): {
+  text: string;
+  codeBlockState: { isInCodeBlock: boolean; codeBlockType: string | null };
+} {
   const MAX_LENGTH = isEmbed ? 4096 : 2000;
 
-  // メッセージが制限以内の場合はそのまま返す
+  // 切り詰めと適切なブロック終了処理
+  const { text, codeBlockState } = truncateTextToLength(content, MAX_LENGTH);
+
+  return { text, codeBlockState };
+}
+
+/**
+ * 長いメッセージを複数のチャンクに分割します。
+ * シンプルに文字数ベースで分割し、コードブロックなどの特殊ブロックが
+ * 分割された場合は適切に閉じて次のチャンクで再開します。
+ */
+export function splitMessage(
+  content: string,
+  isEmbed = false,
+): {
+  chunks: string[];
+  wasChunked: boolean;
+} {
+  const MAX_LENGTH = isEmbed ? 4000 : 1900; // 少し余裕を持たせる
+
+  // コンテンツが空の場合は空の配列を返す
+  if (!content) return { chunks: [], wasChunked: false };
+
+  // 最大長以下の場合は分割不要
   if (content.length <= MAX_LENGTH) {
-    return [content];
+    return { chunks: [content], wasChunked: false };
   }
 
-  // 分割マーカーの定義
-  const SPLIT_MARKER = "===SPLIT_MESSAGE===";
+  const chunks: string[] = [];
+  let isInCodeBlock = false;
+  let codeBlockType: string | null = null;
+  let currentPos = 0;
 
-  // マーカーが含まれている場合はマーカーで分割
-  if (content.includes(SPLIT_MARKER)) {
-    // マーカーで分割し、マーカー自体は削除する
-    const parts = content.split(new RegExp(`\\s*${SPLIT_MARKER}\\s*`));
+  // 本文を最大長ごとにチャンクに分割
+  while (currentPos < content.length) {
+    // 現在のチャンクを取得
+    const chunkEnd = Math.min(currentPos + MAX_LENGTH, content.length);
+    let chunk = content.substring(currentPos, chunkEnd);
 
-    // 空の部分を除去
-    const filteredParts = parts.filter((part) => part.trim() !== "");
+    // 現在のチャンクのコードブロック状態を取得
+    const chunkState = getCodeBlockState(chunk);
 
-    // 分割後も長すぎる部分があれば文字数で単純に分割
-    const result: string[] = [];
-
-    for (const part of filteredParts) {
-      if (part.length <= MAX_LENGTH) {
-        result.push(part);
-      } else {
-        // 単純に文字数で分割
-        for (let i = 0; i < part.length; i += MAX_LENGTH) {
-          result.push(part.substring(i, Math.min(i + MAX_LENGTH, part.length)));
-        }
-      }
+    // 前のチャンクからコードブロックが継続している場合
+    if (isInCodeBlock && !chunks.length) {
+      // 最初のチャンクでかつコードブロック内なら、コードブロック開始を追加
+      chunk = `\`\`\`${codeBlockType || ""}\n${chunk}`;
     }
 
-    return result;
+    // 次のチャンクへ引き継ぐ状態を更新
+    if (chunkState.isInCodeBlock) {
+      // コードブロックが開いたままで終わる場合は閉じる
+      chunk += "\n```";
+      isInCodeBlock = true;
+      codeBlockType = chunkState.codeBlockType;
+    } else {
+      isInCodeBlock = false;
+      codeBlockType = null;
+    }
+
+    // チャンクを追加
+    chunks.push(chunk);
+    currentPos = chunkEnd;
   }
 
-  // マーカーがない場合は単純に文字数で分割
-  const result: string[] = [];
-  for (let i = 0; i < content.length; i += MAX_LENGTH) {
-    result.push(content.substring(i, Math.min(i + MAX_LENGTH, content.length)));
-  }
-  return result;
+  return { chunks, wasChunked: chunks.length > 1 };
 }

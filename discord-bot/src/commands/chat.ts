@@ -5,7 +5,7 @@ import {
   ChannelType,
   ThreadAutoArchiveDuration,
   type TextChannel,
-  ThreadChannel,
+  type ThreadChannel,
   type Message,
   type DMChannel,
   type TextBasedChannel,
@@ -15,8 +15,6 @@ import {
 import { prisma } from "@/lib/prisma";
 import rateLimitManager from "@/handler/rate-limit-handler";
 import aiMessageHandler from "@/handler/ai-message-handler";
-
-const DEBUG_MODE = true;
 
 // API設定 - 環境に応じて変更可能
 const CONSTANTS = {
@@ -83,17 +81,6 @@ async function checkApiHealth(): Promise<{ ok: boolean; message: string }> {
   }
 }
 
-// デバッグ情報を出力
-function logDebugInfo(message: string, data?: Record<string, unknown>): void {
-  if (DEBUG_MODE) {
-    if (data) {
-      logger.info(`[DEBUG] ${message}: ${JSON.stringify(data)}`);
-    } else {
-      logger.info(`[DEBUG] ${message}`);
-    }
-  }
-}
-
 export const data = new SlashCommandBuilder()
   .setName("chat")
   .setDescription("AIとチャットできます")
@@ -109,12 +96,6 @@ export const data = new SlashCommandBuilder()
       .setDescription("会話履歴を保存するかどうか（デフォルト: 保存しない）")
       .setRequired(false),
   )
-  .addBooleanOption((option) =>
-    option
-      .setName("archive")
-      .setDescription("現在のスレッドをアーカイブするかどうか")
-      .setRequired(false),
-  );
 
 export async function execute(interaction: ChatInputCommandInteraction) {
   await interaction.deferReply();
@@ -179,7 +160,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
     const contents = interaction.options.getString("contents", true);
     const saveHistory = interaction.options.getBoolean("save_history") ?? false;
-    const archive = interaction.options.getBoolean("archive") ?? false;
     const title =
       contents.substring(0, 30) + (contents.length > 30 ? "..." : "");
 
@@ -205,83 +185,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
     let thread: ThreadChannel | null = null;
     let isNewThread = false;
-
-    if (archive) {
-      if (!(channel instanceof ThreadChannel)) {
-        await interaction.editReply({
-          embeds: [
-            new EmbedBuilder()
-              .setTitle("エラー")
-              .setDescription("アーカイブはスレッド内でのみ実行できます。")
-              .setColor(Colors.Red),
-          ],
-        });
-        return;
-      }
-
-      // アーカイブ処理前に再度ヘルスチェック
-      const archiveHealthCheck = await checkApiHealth();
-      if (!archiveHealthCheck.ok) {
-        await interaction.editReply({
-          embeds: [
-            new EmbedBuilder()
-              .setTitle("APIエラー")
-              .setDescription(archiveHealthCheck.message)
-              .setColor(Colors.Red),
-          ],
-        });
-        return;
-      }
-
-      try {
-        const response = await fetch(
-          `${CONSTANTS.API_ENDPOINT}/chat/threads/${channel.id}/archive`,
-          {
-            method: "POST",
-          },
-        );
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          await interaction.editReply({
-            embeds: [
-              new EmbedBuilder()
-                .setTitle("エラー")
-                .setDescription(
-                  `スレッドのアーカイブに失敗しました: ${
-                    errorData.error?.message || "不明なエラー"
-                  }`,
-                )
-                .setColor(Colors.Red),
-            ],
-          });
-          return;
-        }
-
-        await interaction.editReply({
-          embeds: [
-            new EmbedBuilder()
-              .setTitle("スレッドをアーカイブしました")
-              .setDescription(
-                "このスレッドはアーカイブされました。新しいメッセージは送信できません。",
-              )
-              .setColor(Colors.Green),
-          ],
-        });
-        return;
-      } catch (error) {
-        logger.error(`[chat] Error archiving thread: ${error}`);
-        await interaction.editReply({
-          embeds: [
-            new EmbedBuilder()
-              .setTitle("エラー")
-              .setDescription("スレッドのアーカイブ中にエラーが発生しました。")
-              .setColor(Colors.Red),
-          ],
-        });
-        return;
-      }
-    }
 
     if (saveHistory && channel) {
       try {
