@@ -294,7 +294,7 @@ export async function execute(interaction: CommandInteraction): Promise<void> {
           collector.stop();
         }
       } catch (error) {
-        logger.error(error);
+        logger.error(`[coinflip] Error handling button interaction: ${error}`);
         await i.followUp({
           content: CONSTANTS.MESSAGES.errors.GENERIC_ERROR,
           flags: MessageFlags.Ephemeral,
@@ -304,6 +304,9 @@ export async function execute(interaction: CommandInteraction): Promise<void> {
 
     collector.on("end", async (collected, reason) => {
       if (reason === "time") {
+        logger.info(
+          `[coinflip] Game timed out for user: ${interaction.user.id}`,
+        );
         const timeoutEmbed = new EmbedBuilder()
           .setTitle("⏰ タイムアウト")
           .setDescription(CONSTANTS.MESSAGES.errors.TIMEOUT)
@@ -316,7 +319,7 @@ export async function execute(interaction: CommandInteraction): Promise<void> {
       }
     });
   } catch (error) {
-    logger.error(error);
+    logger.error(`[coinflip] Error executing command: ${error}`);
     await interaction.reply({
       content: CONSTANTS.MESSAGES.errors.GENERIC_ERROR,
       flags: MessageFlags.Ephemeral,

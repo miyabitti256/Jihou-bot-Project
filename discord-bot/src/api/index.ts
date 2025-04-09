@@ -2,6 +2,7 @@ import { Hono, type Context, type Next } from "hono";
 import { users } from "./routes/users";
 import { minigame } from "./routes/minigame";
 import { guilds } from "./routes/guilds";
+import { chat } from "./routes/chat";
 
 const app = new Hono().basePath("/api");
 
@@ -43,10 +44,11 @@ const authMiddleware = async (c: Context, next: Next) => {
   await next();
 };
 app.use("/*", authMiddleware);
-app.get("/health", (c) => c.json({ status: "ok" }));
+app.get("/health", (c: Context) => c.json({ status: "ok" }));
 
 app.route("/guilds", guilds);
 app.route("/users", users);
 app.route("/minigame", minigame);
+app.route("/chat", chat);
 
 export default app;

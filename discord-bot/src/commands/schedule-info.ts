@@ -1,10 +1,15 @@
 import type { ScheduledMessage } from "@prisma/client";
+import { logger } from "@/lib/logger";
 import {
   type ChatInputCommandInteraction,
   EmbedBuilder,
   MessageFlags,
   SlashCommandBuilder,
 } from "discord.js";
+
+const CONSTANTS = {
+  API_ENDPOINT: "http://localhost:3001/api/guilds/scheduledmessage",
+} as const;
 
 export const data = new SlashCommandBuilder()
   .setName("scheduleinfo")
@@ -13,9 +18,7 @@ export const data = new SlashCommandBuilder()
 export async function execute(interaction: ChatInputCommandInteraction) {
   const guildId = interaction.guildId as string;
   try {
-    const data = await fetch(
-      `http://localhost:3001/api/guilds/scheduledmessage/${guildId}?type=guild`,
-    );
+    const data = await fetch(`${CONSTANTS.API_ENDPOINT}/${guildId}?type=guild`);
     const messages = await data.json();
     const embed = new EmbedBuilder()
       .setTitle("📅 時報の設定一覧")
@@ -60,9 +63,10 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.reply({ embeds: [embed] });
     return;
   } catch (error) {
+    logger.error(`[scheduleinfo] Error fetching schedule info: ${error}`);
     await interaction.reply({
       content: "エラーが発生しました",
-        flags: MessageFlags.Ephemeral,
+      flags: MessageFlags.Ephemeral,
     });
     return;
   }

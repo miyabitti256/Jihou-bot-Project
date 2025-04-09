@@ -1,8 +1,13 @@
+import { logger } from "@/lib/logger";
 import {
   type ChatInputCommandInteraction,
   MessageFlags,
   SlashCommandBuilder,
 } from "discord.js";
+
+const CONSTANTS = {
+  API_ENDPOINT: "http://localhost:3001/api/guilds/scheduledmessage",
+} as const;
 
 export const data = new SlashCommandBuilder()
   .setName("deleteschedule")
@@ -17,12 +22,9 @@ export const data = new SlashCommandBuilder()
 export async function execute(interaction: ChatInputCommandInteraction) {
   const id = interaction.options.getString("id") as string;
 
-  const data = await fetch(
-    `http://localhost:3001/api/guilds/scheduledmessage/details/${id}`,
-    {
-      method: "GET",
-    },
-  );
+  const data = await fetch(`${CONSTANTS.API_ENDPOINT}/details/${id}`, {
+    method: "GET",
+  });
   const message = await data.json();
 
   if (!message) {
@@ -42,22 +44,21 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   }
 
   try {
-    const response = await fetch(
-      "http://localhost:3001/api/guilds/scheduledmessage",
-      {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id,
-          guildId: interaction.guild?.id,
-        }),
+    const response = await fetch(CONSTANTS.API_ENDPOINT, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({
+        id,
+        guildId: interaction.guild?.id,
+      }),
+    });
 
     if (!response.ok) {
-      console.error(await response.json());
+      logger.error(
+        `[deleteschedule] Error deleting schedule: ${await response.text()}`,
+      );
       await interaction.reply({
         content: "時報の削除に失敗しました",
         flags: MessageFlags.Ephemeral,
@@ -72,6 +73,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       flags: MessageFlags.Ephemeral,
     });
   } catch (error) {
+    logger.error(`[deleteschedule] Error executing command: ${error}`);
     await interaction.reply({
       content: "時報の削除に失敗しました",
       flags: MessageFlags.Ephemeral,

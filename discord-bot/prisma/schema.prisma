@@ -89,6 +89,7 @@ model Users {
   JankenOpponent           Janken[]       @relation("opponent")
   JankenRoomHost           JankenRoom[] @relation("RoomHost")
   JankenRoomGuest          JankenRoom[] @relation("RoomGuest")
+  createdThreads           ChatThread[]
 
   @@map("users")
 }
@@ -217,4 +218,42 @@ enum RoomStatus {
   PLAYING
   FINISHED
   CANCELLED
+}
+
+// チャット関連のモデル
+model ChatThread {
+  id          String   @id @unique
+  title       String?
+  guildId     String
+  channelId   String
+  creatorId   String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  messages    ChatMessage[]
+  creator     Users    @relation(fields: [creatorId], references: [id])
+
+  @@map("chat_threads")
+  @@index([channelId], name: "channel_id_idx")
+}
+
+model ChatMessage {
+  id          String   @id @unique @default(cuid())
+  threadId    String
+  content     String
+  role        ChatRole
+  tokenCount  Int
+  createdAt   DateTime @default(now())
+  
+  thread      ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+  @@index([threadId], name: "thread_id_idx")
+}
+
+enum ChatRole {
+  SYSTEM
+  USER
+  ASSISTANT
 }

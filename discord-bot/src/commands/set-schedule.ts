@@ -1,9 +1,13 @@
-import { logger } from "@lib/logger";
+import { logger } from "@/lib/logger";
 import {
   type ChatInputCommandInteraction,
   MessageFlags,
   SlashCommandBuilder,
 } from "discord.js";
+
+const CONSTANTS = {
+  API_ENDPOINT: "http://localhost:3001/api/guilds/scheduledmessage",
+} as const;
 
 export const data = new SlashCommandBuilder()
   .setName("setschedule")
@@ -23,7 +27,7 @@ export const data = new SlashCommandBuilder()
       .setRequired(false),
   );
 
-export const execute = async (interaction: ChatInputCommandInteraction) => {
+export async function execute(interaction: ChatInputCommandInteraction) {
   const time = interaction.options.getString("time");
   const message =
     interaction.options.getString("message") ?? `${time}をお知らせします`;
@@ -54,37 +58,39 @@ export const execute = async (interaction: ChatInputCommandInteraction) => {
       userId: interaction.user.id,
     };
 
-    const response = await fetch(
-      "http://localhost:3001/api/guilds/scheduledmessage",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          data: scheduledMessage,
-        }),
+    const response = await fetch(CONSTANTS.API_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({
+        data: scheduledMessage,
+      }),
+    });
 
     if (!response.ok) {
-      return await interaction.reply({
+      logger.error(
+        `[setschedule] Failed to set schedule: ${await response.text()}`,
+      );
+      await interaction.reply({
         content: "時報の設定に失敗しました",
         flags: MessageFlags.Ephemeral,
       });
+      return;
     }
 
     const data = await response.json();
 
-    return await interaction.reply({
+    await interaction.reply({
       content: data.data.message,
       flags: MessageFlags.Ephemeral,
     });
   } catch (error) {
-    logger.error(error);
-    return await interaction.reply({
+    logger.error(`[setschedule] Error executing command: ${error}`);
+    await interaction.reply({
       content: "時報の設定に失敗しました",
       flags: MessageFlags.Ephemeral,
     });
+    return;
   }
-};
+}

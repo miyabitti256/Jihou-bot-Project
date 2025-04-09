@@ -10,9 +10,9 @@ const clientId = process.env.DISCORD_CLIENT_ID as string;
 const rest = new REST({ version: "10" }).setToken(token);
 
 const commands: APIApplicationCommand[] = [];
-const commandFiles = readdirSync(join(__dirname, "..", "..", "src", "commands")).filter(
-  (file) => file.endsWith(".ts") || file.endsWith(".js"),
-);
+const commandFiles = readdirSync(
+  join(__dirname, "..", "..", "src", "commands"),
+).filter((file) => file.endsWith(".ts") || file.endsWith(".js"));
 
 for (const file of commandFiles) {
   const filePath = join(__dirname, "..", "..", "src", "commands", file);
@@ -30,5 +30,7 @@ for (const file of commandFiles) {
     logger.info("Successfully registered application (/) commands.");
   } catch (error) {
     console.error(error);
+  } finally {
+    process.exit(0);
   }
 })();

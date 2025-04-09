@@ -1,9 +1,14 @@
+import { logger } from "@/lib/logger";
 import {
   ChannelType,
   type ChatInputCommandInteraction,
   MessageFlags,
   SlashCommandBuilder,
 } from "discord.js";
+
+const CONSTANTS = {
+  API_ENDPOINT: "http://localhost:3001/api/guilds/scheduledmessage",
+} as const;
 
 export const data = new SlashCommandBuilder()
   .setName("editschedule")
@@ -83,18 +88,18 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   };
 
   try {
-    const response = await fetch(
-      "http://localhost:3001/api/guilds/scheduledmessage",
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(updateData, null, 2),
+    const response = await fetch(CONSTANTS.API_ENDPOINT, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify(updateData, null, 2),
+    });
     if (!response.ok) {
-      console.error(await response.json().then((data) => data.error.details));
+      const errorResponse = await response.json();
+      logger.error(
+        `[editschedule] Error updating schedule: ${JSON.stringify(errorResponse.error?.details || errorResponse)}`,
+      );
       await interaction.reply({
         content: "時報の編集に失敗しました",
         flags: MessageFlags.Ephemeral,
@@ -107,9 +112,11 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       flags: MessageFlags.Ephemeral,
     });
   } catch (error) {
+    logger.error(`[editschedule] Error executing command: ${error}`);
     await interaction.reply({
       content: "時報の編集に失敗しました",
       flags: MessageFlags.Ephemeral,
     });
+    return;
   }
 }

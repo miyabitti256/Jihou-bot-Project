@@ -5,7 +5,9 @@ import { client } from "@lib/client";
 import cron from "node-cron";
 import {
   ActivityType,
+  ChannelType,
   MessageFlags,
+  ThreadChannel,
   type Guild,
   type GuildMember,
   type Role,
@@ -15,6 +17,7 @@ import { prisma } from "@lib/prisma";
 import { logger } from "@lib/logger";
 import { initCronJobs } from "@handler/cron-handler";
 import { commands, loadCommands } from "@handler/command-handler";
+import aiMessageHandler from "@handler/ai-message-handler";
 
 const token = process.env.DISCORD_TOKEN as string;
 export const cronJobs = new Map<string, cron.ScheduledTask>();
@@ -173,7 +176,7 @@ client.on("interactionCreate", async (interaction) => {
     logger.error("Error executing command:", error);
     await interaction.reply({
       content: "コマンドの実行中にエラーが発生しました。",
-        flags: MessageFlags.Ephemeral,
+      flags: MessageFlags.Ephemeral,
     });
   }
 });
@@ -259,6 +262,11 @@ client.on("guildMemberRemove", async (member) => {
   } catch (error) {
     logger.error("Error deleting guild member:", error);
   }
+});
+
+// AIメッセージハンドラーを使用してmessageCreateイベントを処理
+client.on("messageCreate", async (message) => {
+  await aiMessageHandler.handleMessageCreate(message);
 });
 
 client.login(token);

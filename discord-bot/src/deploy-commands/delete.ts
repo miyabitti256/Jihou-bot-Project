@@ -25,5 +25,7 @@ const rest = new REST({ version: "10" }).setToken(token);
     );
   } catch (error) {
     console.error(error);
+  } finally {
+    process.exit(0);
   }
 })();
