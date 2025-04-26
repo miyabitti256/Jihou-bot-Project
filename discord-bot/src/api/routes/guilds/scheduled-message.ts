@@ -1,11 +1,82 @@
-import { addMessage, deleteMessage, editMessage } from "@handler/cron-handler";
 import { prisma } from "@lib/prisma";
 import type { ScheduledMessage } from "@prisma/client";
 import cuid from "cuid";
 import { Hono } from "hono";
 import { z } from "zod";
+import { logger } from "@lib/logger";
+import { client } from "@lib/client";
+import { cronJobs } from "@index";
+import { schedule } from "node-cron";
+import { TextChannel } from "discord.js";
+
+// Botの処理（cron-handler.tsとの重複を避けるため、共通機能をここに定義）
+const setCronJob = async (message: ScheduledMessage) => {
+  const existingJob = cronJobs.get(message.id);
+  if (existingJob) {
+    existingJob.stop();
+  }
+
+  const [hour, minute] = message.scheduleTime.split(":");
+  const job = schedule(
+    `${minute} ${hour} * * *`,
+    async () => {
+      const channel = client.channels.cache.get(message.channelId);
+      if (channel instanceof TextChannel) {
+        await channel.send(message.message);
+        logger.info(`${message.id} - メッセージを送信しました`);
+      } else {
+        logger.error(`${message.id} - チャンネルが見つかりません`);
+      }
+    },
+    {
+      timezone: "Asia/Tokyo",
+    },
+  );
+  cronJobs.set(message.id, job);
+};
+
+const stopCronJob = async (message: ScheduledMessage) => {
+  const existingJob = cronJobs.get(message.id);
+  if (existingJob) {
+    existingJob.stop();
+    cronJobs.delete(message.id);
+  }
+};
 
 export const message = new Hono();
+
+message.get("/all", async (c) => {
+  try {
+    const data = await prisma.scheduledMessage.findMany({
+      where: {
+        isActive: true,
+      },
+      orderBy: {
+        scheduleTime: "asc",
+      },
+    });
+
+    return c.json(
+      {
+        status: "success",
+        data,
+      },
+      200,
+    );
+  } catch (error) {
+    return c.json(
+      {
+        status: "error",
+        error: {
+          code: "INTERNALSERVERERROR",
+          message: "Internal server error",
+          details: error,
+        },
+      },
+      500,
+    );
+  }
+});
 
 message.get("/:id", async (c) => {
   const id = c.req.param("id");
@@ -112,12 +183,22 @@ message.post("/", async (c) => {
   };
 
   try {
-    await addMessage(newMessage);
+    // 直接DBに保存し、cronジョブを設定
+    const createdMessage = await prisma.scheduledMessage.create({
+      data: newMessage,
+    });
+
+    // cronジョブの設定
+    if (createdMessage.isActive) {
+      await setCronJob(createdMessage);
+    }
+
     return c.json(
       {
         status: "success",
         data: {
           message: "メッセージのスケジュールに成功しました",
+          scheduledMessage: createdMessage,
         },
       },
       200,
@@ -210,13 +291,33 @@ message.patch("/", async (c) => {
       updatedAt: new Date(),
     };
 
-    await editMessage(updatedMessage);
+    // 直接DBを更新
+    const savedMessage = await prisma.scheduledMessage.update({
+      where: { id: updatedMessage.id },
+      data: {
+        channelId: updatedMessage.channelId,
+        message: updatedMessage.message,
+        scheduleTime: updatedMessage.scheduleTime,
+        lastUpdatedUserId: updatedMessage.lastUpdatedUserId,
+        isActive: updatedMessage.isActive,
+        updatedAt: updatedMessage.updatedAt,
+      },
+    });
+
+    // cronジョブの更新
+    if (savedMessage.isActive) {
+      await stopCronJob(savedMessage);
+      await setCronJob(savedMessage);
+    } else {
+      await stopCronJob(savedMessage);
+    }
 
     return c.json(
       {
         status: "success",
         data: {
           message: "メッセージの更新に成功しました",
+          scheduledMessage: savedMessage,
         },
       },
       200,
@@ -285,11 +386,13 @@ message.delete("/", async (c) => {
       );
     }
 
-    try {
-      await deleteMessage(existingMessage);
-    } catch {
-      throw new Error("メッセージの削除に失敗しました");
-    }
+    // cronジョブの停止
+    await stopCronJob(existingMessage);
+
+    // DBから削除
+    await prisma.scheduledMessage.delete({
+      where: { id: messageId },
+    });
 
     return c.json(
       {

@@ -3,6 +3,7 @@ import { users } from "./routes/users";
 import { minigame } from "./routes/minigame";
 import { guilds } from "./routes/guilds";
 import { chat } from "./routes/chat";
+import { dbSync } from "./routes/db-sync";
 
 const app = new Hono().basePath("/api");
 
@@ -50,5 +51,6 @@ app.route("/guilds", guilds);
 app.route("/users", users);
 app.route("/minigame", minigame);
 app.route("/chat", chat);
+app.route("/db-sync", dbSync);
 
 export default app;
