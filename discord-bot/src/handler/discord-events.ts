@@ -58,7 +58,7 @@ export function setupDiscordEventHandlers(): void {
   // メッセージ受信時
   client.on("messageCreate", handleMessageCreate);
 
-  logger.info("Discordイベントハンドラを設定しました");
+  logger.info("Setup discord event handlers");
 }
 
 /**

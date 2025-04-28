@@ -23,7 +23,7 @@ export async function updateStatus(startTime: Date): Promise<void> {
   // 起動してからの稼働時間を計算
   const now = new Date();
   const h = Math.floor((now.getTime() - startTime.getTime()) / 1000 / 60 / 60);
-  client.user?.setActivity(`Running for ${h} hours`, {
+  client.user?.setActivity(`${h}時間連続稼働中`, {
     type: ActivityType.Custom,
   });
 }
