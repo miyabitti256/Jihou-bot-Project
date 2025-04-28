@@ -1,8 +1,13 @@
-import { Hono } from "hono";
-import { message } from "./scheduled-message";
-import { prisma } from "@lib/prisma";
 import { logger } from "@lib/logger";
+import {
+  GuildError,
+  type GuildIncludeOptions,
+  getGuildWithData,
+  getUserGuilds,
+} from "@services/guilds/guild";
+import { Hono } from "hono";
 import { z } from "zod";
+import { message } from "./scheduled-message";
 
 export const guilds = new Hono();
 
@@ -48,24 +53,25 @@ guilds.get("/:guildId", async (c) => {
 
   const includes = includesResult.data ?? [];
 
-  const includeMap = {
+  const includeOptions: GuildIncludeOptions = {
     roles: includes.includes("roles"),
     channels: includes.includes("channels"),
     members: includes.includes("members"),
-    ScheduledMessage: includes.includes("messages"),
+    messages: includes.includes("messages"),
   };
 
   try {
-    const data = await prisma.guild.findUnique({
-      where: {
-        id: guildIdResult.data,
-      },
-      include: {
-        ...includeMap,
-      },
-    });
+    const data = await getGuildWithData(guildIdResult.data, includeOptions);
 
-    if (!data) {
+    return c.json(
+      {
+        status: "success",
+        data,
+      },
+      200,
+    );
+  } catch (error) {
+    if (error instanceof GuildError && error.message === "GUILD_NOT_FOUND") {
       return c.json(
         {
           status: "error",
@@ -78,15 +84,7 @@ guilds.get("/:guildId", async (c) => {
       );
     }
 
-    return c.json(
-      {
-        status: "success",
-        data,
-      },
-      200,
-    );
-  } catch (error) {
-    logger.error(error);
+    logger.error(`[guild-api] Error: ${error}`);
     return c.json(
       {
         status: "error",
@@ -118,11 +116,7 @@ guilds.get("/members/:userId", async (c) => {
   }
 
   try {
-    const data = await prisma.guildMembers.findMany({
-      where: {
-        userId,
-      },
-    });
+    const data = await getUserGuilds(userId);
 
     return c.json(
       {
@@ -132,7 +126,7 @@ guilds.get("/members/:userId", async (c) => {
       200,
     );
   } catch (error) {
-    logger.error(error);
+    logger.error(`[guild-api] Error getting user guilds: ${error}`);
     return c.json(
       {
         status: "error",

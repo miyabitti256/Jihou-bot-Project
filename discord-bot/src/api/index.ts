@@ -1,9 +1,7 @@
-import { Hono, type Context, type Next } from "hono";
-import { users } from "./routes/users";
-import { minigame } from "./routes/minigame";
+import { type Context, Hono, type Next } from "hono";
 import { guilds } from "./routes/guilds";
-import { chat } from "./routes/chat";
-import { dbSync } from "./routes/db-sync";
+import { minigame } from "./routes/minigame";
+import { users } from "./routes/users";
 
 const app = new Hono().basePath("/api");
 
@@ -50,7 +48,5 @@ app.get("/health", (c: Context) => c.json({ status: "ok" }));
 app.route("/guilds", guilds);
 app.route("/users", users);
 app.route("/minigame", minigame);
-app.route("/chat", chat);
-app.route("/db-sync", dbSync);
 
 export default app;

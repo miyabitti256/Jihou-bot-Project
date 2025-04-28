@@ -22,7 +22,7 @@
     "typescript": "^5.7.2"
   },
   "dependencies": {
-    "@google/genai": "^0.7.0",
+    "@google/genai": "^0.8.0",
     "@prisma/client": "^6.3.1",
     "@prisma/extension-pulse": "^1.2.0",
     "@types/node-cron": "^3.0.11",

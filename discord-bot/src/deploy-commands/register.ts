@@ -1,8 +1,8 @@
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { REST } from "@discordjs/rest";
-import { Routes, type APIApplicationCommand } from "discord-api-types/v10";
 import { logger } from "@lib/logger";
+import { type APIApplicationCommand, Routes } from "discord-api-types/v10";
 
 const token = process.env.DISCORD_TOKEN as string;
 const clientId = process.env.DISCORD_CLIENT_ID as string;

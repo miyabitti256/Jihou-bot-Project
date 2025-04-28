@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
-import { formatChatHistoryForGemini } from "./utils";
-import type { ChatRole } from "@prisma/client";
 import { logger } from "@lib/logger";
+import type { ChatRole } from "@prisma/client";
+import { formatChatHistoryForGemini } from "./utils";
 
 const CONSTANTS = {
   MODEL_NAME: "gemini-2.0-flash",
@@ -209,10 +209,69 @@ export async function generateChatTextStream(
 
     const model = gemini.models;
     try {
-      return await model.generateContentStream({
+      // コード実行を含むストリーミングレスポンスを取得
+      const response = await model.generateContentStream({
         model: CONSTANTS.MODEL_NAME,
         contents: formattedMessages,
       });
+
+      // ストリーム処理を行い、コード実行部分をフィルタリングまたは処理するラッパーを返す
+      return {
+        [Symbol.asyncIterator]() {
+          return {
+            async next() {
+              try {
+                const result = await response.next();
+
+                if (result.done) {
+                  return { done: true, value: undefined };
+                }
+
+                const chunk = result.value;
+
+                // チャンクに適切なテキストがない場合はスキップして次へ
+                if (chunk?.candidates?.[0]?.content?.parts?.[0]) {
+                  // テキスト部分を抽出
+                  const part = chunk.candidates[0].content.parts[0];
+
+                  // executableCodeやcodeExecutionResultがある場合は、結果のみをテキストとして抽出
+                  if (part.executableCode) {
+                    logger.debug(
+                      "[gemini] Found executableCode part, processing...",
+                    );
+                    // コード実行部分は無視してスキップ
+                    return { done: false, value: { text: "" } };
+                  }
+
+                  if (part.codeExecutionResult) {
+                    logger.debug(
+                      "[gemini] Found codeExecutionResult part, extracting output...",
+                    );
+                    // 実行結果を取得
+                    return {
+                      done: false,
+                      value: {
+                        text: part.codeExecutionResult.output || "",
+                      },
+                    };
+                  }
+
+                  if (part.text) {
+                    // 通常のテキスト
+                    return { done: false, value: { text: part.text } };
+                  }
+                }
+
+                // テキストが見つからない場合は空文字を返す
+                return { done: false, value: { text: "" } };
+              } catch (error) {
+                logger.error(`[gemini] Error in stream processing: ${error}`);
+                throw error;
+              }
+            },
+          };
+        },
+      };
     } catch (apiError) {
       logger.error(`[gemini] API error in generateContentStream: ${apiError}`);
       // リクエストの詳細をログに記録して診断を容易にする

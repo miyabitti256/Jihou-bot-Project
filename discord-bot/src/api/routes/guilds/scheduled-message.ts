@@ -1,60 +1,23 @@
-import { prisma } from "@lib/prisma";
-import type { ScheduledMessage } from "@prisma/client";
-import cuid from "cuid";
+import { logger } from "@lib/logger";
+import {
+  type ScheduledMessageCreateData,
+  ScheduledMessageError,
+  type ScheduledMessageUpdateData,
+  createScheduledMessage,
+  deleteScheduledMessage,
+  getAllScheduledMessages,
+  getScheduledMessageById,
+  getScheduledMessages,
+  updateScheduledMessage,
+} from "@services/guilds/scheduled-message";
 import { Hono } from "hono";
 import { z } from "zod";
-import { logger } from "@lib/logger";
-import { client } from "@lib/client";
-import { cronJobs } from "@index";
-import { schedule } from "node-cron";
-import { TextChannel } from "discord.js";
-
-// Botの処理（cron-handler.tsとの重複を避けるため、共通機能をここに定義）
-const setCronJob = async (message: ScheduledMessage) => {
-  const existingJob = cronJobs.get(message.id);
-  if (existingJob) {
-    existingJob.stop();
-  }
-
-  const [hour, minute] = message.scheduleTime.split(":");
-  const job = schedule(
-    `${minute} ${hour} * * *`,
-    async () => {
-      const channel = client.channels.cache.get(message.channelId);
-      if (channel instanceof TextChannel) {
-        await channel.send(message.message);
-        logger.info(`${message.id} - メッセージを送信しました`);
-      } else {
-        logger.error(`${message.id} - チャンネルが見つかりません`);
-      }
-    },
-    {
-      timezone: "Asia/Tokyo",
-    },
-  );
-  cronJobs.set(message.id, job);
-};
-
-const stopCronJob = async (message: ScheduledMessage) => {
-  const existingJob = cronJobs.get(message.id);
-  if (existingJob) {
-    existingJob.stop();
-    cronJobs.delete(message.id);
-  }
-};
 
 export const message = new Hono();
 
 message.get("/all", async (c) => {
   try {
-    const data = await prisma.scheduledMessage.findMany({
-      where: {
-        isActive: true,
-      },
-      orderBy: {
-        scheduleTime: "asc",
-      },
-    });
+    const data = await getAllScheduledMessages();
 
     return c.json(
       {
@@ -64,6 +27,7 @@ message.get("/all", async (c) => {
       200,
     );
   } catch (error) {
+    logger.error(`[scheduledmessage-api] Error getting all messages: ${error}`);
     return c.json(
       {
         status: "error",
@@ -83,14 +47,7 @@ message.get("/:id", async (c) => {
   const query = (c.req.query("type") as "user" | "guild") ?? "guild";
 
   try {
-    const data = await prisma.scheduledMessage.findMany({
-      where: {
-        [query === "user" ? "userId" : "guildId"]: id,
-      },
-      orderBy: {
-        scheduleTime: "asc",
-      },
-    });
+    const data = await getScheduledMessages(id, query);
 
     return c.json(
       {
@@ -100,6 +57,7 @@ message.get("/:id", async (c) => {
       200,
     );
   } catch (error) {
+    logger.error(`[scheduledmessage-api] Error getting messages: ${error}`);
     return c.json(
       {
         status: "error",
@@ -117,11 +75,7 @@ message.get("/:id", async (c) => {
 message.get("/details/:id", async (c) => {
   const id = c.req.param("id");
   try {
-    const data = await prisma.scheduledMessage.findUnique({
-      where: {
-        id,
-      },
-    });
+    const data = await getScheduledMessageById(id);
     return c.json(
       {
         status: "success",
@@ -130,6 +84,25 @@ message.get("/details/:id", async (c) => {
       200,
     );
   } catch (error) {
+    if (
+      error instanceof ScheduledMessageError &&
+      error.message === "MESSAGE_NOT_FOUND"
+    ) {
+      return c.json(
+        {
+          status: "error",
+          error: {
+            code: "NOTFOUND",
+            message: "Scheduled message not found",
+          },
+        },
+        404,
+      );
+    }
+
+    logger.error(
+      `[scheduledmessage-api] Error getting message details: ${error}`,
+    );
     return c.json(
       {
         status: "error",
@@ -169,29 +142,17 @@ message.post("/", async (c) => {
       400,
     );
   }
+
   const validatedData = result.data;
   const { userId, ...rest } = validatedData;
 
-  const newMessage: ScheduledMessage = {
-    id: cuid(),
+  const createData: ScheduledMessageCreateData = {
     ...rest,
     createdUserId: userId,
-    lastUpdatedUserId: userId,
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
   };
 
   try {
-    // 直接DBに保存し、cronジョブを設定
-    const createdMessage = await prisma.scheduledMessage.create({
-      data: newMessage,
-    });
-
-    // cronジョブの設定
-    if (createdMessage.isActive) {
-      await setCronJob(createdMessage);
-    }
+    const createdMessage = await createScheduledMessage(createData);
 
     return c.json(
       {
@@ -204,6 +165,22 @@ message.post("/", async (c) => {
       200,
     );
   } catch (error) {
+    if (error instanceof ScheduledMessageError) {
+      if (error.message === "INVALID_TIME_FORMAT") {
+        return c.json(
+          {
+            status: "error",
+            error: {
+              code: "VALIDATION_ERROR",
+              message: "時刻のフォーマットが不正です",
+            },
+          },
+          400,
+        );
+      }
+    }
+
+    logger.error(`[scheduledmessage-api] Error creating message: ${error}`);
     return c.json(
       {
         status: "error",
@@ -251,78 +228,58 @@ message.patch("/", async (c) => {
   }
 
   const validatedData = result.data;
+  const { id, guildId, userId, ...rest } = validatedData;
+
+  const updateData: ScheduledMessageUpdateData = {
+    id,
+    guildId,
+    lastUpdatedUserId: userId,
+    ...rest,
+  };
 
   try {
-    const existingMessage = await prisma.scheduledMessage.findUnique({
-      where: { id: validatedData.id },
-    });
-
-    if (!existingMessage) {
-      return c.json(
-        {
-          status: "error",
-          error: {
-            code: "NOT_FOUND",
-            message: "指定されたメッセージが見つかりません",
-          },
-        },
-        404,
-      );
-    }
-
-    if (validatedData.guildId !== existingMessage.guildId) {
-      return c.json(
-        {
-          status: "error",
-          error: {
-            code: "FORBIDDEN",
-            message: "指定されたメッセージは存在しません",
-          },
-        },
-        403,
-      );
-    }
-
-    const updatedMessage: ScheduledMessage = {
-      ...existingMessage,
-      ...validatedData,
-      lastUpdatedUserId:
-        validatedData.userId || existingMessage.lastUpdatedUserId,
-      updatedAt: new Date(),
-    };
-
-    // 直接DBを更新
-    const savedMessage = await prisma.scheduledMessage.update({
-      where: { id: updatedMessage.id },
-      data: {
-        channelId: updatedMessage.channelId,
-        message: updatedMessage.message,
-        scheduleTime: updatedMessage.scheduleTime,
-        lastUpdatedUserId: updatedMessage.lastUpdatedUserId,
-        isActive: updatedMessage.isActive,
-        updatedAt: updatedMessage.updatedAt,
-      },
-    });
-
-    // cronジョブの更新
-    if (savedMessage.isActive) {
-      await stopCronJob(savedMessage);
-      await setCronJob(savedMessage);
-    } else {
-      await stopCronJob(savedMessage);
-    }
+    const updatedMessage = await updateScheduledMessage(updateData);
 
     return c.json(
       {
         status: "success",
         data: {
           message: "メッセージの更新に成功しました",
-          scheduledMessage: savedMessage,
+          scheduledMessage: updatedMessage,
         },
       },
       200,
     );
   } catch (error) {
+    if (error instanceof ScheduledMessageError) {
+      if (error.message === "MESSAGE_NOT_FOUND") {
+        return c.json(
+          {
+            status: "error",
+            error: {
+              code: "NOTFOUND",
+              message: "指定されたメッセージが見つかりません",
+            },
+          },
+          404,
+        );
+      }
+
+      if (error.message === "INVALID_TIME_FORMAT") {
+        return c.json(
+          {
+            status: "error",
+            error: {
+              code: "VALIDATION_ERROR",
+              message: "時刻のフォーマットが不正です",
+            },
+          },
+          400,
+        );
+      }
+    }
+
+    logger.error(`[scheduledmessage-api] Error updating message: ${error}`);
     return c.json(
       {
         status: "error",
@@ -339,60 +296,32 @@ message.patch("/", async (c) => {
 
 message.delete("/", async (c) => {
   const body = await c.req.json();
-  const messageId = body.messageId;
-  const guildId = body.guildId;
 
-  if (!messageId) {
+  const deleteSchema = z.object({
+    id: z.string().min(1),
+    guildId: z.string().min(1),
+  });
+
+  const result = deleteSchema.safeParse(body);
+
+  if (!result.success) {
     return c.json(
       {
         status: "error",
         error: {
-          code: "INVALID_REQUEST",
-          message: "メッセージIDが指定されていません",
+          code: "VALIDATION_ERROR",
+          message: "入力データが不正です",
+          details: result.error.format(),
         },
       },
       400,
     );
   }
 
+  const { id } = result.data;
+
   try {
-    const existingMessage = await prisma.scheduledMessage.findUnique({
-      where: { id: messageId },
-    });
-
-    if (!existingMessage) {
-      return c.json(
-        {
-          status: "error",
-          error: {
-            code: "NOT_FOUND",
-            message: "指定されたメッセージが見つかりません",
-          },
-        },
-        404,
-      );
-    }
-
-    if (existingMessage.guildId !== guildId) {
-      return c.json(
-        {
-          status: "error",
-          error: {
-            code: "FORBIDDEN",
-            message: "指定されたメッセージは存在しません",
-          },
-        },
-        403,
-      );
-    }
-
-    // cronジョブの停止
-    await stopCronJob(existingMessage);
-
-    // DBから削除
-    await prisma.scheduledMessage.delete({
-      where: { id: messageId },
-    });
+    await deleteScheduledMessage(id);
 
     return c.json(
       {
@@ -404,6 +333,23 @@ message.delete("/", async (c) => {
       200,
     );
   } catch (error) {
+    if (
+      error instanceof ScheduledMessageError &&
+      error.message === "MESSAGE_NOT_FOUND"
+    ) {
+      return c.json(
+        {
+          status: "error",
+          error: {
+            code: "NOTFOUND",
+            message: "指定されたメッセージが見つかりません",
+          },
+        },
+        404,
+      );
+    }
+
+    logger.error(`[scheduledmessage-api] Error deleting message: ${error}`);
     return c.json(
       {
         status: "error",
