@@ -1,14 +1,11 @@
+import { generateText } from "@/lib/gemini-client";
 import { logger } from "@/lib/logger";
+import { OmikujiError, drawOmikuji } from "@services/minigame/omikuji";
 import {
   type ChatInputCommandInteraction,
-  SlashCommandBuilder,
   EmbedBuilder,
+  SlashCommandBuilder,
 } from "discord.js";
-import { generateText } from "@/lib/gemini-client";
-
-const CONSTANTS = {
-  API_ENDPOINT: "http://localhost:3001/api/minigame/omikuji",
-} as const;
 
 export const data = new SlashCommandBuilder()
   .setName("omikuji")
@@ -29,24 +26,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     // 開始時間を記録（最低3秒待機のため）
     const startTime = Date.now();
 
-    const response = await fetch(`${CONSTANTS.API_ENDPOINT}/draw`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        userId: interaction.user.id,
-      }),
-    });
-
-    const result = await response.json();
-
-    if (result.status === "error") {
-      await interaction.editReply(result.error.message);
-      return;
-    }
-
-    const fortune = result.data.result;
+    const result = await drawOmikuji(interaction.user.id);
+    const fortune = result.result;
     let reply = `おみくじの結果は「${fortune}」です！`;
 
     // ロールの割り当て処理
@@ -93,7 +74,17 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     }
   } catch (error) {
     logger.error(`[omikuji] Error executing command: ${error}`);
-    await interaction.editReply("おみくじの処理中にエラーが発生しました。");
+    let errorMessage = "おみくじの処理中にエラーが発生しました。";
+
+    if (error instanceof OmikujiError) {
+      if (error.message === "USER_NOT_FOUND") {
+        errorMessage = "ユーザーデータが見つかりません。";
+      } else if (error.message === "ALREADY_DRAWN") {
+        errorMessage = "おみくじは一日に一度しか引けません";
+      }
+    }
+
+    await interaction.editReply(errorMessage);
   }
 }
 

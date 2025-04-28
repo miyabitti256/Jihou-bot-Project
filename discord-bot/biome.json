@@ -33,6 +33,10 @@
       },
       "performance": {
         "noDelete": "error"
+      },
+      "correctness": {
+        "noUnusedImports": "error",
+        "noUnusedVariables": "error"
       }
     }
   },

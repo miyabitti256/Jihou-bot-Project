@@ -1,5 +1,5 @@
-import pino from "pino";
 import path from "node:path";
+import pino from "pino";
 
 export const logger = pino({
   level: "info",

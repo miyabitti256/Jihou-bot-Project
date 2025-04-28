@@ -1,13 +1,13 @@
 import { logger } from "@/lib/logger";
 import {
+  ScheduledMessageError,
+  createScheduledMessage,
+} from "@services/guilds/scheduled-message";
+import {
   type ChatInputCommandInteraction,
   MessageFlags,
   SlashCommandBuilder,
 } from "discord.js";
-
-const CONSTANTS = {
-  API_ENDPOINT: "http://localhost:3001/api/guilds/scheduledmessage",
-} as const;
 
 export const data = new SlashCommandBuilder()
   .setName("setschedule")
@@ -54,38 +54,33 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       channelId: interaction.channelId,
       message: message,
       scheduleTime: time,
-      guildId: interaction.guildId,
-      userId: interaction.user.id,
+      guildId: interaction.guildId || "",
+      createdUserId: interaction.user.id,
     };
 
-    const response = await fetch(CONSTANTS.API_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        data: scheduledMessage,
-      }),
-    });
+    await createScheduledMessage(scheduledMessage);
 
-    if (!response.ok) {
-      logger.error(
-        `[setschedule] Failed to set schedule: ${await response.text()}`,
-      );
+    await interaction.reply({
+      content: `${time}に「${message}」を通知するよう設定しました。`,
+      flags: MessageFlags.Ephemeral,
+    });
+  } catch (error) {
+    if (error instanceof ScheduledMessageError) {
+      logger.error(`[setschedule] Failed to set schedule: ${error.message}`);
+
+      let errorMessage = "時報の設定に失敗しました";
+      if (error.message === "INVALID_TIME_FORMAT") {
+        errorMessage =
+          "時刻の形式が正しくありません。HH:MM の形式で指定してください";
+      }
+
       await interaction.reply({
-        content: "時報の設定に失敗しました",
+        content: errorMessage,
         flags: MessageFlags.Ephemeral,
       });
       return;
     }
 
-    const data = await response.json();
-
-    await interaction.reply({
-      content: data.data.message,
-      flags: MessageFlags.Ephemeral,
-    });
-  } catch (error) {
     logger.error(`[setschedule] Error executing command: ${error}`);
     await interaction.reply({
       content: "時報の設定に失敗しました",

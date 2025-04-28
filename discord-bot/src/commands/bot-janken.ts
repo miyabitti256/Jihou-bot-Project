@@ -53,7 +53,7 @@ export const execute = async (i: ChatInputCommandInteraction) => {
   try {
     const result = getResult(userHand, enemyHand);
     await i.reply(`相手：${getEmoji(enemyHand)}\n${result}`);
-  } catch (error) {
+  } catch (_) {
     await i.reply({
       content: "エラーが発生しました",
       flags: MessageFlags.Ephemeral,

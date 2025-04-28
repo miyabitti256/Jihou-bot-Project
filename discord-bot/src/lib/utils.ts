@@ -1,5 +1,5 @@
-import type { ChatRole } from "@prisma/client";
 import { logger } from "@lib/logger";
+import type { ChatRole } from "@prisma/client";
 
 export const MAX_TOKENS = 900000;
 
