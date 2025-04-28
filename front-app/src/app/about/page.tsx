@@ -21,11 +21,6 @@ export default function About() {
             </div>
 
             <div>
-              <h3 className="text-xl font-semibold mb-2">/scheduleinfo</h3>
-              <p>時報の情報を表示します</p>
-            </div>
-
-            <div>
               <h3 className="text-xl font-semibold mb-2">/editschedule</h3>
               <p className="mb-2">時報を編集します</p>
               <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
@@ -41,11 +36,34 @@ export default function About() {
             </div>
 
             <div>
+              <h3 className="text-xl font-semibold mb-2">/deleteschedule</h3>
+              <p className="mb-2">時報を削除します</p>
+              <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+                <h4 className="font-medium mb-2">オプション：</h4>
+                <ul className="list-disc list-inside">
+                  <li>id: (必須) 削除する時報のID</li>
+                </ul>
+                <p className="mt-2">idは/scheduleinfoコマンドで確認できます</p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-xl font-semibold mb-2">/scheduleinfo</h3>
+              <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+                <p>時報の情報を表示します</p>
+              </div>
+            </div>
+
+            <div>
               <h3 className="text-xl font-semibold mb-2">/omikuji</h3>
               <p className="mb-2">おみくじを引きます</p>
               <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-                <h4 className="font-medium mb-2">確率：</h4>
+                <h4 className="font-medium mb-2">オプション：</h4>
                 <ul className="list-disc list-inside">
+                  <li>text: (任意) おみくじのテキストをつけるかどうか</li>
+                </ul>
+                <h4 className="font-medium mt-2">確率：</h4>
+                <ul className="list-disc list-inside mt-2">
                   <li>ぬべ吉: 1% (20000円)</li>
                   <li>大吉: 8% (1000円)</li>
                   <li>吉: 12% (500円)</li>

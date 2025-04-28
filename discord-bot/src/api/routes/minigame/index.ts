@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { omikuji } from "./omikuji";
 import { coinflip } from "./coinflip";
+import { omikuji } from "./omikuji";
 
 export const minigame = new Hono();
 

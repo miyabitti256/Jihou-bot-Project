@@ -1,15 +1,15 @@
 import { logger } from "@/lib/logger";
-import {
-  SlashCommandBuilder,
-  ButtonBuilder,
-  ActionRowBuilder,
-  ButtonStyle,
-  EmbedBuilder,
-  type ChatInputCommandInteraction,
-  type User,
-  type Message,
-} from "discord.js";
 import { prisma } from "@/lib/prisma";
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  type ChatInputCommandInteraction,
+  EmbedBuilder,
+  type Message,
+  SlashCommandBuilder,
+  type User,
+} from "discord.js";
 
 const CONSTANTS = {
   TIMEOUT_DURATION: 180000,
@@ -577,7 +577,7 @@ async function showResult(
 
 async function handleRematch(
   interaction: ChatInputCommandInteraction,
-  message: Message,
+  _message: Message,
   challenger: User,
   opponent: User,
 ) {
@@ -660,11 +660,11 @@ async function handleRematch(
               components: [],
             });
 
-            const bet = interaction.options.getBoolean("bet", true);
-            const newInteraction = interaction.followUp({
-              content: "リマッチを準備中...",
-              fetchReply: true,
-            });
+            // const bet = interaction.options.getBoolean("bet", true);
+            // const newInteraction = interaction.followUp({
+            //   content: "リマッチを準備中...",
+            //   fetchReply: true,
+            // });
 
             execute(interaction, {
               challenger,

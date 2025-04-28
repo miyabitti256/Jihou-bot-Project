@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import DeleteButton from "./components/delete-button";
 import Link from "next/link";
 import { FaPlus } from "react-icons/fa";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default async function SchedulePage() {
   const session = await auth();
@@ -74,11 +75,12 @@ export default async function SchedulePage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center gap-4">
                 {guild.data.iconUrl && (
-                  <img
-                    src={guild.data.iconUrl}
-                    alt={guild.data.name}
-                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full"
-                  />
+                  <Avatar className="rounded-full">
+                    <AvatarImage src={guild.data.iconUrl} />
+                    <AvatarFallback>
+                      {guild.data.name.slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
                 )}
                 <div>
                   <CardTitle className="text-lg sm:text-xl">

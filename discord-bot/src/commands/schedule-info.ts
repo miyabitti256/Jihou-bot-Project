@@ -1,15 +1,12 @@
-import type { ScheduledMessage } from "@prisma/client";
 import { logger } from "@/lib/logger";
+import type { ScheduledMessage } from "@prisma/client";
+import { getScheduledMessages } from "@services/guilds/scheduled-message";
 import {
   type ChatInputCommandInteraction,
   EmbedBuilder,
   MessageFlags,
   SlashCommandBuilder,
 } from "discord.js";
-
-const CONSTANTS = {
-  API_ENDPOINT: "http://localhost:3001/api/guilds/scheduledmessage",
-} as const;
 
 export const data = new SlashCommandBuilder()
   .setName("scheduleinfo")
@@ -18,13 +15,12 @@ export const data = new SlashCommandBuilder()
 export async function execute(interaction: ChatInputCommandInteraction) {
   const guildId = interaction.guildId as string;
   try {
-    const data = await fetch(`${CONSTANTS.API_ENDPOINT}/${guildId}?type=guild`);
-    const messages = await data.json();
+    const messages = await getScheduledMessages(guildId);
     const embed = new EmbedBuilder()
       .setTitle("📅 時報の設定一覧")
       .setColor("#00ff00");
-    if (messages.data.length > 0) {
-      const sortedMessages = messages.data.sort(
+    if (messages.length > 0) {
+      const sortedMessages = messages.sort(
         (a: ScheduledMessage, b: ScheduledMessage) => {
           const [aHours, aMinutes] = a.scheduleTime.split(":").map(Number);
           const [bHours, bMinutes] = b.scheduleTime.split(":").map(Number);

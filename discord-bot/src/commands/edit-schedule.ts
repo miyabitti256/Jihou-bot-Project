@@ -1,14 +1,15 @@
 import { logger } from "@/lib/logger";
 import {
+  ScheduledMessageError,
+  getScheduledMessageById,
+  updateScheduledMessage,
+} from "@services/guilds/scheduled-message";
+import {
   ChannelType,
   type ChatInputCommandInteraction,
   MessageFlags,
   SlashCommandBuilder,
 } from "discord.js";
-
-const CONSTANTS = {
-  API_ENDPOINT: "http://localhost:3001/api/guilds/scheduledmessage",
-} as const;
 
 export const data = new SlashCommandBuilder()
   .setName("editschedule")
@@ -51,8 +52,35 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const channelId = interaction.options.getString("channel") as string | null;
   const isActive = interaction.options.getBoolean("isactive") as boolean | null;
 
-  const userId = interaction.user.id;
+  const lastUpdatedUserId = interaction.user.id;
   const guildId = interaction.guild?.id as string;
+
+  // 既存のスケジュールメッセージを取得して存在確認
+  try {
+    const existingMessage = await getScheduledMessageById(id);
+    if (!existingMessage) {
+      await interaction.reply({
+        content: "指定されたIDの時報が見つかりません",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    if (existingMessage.guildId !== guildId) {
+      await interaction.reply({
+        content: "指定されたIDの時報は存在しません",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+  } catch (error) {
+    logger.error(`[editschedule] Error getting scheduled message: ${error}`);
+    await interaction.reply({
+      content: "時報の取得に失敗しました",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
 
   if (time) {
     const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
@@ -76,42 +104,36 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   }
 
   const updateData = {
-    data: {
-      id,
-      guildId,
-      userId,
-      ...(channelId !== null && { channelId }),
-      ...(message !== null && { message }),
-      ...(time !== null && { scheduleTime: time }),
-      ...(isActive !== null && { isActive }),
-    },
+    id,
+    guildId,
+    lastUpdatedUserId,
+    ...(channelId !== null && { channelId }),
+    ...(message !== null && { message }),
+    ...(time !== null && { scheduleTime: time }),
+    ...(isActive !== null && { isActive }),
   };
 
   try {
-    const response = await fetch(CONSTANTS.API_ENDPOINT, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(updateData, null, 2),
+    await updateScheduledMessage(updateData);
+    await interaction.reply({
+      content: "時報を更新しました",
+      flags: MessageFlags.Ephemeral,
     });
-    if (!response.ok) {
-      const errorResponse = await response.json();
-      logger.error(
-        `[editschedule] Error updating schedule: ${JSON.stringify(errorResponse.error?.details || errorResponse)}`,
-      );
+  } catch (error) {
+    if (error instanceof ScheduledMessageError) {
+      let errorMessage = "時報の編集に失敗しました";
+      if (error.message === "INVALID_TIME_FORMAT") {
+        errorMessage = "時刻の形式が正しくありません";
+      } else if (error.message === "MESSAGE_NOT_FOUND") {
+        errorMessage = "指定されたIDの時報が見つかりません";
+      }
       await interaction.reply({
-        content: "時報の編集に失敗しました",
+        content: errorMessage,
         flags: MessageFlags.Ephemeral,
       });
       return;
     }
-    const data = await response.json();
-    await interaction.reply({
-      content: data.data.message,
-      flags: MessageFlags.Ephemeral,
-    });
-  } catch (error) {
+
     logger.error(`[editschedule] Error executing command: ${error}`);
     await interaction.reply({
       content: "時報の編集に失敗しました",
