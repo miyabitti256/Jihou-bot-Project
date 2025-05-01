@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { useEffect, useRef, useState } from "react";
 
 interface Message {
   sender: "player" | "bot";
@@ -58,8 +58,18 @@ export default function BotJanken() {
   return (
     <Card className="w-full max-w-2xl mx-auto my-4 h-[600px] flex flex-col bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-800">
       <div className="bg-gray-100 dark:bg-slate-800 p-4 rounded-t-lg border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">時報とじゃんけん！</h1>
-        <p>created by <a href="https://twitter.com/@wister_fujicco" className="text-blue-500">@wister_fujicco</a></p>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+          時報とじゃんけん！
+        </h1>
+        <p>
+          created by{" "}
+          <a
+            href="https://twitter.com/@wister_fujicco"
+            className="text-blue-500"
+          >
+            @wister_fujicco
+          </a>
+        </p>
       </div>
 
       <ScrollArea className="flex-1 p-4">
@@ -86,7 +96,8 @@ export default function BotJanken() {
                 {message.content}
               </div>
             </div>
-          ))}          <div ref={scrollRef} />
+          ))}{" "}
+          <div ref={scrollRef} />
         </div>
       </ScrollArea>
 

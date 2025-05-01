@@ -1,20 +1,20 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import {
-  NavigationMenu,
-  NavigationMenuList,
-  NavigationMenuItem,
-} from "@/components/ui/navigation-menu";
-import { Menu, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
+import {
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuList,
+} from "@/components/ui/navigation-menu";
+import { Menu, X } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 type NavItem = {
@@ -27,6 +27,7 @@ const navItems: NavItem[] = [
   { href: "/about", label: "時報について" },
   { href: "/schedule", label: "時報設定" },
   { href: "/minigame", label: "ミニゲーム" },
+  { href: "/users", label: "ユーザー" },
   { href: "/contact", label: "お問い合わせ" },
 ];
 

@@ -10,7 +10,9 @@ export default function About() {
           <div className="space-y-6">
             <div>
               <h3 className="text-xl font-semibold mb-2">/setschedule</h3>
-              <p className="mb-2">時報を追加します コマンドを実行したチャンネルに送信されます</p>
+              <p className="mb-2">
+                時報を追加します コマンドを実行したチャンネルに送信されます
+              </p>
               <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
                 <h4 className="font-medium mb-2">オプション：</h4>
                 <ul className="list-disc list-inside">
@@ -109,7 +111,9 @@ export default function About() {
                 <ul className="list-disc list-inside">
                   <li>bet: (必須) お金を賭けるかどうか</li>
                 </ul>
-                <p className="mt-2">賭けモードで開始した場合、賭け金は100,500,1000,5000,10000の中から選択します</p>
+                <p className="mt-2">
+                  賭けモードで開始した場合、賭け金は100,500,1000,5000,10000の中から選択します
+                </p>
               </div>
             </div>
           </div>

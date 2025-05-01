@@ -1,6 +1,6 @@
 import NextAuth from "next-auth";
-import Discord from "next-auth/providers/discord";
 import type { DefaultSession } from "next-auth";
+import Discord from "next-auth/providers/discord";
 
 declare module "next-auth" {
   interface Session extends DefaultSession {

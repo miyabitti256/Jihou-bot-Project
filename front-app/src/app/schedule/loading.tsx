@@ -1,9 +1,5 @@
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from "@/components/ui/card";
 
 export default function Loading() {
   return (
@@ -11,7 +7,7 @@ export default function Loading() {
       <div className="flex justify-between items-center mb-6">
         <Skeleton className="h-10 w-32" />
       </div>
-      
+
       {[1, 2].map((index) => (
         <Card key={index} className="mb-8">
           <CardHeader>

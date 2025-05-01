@@ -1,9 +1,9 @@
+import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
-import DrawOmikuji from "./components/draw-omikuji";
 import { getTokyoDate, hasDrawnToday } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import DrawOmikuji from "./components/draw-omikuji";
 
 export default async function OmikujiPage() {
   const session = await auth();

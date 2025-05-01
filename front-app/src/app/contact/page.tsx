@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FaGithub, FaDiscord } from "react-icons/fa";
+import { FaDiscord, FaGithub } from "react-icons/fa";
 
 export default function Contact() {
   return (

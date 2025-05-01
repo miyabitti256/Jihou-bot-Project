@@ -109,3 +109,25 @@ export interface Janken {
   winnerUserId?: string;
   createdAt: Date;
 }
+
+// ユーザー一覧レスポンスの型定義
+export interface UsersListResponse {
+  status: string;
+  data: {
+    users: User[];
+    total: number;
+    page: number;
+    limit: number;
+  };
+}
+
+export interface User {
+  id: string;
+  username: string;
+  discriminator: string | null;
+  avatarUrl: string | null;
+  money: number;
+  lastDraw?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}

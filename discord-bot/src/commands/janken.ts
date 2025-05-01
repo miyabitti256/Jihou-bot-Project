@@ -1,4 +1,5 @@
 import { logger } from "@/lib/logger";
+import * as JankenService from "@/services/minigame";
 import {
   ActionRowBuilder,
   ButtonBuilder,
@@ -9,7 +10,6 @@ import {
   SlashCommandBuilder,
   type User,
 } from "discord.js";
-import * as JankenService from "@/services/minigame";
 
 const CONSTANTS = {
   TIMEOUT_DURATION: 180000,
@@ -701,7 +701,6 @@ async function handleRematch(
               content: "じゃんけん勝負を終了します。ありがとうございました！",
               components: [],
             });
-            // 停止理由を明示的に "manual" と指定
             rematchCollector.stop("manual");
             resolve();
             return;

@@ -1,6 +1,7 @@
 import NoAuthRedirect from "@/components/noAuthRedirect";
-import { auth } from "@/lib/auth";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -9,11 +10,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { auth } from "@/lib/auth";
+import type { GuildChannel, Janken, UserData } from "@/types/api-response";
 import { formatDistance } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Skeleton } from "@/components/ui/skeleton";
-import type { GuildChannel, Janken, UserData } from "@/types/api-response";
 import { FaDiscord } from "react-icons/fa";
 
 export default async function Dashboard() {
@@ -45,10 +45,12 @@ export default async function Dashboard() {
   const allJankenGames = [
     ...(userData?.data?.JankenChallenger ?? []),
     ...(userData?.data?.JankenOpponent ?? []),
-  ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  ].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
 
   const recentJankenGames = allJankenGames.slice(0, 10);
-  const recentCoinFlips = coinflip.slice(0, 10);
+  const recentCoinFlips = coinflip.slice(0, 30);
 
   const winRate =
     coinflip.length > 0
@@ -410,18 +412,12 @@ export default async function Dashboard() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="min-w-[100px]">
-                          賭け金
-                        </TableHead>
-                        <TableHead className="min-w-[100px]">
-                          結果
-                        </TableHead>
+                        <TableHead className="min-w-[100px]">賭け金</TableHead>
+                        <TableHead className="min-w-[100px]">結果</TableHead>
                         <TableHead className="min-w-[150px]">
                           ゲーム後の所持金
                         </TableHead>
-                        <TableHead className="min-w-[100px]">
-                          日時
-                        </TableHead>
+                        <TableHead className="min-w-[100px]">日時</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -492,15 +488,9 @@ export default async function Dashboard() {
                         <TableHead className="min-w-[100px]">
                           相手の手
                         </TableHead>
-                        <TableHead className="min-w-[100px]">
-                          賭け金
-                        </TableHead>
-                        <TableHead className="min-w-[100px]">
-                          結果
-                        </TableHead>
-                        <TableHead className="min-w-[100px]">
-                          日時
-                        </TableHead>
+                        <TableHead className="min-w-[100px]">賭け金</TableHead>
+                        <TableHead className="min-w-[100px]">結果</TableHead>
+                        <TableHead className="min-w-[100px]">日時</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>

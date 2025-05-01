@@ -48,14 +48,12 @@
     "zod": "^3.24.3"
   },
   "devDependencies": {
-    "typescript": "^5.8.3",
+    "@biomejs/biome": "1.9.4",
     "@types/node": "^20.17.32",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
-    "eslint": "^9.25.1",
-    "eslint-config-next": "15.1.2",
-    "@eslint/eslintrc": "^3.3.1"
+    "typescript": "^5.8.3"
   }
 }

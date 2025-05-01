@@ -1,11 +1,11 @@
-import { ScheduleForm } from "./components/schedule-form";
-import { auth } from "@/lib/auth";
 import NoAuthRedirect from "@/components/noAuthRedirect";
+import { auth } from "@/lib/auth";
 import type {
   GuildChannel,
   GuildData,
   ScheduledMessage,
 } from "@/types/api-response";
+import { ScheduleForm } from "./components/schedule-form";
 
 export default async function SchedulePage({
   params,

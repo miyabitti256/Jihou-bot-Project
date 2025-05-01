@@ -3,8 +3,9 @@ import {
   UserServiceError,
   createOrUpdateUser,
   getUserData,
+  getUsersFromSameGuilds,
   updateUserMoney,
-} from "@services/users";
+} from "@services/users/user";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -198,6 +199,62 @@ users.put("/:userId/money", async (c) => {
     }
 
     logger.error(`[users-api] 所持金更新エラー: ${error}`);
+    return c.json(
+      {
+        status: "error",
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "サーバー内部エラーが発生しました",
+        },
+      },
+      500,
+    );
+  }
+});
+
+// ユーザー一覧の取得API
+users.get("/guilds/:userId", async (c) => {
+  const userId = c.req.param("userId");
+  const page = Number.parseInt(c.req.query("page") || "1", 10);
+  const limit = Number.parseInt(c.req.query("limit") || "20", 10);
+  const search = c.req.query("search");
+
+  if (!userId) {
+    return c.json(
+      {
+        status: "error",
+        error: {
+          code: "INVALID_USER_ID",
+          message: "ユーザーIDは必須です",
+        },
+      },
+      400,
+    );
+  }
+
+  try {
+    const result = await getUsersFromSameGuilds(userId, page, limit, search);
+
+    return c.json({
+      status: "success",
+      data: result,
+    });
+  } catch (error) {
+    if (error instanceof UserServiceError) {
+      logger.error(`[users-api] ${error.code}: ${error.message}`);
+      return c.json(
+        {
+          status: "error",
+          error: {
+            code: error.code,
+            message: error.message,
+          },
+        },
+        error.code === "USER_NOT_FOUND" ? 404 : 500,
+      );
+    }
+
+    logger.error(`[users-api] ユーザー一覧取得エラー: ${error}`);
     return c.json(
       {
         status: "error",
