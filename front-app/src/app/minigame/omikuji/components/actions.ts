@@ -13,4 +13,4 @@ export const drawOmikuji = async (userId: string) => {
     },
   );
   return result.json();
-}
+};

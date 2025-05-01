@@ -1,8 +1,8 @@
+import Footer from "@/components/layout/footer";
+import Header from "@/components/layout/header";
+import { ThemeProvider } from "@/provider/theme-provider";
 import type { Metadata } from "next";
 import { Noto_Sans_JP } from "next/font/google";
-import { ThemeProvider } from "@/provider/theme-provider";
-import Header from "@/components/layout/header";
-import Footer from "@/components/layout/footer";
 import "./globals.css";
 import ToastProvider from "@/provider/toast-provider";
 

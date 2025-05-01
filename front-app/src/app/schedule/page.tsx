@@ -1,10 +1,6 @@
 import NoAuthRedirect from "@/components/noAuthRedirect";
-import { auth } from "@/lib/auth";
-import type {
-  GuildChannel,
-  GuildMember,
-  ScheduledMessage,
-} from "@/types/api-response";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -13,6 +9,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -20,18 +23,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import DeleteButton from "./components/delete-button";
+import { auth } from "@/lib/auth";
+import type {
+  GuildChannel,
+  GuildMember,
+  ScheduledMessage,
+} from "@/types/api-response";
 import Link from "next/link";
 import { FaPlus } from "react-icons/fa";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import DeleteButton from "./components/delete-button";
 
 export default async function SchedulePage() {
   const session = await auth();
@@ -189,7 +189,9 @@ export default async function SchedulePage() {
                                   </div>
                                   <div className="mt-4 flex justify-end gap-4">
                                     <Link href={`schedule/${message.id}`}>
-                                      <Button variant="outline" size={"sm"}>編集</Button>
+                                      <Button variant="outline" size={"sm"}>
+                                        編集
+                                      </Button>
                                     </Link>
                                     <DeleteButton
                                       messageId={message.id}

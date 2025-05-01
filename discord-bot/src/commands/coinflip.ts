@@ -255,6 +255,25 @@ export async function execute(interaction: CommandInteraction): Promise<void> {
             }
           }
         } else if (i.customId === "playAgain") {
+          if (gameState.money <= 0) {
+            const noMoneyEmbed = new EmbedBuilder()
+              .setTitle("💸 所持金が0円になりました")
+              .setDescription(
+                "```diff\n- 所持金が足りません！\n+ /omikuji コマンドでお金を受け取ってください！```",
+              )
+              .setColor("#ff0000")
+              .setFooter({
+                text: "おみくじを引いてお金をゲット！",
+              })
+              .setTimestamp();
+
+            await i.update({
+              embeds: [noMoneyEmbed],
+              components: [],
+            });
+            return;
+          }
+
           await i.deferUpdate();
           const embed = createEmbed(gameState);
           await i.editReply({
@@ -262,10 +281,20 @@ export async function execute(interaction: CommandInteraction): Promise<void> {
             components: buttons,
           });
         } else if (i.customId === "endGame") {
+          const endEmbed = new EmbedBuilder()
+            .setTitle("👋 コインフリップを終了します")
+            .setDescription("```diff\n+ お疲れ様でした！またね```")
+            .setColor("#00ff00")
+            .setFooter({
+              text: `所持金: ${gameState.money}円`,
+              iconURL: interaction.user.displayAvatarURL(),
+            })
+            .setTimestamp();
+
           collector.stop();
           await i.update({
-            content: "ゲームを終了しました。",
-            embeds: [],
+            content: "",
+            embeds: [endEmbed],
             components: [],
           });
         }
@@ -281,13 +310,35 @@ export async function execute(interaction: CommandInteraction): Promise<void> {
     collector.on("end", async (_, reason) => {
       if (reason === "idle") {
         try {
+          const currentMoney = await getUserMoneyStatus(interaction.user.id);
+
+          // タイムアウトメッセージの埋め込みを作成
+          const timeoutEmbed = new EmbedBuilder()
+            .setTitle("⏰ タイムアウト")
+            .setDescription(CONSTANTS.MESSAGES.errors.TIMEOUT)
+            .setColor("#ff0000")
+            .setFooter({
+              text: `所持金: ${currentMoney}円`,
+            });
+
           await interaction.editReply({
-            content: CONSTANTS.MESSAGES.errors.TIMEOUT,
-            embeds: [],
+            content: "",
+            embeds: [timeoutEmbed],
             components: [],
           });
         } catch (error) {
           logger.error(`[coinflip] Error updating idle message: ${error}`);
+          try {
+            await interaction.editReply({
+              content: CONSTANTS.MESSAGES.errors.TIMEOUT,
+              embeds: [],
+              components: [],
+            });
+          } catch (fallbackError) {
+            logger.error(
+              `[coinflip] Error updating fallback idle message: ${fallbackError}`,
+            );
+          }
         }
       }
     });

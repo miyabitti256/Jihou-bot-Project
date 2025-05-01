@@ -4,7 +4,7 @@ import { Button } from "../ui/button";
 export default function Footer() {
   return (
     <footer className="container mx-auto px-4 border-t border-gray-200">
-			<div className="flex justify-center items-center h-16">
+      <div className="flex justify-center items-center h-16">
         <Button variant="link" asChild>
           <Link href="/legal/terms">利用規約</Link>
         </Button>

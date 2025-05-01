@@ -12,9 +12,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { messageDelete } from "./actions";
-import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import { messageDelete } from "./actions";
 
 export default function DeleteButton({
   messageId,
@@ -28,9 +28,7 @@ export default function DeleteButton({
       message?: string;
     }
 
-    toast.promise<DeleteResponse>(
-      messageDelete(messageId, guildId),
-      {
+    toast.promise<DeleteResponse>(messageDelete(messageId, guildId), {
       loading: "削除中...",
       success: (response: DeleteResponse) => {
         if (response.data?.message) return response.data.message;
@@ -38,12 +36,20 @@ export default function DeleteButton({
         return "削除しました";
       },
       error: (error: unknown) => {
-        if (error && typeof error === 'object' && 'error' in error && error.error && typeof error.error === 'object' && 'message' in error.error) return (error.error as {message: string}).message;
-        if (error && typeof error === 'object' && 'message' in error) return (error as {message: string}).message;
+        if (
+          error &&
+          typeof error === "object" &&
+          "error" in error &&
+          error.error &&
+          typeof error.error === "object" &&
+          "message" in error.error
+        )
+          return (error.error as { message: string }).message;
+        if (error && typeof error === "object" && "message" in error)
+          return (error as { message: string }).message;
         return "削除中にエラーが発生しました";
-      }
-      }
-    );
+      },
+    });
     router.refresh();
   };
   return (

@@ -220,3 +220,85 @@ export async function updateUserMoney(
     );
   }
 }
+
+/**
+ * ユーザーが所属するサーバーのメンバーを取得する API用
+ * @param userId ユーザーID
+ * @param page ページ番号（1から開始）
+ * @param limit 1ページあたりの件数
+ * @param search 検索キーワード
+ */
+export async function getUsersFromSameGuilds(
+  userId: string,
+  page = 1,
+  limit = 20,
+  search?: string,
+) {
+  try {
+    // ユーザーが所属するサーバーのIDリストを取得
+    const userGuilds = await prisma.guildMembers.findMany({
+      where: { userId },
+      select: { guildId: true },
+    });
+
+    if (userGuilds.length === 0) {
+      return { users: [], total: 0, page, limit };
+    }
+
+    const guildIds = userGuilds.map((guild) => guild.guildId);
+
+    // 検索条件の構築
+    const whereCondition: Prisma.GuildMembersWhereInput = {
+      guildId: { in: guildIds },
+    };
+
+    // 検索キーワードが指定されている場合
+    if (search && search.trim() !== "") {
+      whereCondition.user = {
+        username: {
+          contains: search,
+          mode: "insensitive",
+        },
+      };
+    }
+
+    // ユーザーIDの一覧を取得（重複を除去するため）
+    const uniqueMembers = await prisma.guildMembers.findMany({
+      where: whereCondition,
+      select: { userId: true },
+      distinct: ["userId"],
+    });
+
+    // 重複を除去したユーザーIDの配列
+    const uniqueUserIds = uniqueMembers.map((member) => member.userId);
+
+    // 総数を計算
+    const total = uniqueUserIds.length;
+
+    // ページネーションの計算
+    const skip = (page - 1) * limit;
+
+    // ユーザーデータの取得（ページネーション対応）
+    const pagedUserIds = uniqueUserIds.slice(skip, skip + limit);
+
+    // ユーザー詳細データの取得
+    const users = await prisma.users.findMany({
+      where: {
+        id: {
+          in: pagedUserIds,
+        },
+      },
+      orderBy: {
+        username: "asc",
+      },
+    });
+
+    return { users, total, page, limit };
+  } catch (error) {
+    logger.error(`[users] Error getting users from same guilds: ${error}`);
+    throw new UserServiceError(
+      "INTERNAL_SERVER_ERROR",
+      "Failed to fetch users data",
+    );
+  }
+}

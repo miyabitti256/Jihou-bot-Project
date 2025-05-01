@@ -19,14 +19,19 @@ export default function LogoutButton() {
     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          <button type="button" className="w-full text-left text-red-500 dark:text-red-400">
+          <button
+            type="button"
+            className="w-full text-left text-red-500 dark:text-red-400"
+          >
             ログアウト
           </button>
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>ログアウトの確認</AlertDialogTitle>
-            <AlertDialogDescription>本当にログアウトしますか？</AlertDialogDescription>
+            <AlertDialogDescription>
+              本当にログアウトしますか？
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>キャンセル</AlertDialogCancel>

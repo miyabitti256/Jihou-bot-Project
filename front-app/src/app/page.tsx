@@ -1,6 +1,6 @@
+import { DigitalClock } from "@/components/digitalClock";
 import Image from "next/image";
 import Link from "next/link";
-import { DigitalClock } from "@/components/digitalClock";
 
 export default function Home() {
   return (

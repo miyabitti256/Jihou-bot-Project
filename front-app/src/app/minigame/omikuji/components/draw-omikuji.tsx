@@ -1,13 +1,13 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import type { ApiResponse } from "@/types/api-response";
+import { AnimatePresence, motion } from "framer-motion";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
 import { drawOmikuji } from "./actions";
-import { useRouter } from "next/navigation";
-import type { ApiResponse } from "@/types/api-response";
 
 interface Props {
   userId: string;
@@ -36,7 +36,7 @@ export default function DrawOmikuji({ userId }: Props) {
       if (data.status === "success") {
         setOmikuji(data);
       } else {
-        toast.error(data.error?.message ?? 'エラーが発生しました')
+        toast.error(data.error?.message ?? "エラーが発生しました");
       }
       setIsDrawing(false);
     }, 3000);

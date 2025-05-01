@@ -1,7 +1,7 @@
-import SessionMenu from "./session-menu";
-import Navigation from "./navigation";
-import ToggleTheme from "./toggle-theme";
 import Link from "next/link";
+import Navigation from "./navigation";
+import SessionMenu from "./session-menu";
+import ToggleTheme from "./toggle-theme";
 
 export default async function Header() {
   return (
