@@ -1,9 +1,9 @@
-export interface ApiResponse {
+export interface ApiResponse<T> {
   status: "success" | "error";
-  data?: unknown;
+  data?: T;
   error?: {
     code: string;
     message: string;
-    details: unknown;
+    details: T;
   };
 }

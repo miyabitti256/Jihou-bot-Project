@@ -1,48 +1,46 @@
-import { type Context, Hono, type Next } from "hono";
+import { type Context, Hono } from "hono";
+import { secureHeaders } from "hono/secure-headers";
+import { auth } from "./routes/auth";
 import { guilds } from "./routes/guilds";
 import { minigame } from "./routes/minigame";
 import { users } from "./routes/users";
+import { jwtAuthWithAuthorizationMiddleware } from "@lib/auth-middleware";
+import { hybridAuthMiddleware } from "@lib/jwt-auth";
 
 const app = new Hono().basePath("/api");
 
-const authMiddleware = async (c: Context, next: Next) => {
-  const clientIp =
-    c.req.header("x-forwarded-for") ||
-    c.req.header("x-real-ip") ||
-    c.env?.remoteAddr ||
-    "127.0.0.1";
+// セキュリティヘッダーの追加
+app.use("*", secureHeaders({
+  contentSecurityPolicy: {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'"],
+    styleSrc: ["'self'", "'unsafe-inline'"],
+    imgSrc: ["'self'", "data:", "https:"],
+    connectSrc: ["'self'"],
+    fontSrc: ["'self'"],
+    frameAncestors: ["'none'"],
+  },
+  strictTransportSecurity: "max-age=31536000; includeSubDomains; preload",
+  xFrameOptions: "DENY",
+  xContentTypeOptions: "nosniff",
+  referrerPolicy: "strict-origin-when-cross-origin",
+  permissionsPolicy: {
+    camera: [],
+    microphone: [],
+    geolocation: [],
+    payment: [],
+    usb: [],
+  },
+}));
+// 認証エンドポイントは旧APIキー認証を使用（NextAuthで保護済み）
+app.route("/auth", auth);
 
-  const isLocalRequest =
-    clientIp === "127.0.0.1" ||
-    clientIp === "localhost" ||
-    clientIp === "::1" ||
-    clientIp.includes("127.0.0.1");
+// ユーザーデータ関連APIは強化された認可チェックを使用
+app.use("/users/*", jwtAuthWithAuthorizationMiddleware);
+app.use("/minigame/*", jwtAuthWithAuthorizationMiddleware);
 
-  if (isLocalRequest) {
-    await next();
-    return;
-  }
-
-  const apiKey = c.req.header("X-API-Key");
-  const validApiKey = process.env.API_KEY;
-
-  if (!apiKey || apiKey !== validApiKey) {
-    return c.json(
-      {
-        status: "error",
-        error: {
-          code: "UNAUTHORIZED",
-          message: "Unauthorized - Invalid API Key",
-          details: null,
-        },
-      },
-      401,
-    );
-  }
-
-  await next();
-};
-app.use("/*", authMiddleware);
+// その他のAPIは既存のハイブリッド認証を使用
+app.use("/*", hybridAuthMiddleware);
 app.get("/health", (c: Context) => c.json({ status: "ok" }));
 
 app.route("/guilds", guilds);

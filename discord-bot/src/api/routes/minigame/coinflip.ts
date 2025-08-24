@@ -12,14 +12,29 @@ export const coinflip = new Hono();
 // コインフリップをプレイするAPI
 coinflip.post("/play", async (c) => {
   try {
-    const { userId, bet, choice } = await c.req.json();
+    // JWTペイロードから認証済みユーザーIDを取得
+    const userId = c.get("authenticatedUserId");
+    const { bet, choice } = await c.req.json();
 
-    if (!userId || bet === undefined || !choice) {
+    if (!userId) {
       return c.json(
         {
           status: "error",
           error: {
-            message: "必須パラメータが不足しています",
+            message: "認証されたユーザーIDが見つかりません",
+            code: "MISSING_AUTHENTICATED_USER",
+          },
+        },
+        401,
+      );
+    }
+
+    if (bet === undefined || !choice) {
+      return c.json(
+        {
+          status: "error",
+          error: {
+            message: "必須パラメータが不足しています（bet, choice）",
             code: "MISSING_PARAMETERS",
           },
         },

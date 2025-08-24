@@ -10,7 +10,7 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  type CommandInteraction,
+  type ChatInputCommandInteraction,
   EmbedBuilder,
   MessageFlags,
   ModalBuilder,
@@ -145,12 +145,12 @@ const createBetInputModal = (currentBet: number): ModalBuilder => {
     .addComponents(actionRow);
 };
 
-export async function execute(interaction: CommandInteraction): Promise<void> {
+export async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
   try {
     const userMoney = await getUserMoneyStatus(interaction.user.id);
 
-    const initialBet = interaction.options.get("bet")?.value as number;
-    if (initialBet < 1) {
+    const initialBet = interaction.options.getInteger("bet");
+    if (initialBet === null || initialBet < 1) {
       await interaction.reply({
         content: CONSTANTS.MESSAGES.errors.MIN_BET,
         flags: MessageFlags.Ephemeral,

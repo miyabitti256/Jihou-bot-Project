@@ -267,3 +267,139 @@ users.get("/guilds/:userId", async (c) => {
     );
   }
 });
+
+// Discord API経由でのユーザー情報取得エンドポイント
+users.get("/:userId/discord", async (c) => {
+  const userIdSchema = z.string().min(1);
+  const userIdResult = userIdSchema.safeParse(c.req.param("userId"));
+
+  if (!userIdResult.success) {
+    return c.json(
+      {
+        status: "error",
+        error: {
+          code: "INVALID_REQUEST",
+          message: "Invalid userId",
+          details: userIdResult.error,
+        },
+      },
+      400,
+    );
+  }
+
+  try {
+    const response = await fetch(
+      `https://discord.com/api/v10/users/${userIdResult.data}`,
+      {
+        headers: {
+          Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      logger.error(`Failed to fetch user ${userIdResult.data}: ${response.status}`);
+      return c.json(
+        {
+          status: "error",
+          error: {
+            code: "USER_NOT_FOUND",
+            message: "User not found or bot lacks access",
+            details: null,
+          },
+        },
+        404,
+      );
+    }
+
+    const userData = await response.json();
+    return c.json({
+      status: "success",
+      data: userData,
+    });
+  } catch (error) {
+    logger.error(`Discord API error: ${error}`);
+    return c.json(
+      {
+        status: "error",
+        error: {
+          code: "DISCORD_API_ERROR",
+          message: "Failed to fetch user data",
+          details: null,
+        },
+      },
+      500,
+    );
+  }
+});
+
+// Discord API経由でのチャンネル情報取得エンドポイント
+users.get("/channels/:channelId/discord", async (c) => {
+  const channelIdSchema = z.string().min(1);
+  const channelIdResult = channelIdSchema.safeParse(c.req.param("channelId"));
+
+  if (!channelIdResult.success) {
+    return c.json(
+      {
+        status: "error",
+        error: {
+          code: "INVALID_REQUEST",
+          message: "Invalid channelId",
+          details: channelIdResult.error,
+        },
+      },
+      400,
+    );
+  }
+
+  try {
+    const response = await fetch(
+      `https://discord.com/api/v10/channels/${channelIdResult.data}`,
+      {
+        headers: {
+          Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+      },
+    );
+
+    if (!response.ok) {
+      logger.error(`Failed to fetch channel ${channelIdResult.data}: ${response.status}`);
+      return c.json(
+        {
+          status: "error",
+          error: {
+            code: "CHANNEL_NOT_FOUND",
+            message: "Channel not found or bot lacks access",
+            details: null,
+          },
+        },
+        404,
+      );
+    }
+
+    const channelData = await response.json();
+    return c.json({
+      status: "success",
+      data: {
+        id: channelData.id,
+        name: channelData.name,
+        type: channelData.type,
+      },
+    });
+  } catch (error) {
+    logger.error(`Discord API error: ${error}`);
+    return c.json(
+      {
+        status: "error",
+        error: {
+          code: "DISCORD_API_ERROR",
+          message: "Failed to fetch channel data",
+          details: null,
+        },
+      },
+      500,
+    );
+  }
+});

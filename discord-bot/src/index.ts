@@ -1,4 +1,5 @@
 import "@api";
+import "./types/hono";
 import app from "@api";
 import { loadCommands } from "@handler/command";
 import { setupDiscordEventHandlers } from "@handler/discord-events";

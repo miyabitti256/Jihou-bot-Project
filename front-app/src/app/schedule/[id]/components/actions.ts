@@ -1,20 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { authenticatedFetch } from "@/lib/auth-api";
 
 export async function createSchedule(
   prevState: { message?: string; error?: string } | null,
   formData: FormData,
 ) {
   try {
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/guilds/scheduledmessage`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-Key": process.env.API_KEY as string,
-        },
         body: JSON.stringify({ data: Object.fromEntries(formData) }),
       },
     );
@@ -52,14 +49,10 @@ export async function updateSchedule(
       isActive: formData.get("isActive") === "true",
     };
 
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/guilds/scheduledmessage`,
       {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-Key": process.env.API_KEY as string,
-        },
         body: JSON.stringify({ data: updateData }),
       },
     );

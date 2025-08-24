@@ -41,19 +41,19 @@ omikuji.get("/result/:userId", async (c) => {
 
 // おみくじを引くAPI
 omikuji.post("/draw", async (c) => {
-  const body = await c.req.json();
-  const userId = body.userId;
+  // JWTペイロードから認証済みユーザーIDを取得
+  const userId = c.get("authenticatedUserId");
 
   if (!userId) {
     return c.json(
       {
         status: "error",
         error: {
-          message: "ユーザーIDが見つかりません",
-          code: "MISSING_USER_ID",
+          message: "認証されたユーザーIDが見つかりません",
+          code: "MISSING_AUTHENTICATED_USER",
         },
       },
-      400,
+      401,
     );
   }
 

@@ -10,22 +10,23 @@
   "type": "module",
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@flydotio/dockerfile": "^0.7.8",
+    "@flydotio/dockerfile": "^0.7.10",
     "@types/bun": "latest"
   },
   "dependencies": {
     "@google/genai": "^0.8.0",
-    "@prisma/client": "^6.3.1",
-    "@prisma/extension-pulse": "^1.2.0",
+    "@hono/zod-validator": "^0.7.2",
+    "@prisma/client": "^6.12.0",
+    "@prisma/extension-pulse": "^1.2.2",
     "@types/node-cron": "^3.0.11",
     "@types/pino": "^7.0.5",
     "cuid": "^3.0.0",
-    "discord.js": "^14.18.0",
-    "hono": "^4.7.0",
+    "discord.js": "^14.21.0",
+    "hono": "^4.8.9",
     "node-cron": "^3.0.3",
-    "pino": "^9.6.0",
+    "pino": "^9.7.0",
     "pino-pretty": "^13.0.0",
-    "prisma": "^6.3.1",
-    "zod": "^3.24.2"
+    "prisma": "^6.12.0",
+    "zod": "^3.25.76"
   }
 }

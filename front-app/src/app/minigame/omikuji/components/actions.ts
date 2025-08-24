@@ -1,15 +1,14 @@
 "use server";
 
-export const drawOmikuji = async (userId: string) => {
-  const result = await fetch(
+import { authenticatedFetch } from "@/lib/auth-api";
+
+export const drawOmikuji = async () => {
+  // userIdはJWTトークンから自動取得されるため、パラメータとして送信しない
+  const result = await authenticatedFetch(
     `${process.env.NEXT_PUBLIC_API_URL}/api/minigame/omikuji/draw`,
     {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-API-Key": process.env.API_KEY as string,
-      },
-      body: JSON.stringify({ userId }),
+      body: JSON.stringify({}), // 空のボディ
     },
   );
   return result.json();

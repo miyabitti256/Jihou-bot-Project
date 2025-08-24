@@ -11,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { auth } from "@/lib/auth";
+import { authenticatedFetch } from "@/lib/auth-api";
 import type { GuildChannel, Janken, UserData } from "@/types/api-response";
 import { formatDistance } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -23,13 +24,10 @@ export default async function Dashboard() {
     return <NoAuthRedirect redirectPath="/" />;
   }
 
-  const userResponse = await fetch(
+  const userResponse = await authenticatedFetch(
     `${process.env.NEXT_PUBLIC_API_URL}/api/users/${session.user.id}?includes=scheduledmessage,omikuji,coinflip,janken`,
     {
       method: "GET",
-      headers: {
-        "X-API-KEY": process.env.API_KEY ?? "",
-      },
     },
   );
   const userData: UserData = await userResponse.json();
@@ -105,26 +103,20 @@ export default async function Dashboard() {
   );
 
   const getGuildData = async (guildId: string) => {
-    const guildResponse = await fetch(
+    const guildResponse = await authenticatedFetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/guilds/${guildId}?includes=channels,roles`,
       {
         method: "GET",
-        headers: {
-          "X-API-KEY": process.env.API_KEY ?? "",
-        },
       },
     );
     return await guildResponse.json();
   };
 
   const getUserData = async (userId: string) => {
-    const userResponse = await fetch(
+    const userResponse = await authenticatedFetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`,
       {
         method: "GET",
-        headers: {
-          "X-API-KEY": process.env.API_KEY ?? "",
-        },
       },
     );
     return await userResponse.json();

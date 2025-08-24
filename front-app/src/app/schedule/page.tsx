@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { auth } from "@/lib/auth";
+import { authenticatedFetch } from "@/lib/auth-api";
 import type {
   GuildChannel,
   GuildMember,
@@ -39,25 +40,19 @@ export default async function SchedulePage() {
     return <NoAuthRedirect redirectPath="/" />;
   }
 
-  const memberResponse = await fetch(
+  const memberResponse = await authenticatedFetch(
     `${process.env.NEXT_PUBLIC_API_URL}/api/guilds/members/${session.user.id}`,
     {
       method: "GET",
-      headers: {
-        "X-API-Key": process.env.API_KEY as string,
-      },
     },
   );
 
   const memberData = await memberResponse.json().then((data) => data.data);
   const guildPromises = memberData.map((member: GuildMember) =>
-    fetch(
+    authenticatedFetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/guilds/${member.guildId}?includes=roles,channels,messages`,
       {
         method: "GET",
-        headers: {
-          "X-API-Key": process.env.API_KEY as string,
-        },
       },
     ).then((res) => res.json()),
   );
