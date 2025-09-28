@@ -2,9 +2,9 @@ import { client } from "@lib/client";
 import { logger } from "@lib/logger";
 import { syncGuildAllData } from "@services/db-sync/guild-sync";
 import { ActivityType } from "discord.js";
-import cron from "node-cron";
+import cron, { type ScheduledTask } from "node-cron";
 
-let statusUpdateJob: cron.ScheduledTask | null = null;
+let statusUpdateJob: ScheduledTask | null = null;
 
 /**
  * Discordボットのステータスを更新する
