@@ -1,3 +1,4 @@
+import type { User } from "discord.js";
 import type { ChoiceKey } from "@/commands/janken";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
@@ -5,7 +6,6 @@ import {
   ensureUserExists as ensureUser,
   updateUserMoney,
 } from "@/services/users";
-import type { User } from "discord.js";
 
 interface JankenGameResult {
   challengerId: string;

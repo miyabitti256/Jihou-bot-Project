@@ -1,4 +1,4 @@
-import { type Context, type Next } from "hono";
+import type { Context, Next } from "hono";
 import { jwt, sign, verify } from "hono/jwt";
 import { logger } from "./logger";
 
@@ -11,7 +11,10 @@ interface AuthorizedJWTPayload {
 /**
  * JWT認証とユーザー認可を統合したミドルウェア
  */
-export const jwtAuthWithAuthorizationMiddleware = async (c: Context, next: Next) => {
+export const jwtAuthWithAuthorizationMiddleware = async (
+  c: Context,
+  next: Next,
+) => {
   const clientIp =
     c.req.header("x-forwarded-for") ||
     c.req.header("x-real-ip") ||
@@ -49,7 +52,10 @@ export const jwtAuthWithAuthorizationMiddleware = async (c: Context, next: Next)
     }
 
     const token = authHeader.slice(7); // "Bearer " を除去
-    const payload = await verify(token, jwtSecret) as unknown as AuthorizedJWTPayload;
+    const payload = (await verify(
+      token,
+      jwtSecret,
+    )) as unknown as AuthorizedJWTPayload;
 
     // ペイロードからユーザーIDを取得してコンテキストに設定
     c.set("authenticatedUserId", payload.userId);
@@ -77,13 +83,20 @@ export const jwtAuthWithAuthorizationMiddleware = async (c: Context, next: Next)
 /**
  * ユーザーIDアクセス認可チェック
  */
-async function authorizeUserIdAccess(c: Context, authenticatedUserId: string): Promise<void> {
+async function authorizeUserIdAccess(
+  c: Context,
+  authenticatedUserId: string,
+): Promise<void> {
   // リクエストボディのuserIdをチェック
   let requestUserId: string | undefined;
 
   try {
     // POSTリクエストのボディをチェック
-    if (c.req.method === "POST" || c.req.method === "PUT" || c.req.method === "PATCH") {
+    if (
+      c.req.method === "POST" ||
+      c.req.method === "PUT" ||
+      c.req.method === "PATCH"
+    ) {
       const body = await c.req.json().catch(() => ({}));
       requestUserId = body.userId || body.data?.userId;
     }
@@ -98,7 +111,6 @@ async function authorizeUserIdAccess(c: Context, authenticatedUserId: string): P
       const url = new URL(c.req.url);
       requestUserId = url.searchParams.get("userId") ?? undefined;
     }
-
   } catch (error) {
     logger.warn(`Failed to parse request for user ID: ${error}`);
   }
@@ -106,7 +118,7 @@ async function authorizeUserIdAccess(c: Context, authenticatedUserId: string): P
   // ユーザーIDが指定されている場合、認証されたユーザーIDと一致するかチェック
   if (requestUserId && requestUserId !== authenticatedUserId) {
     logger.warn(
-      `Authorization failed: authenticated user ${authenticatedUserId} attempted to access data for user ${requestUserId}`
+      `Authorization failed: authenticated user ${authenticatedUserId} attempted to access data for user ${requestUserId}`,
     );
     throw new Error(`Insufficient permissions to access user data`);
   }
@@ -118,7 +130,7 @@ async function authorizeUserIdAccess(c: Context, authenticatedUserId: string): P
 export const adminAuthMiddleware = async (c: Context, next: Next) => {
   // まず通常の認証を実行
   await jwtAuthWithAuthorizationMiddleware(c, next);
-  
+
   // 管理者権限のチェック（今後実装予定）
   // const authenticatedUserId = c.get("authenticatedUserId");
   // const isAdmin = await checkAdminPermissions(authenticatedUserId);
@@ -132,7 +144,7 @@ export const adminAuthMiddleware = async (c: Context, next: Next) => {
  */
 export async function generateSecureJWT(
   authenticatedUserId: string,
-  jwtSecret: string
+  jwtSecret: string,
 ): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
   const payload = {
@@ -150,12 +162,16 @@ export async function generateSecureJWT(
 function isLocalEnvironment(ip: string): boolean {
   const localIPs = ["127.0.0.1", "::1", "localhost"];
   const privateRanges = [
-    /^10\./, /^172\.1[6-9]\./, /^172\.2[0-9]\./, /^172\.3[01]\./, /^192\.168\./
+    /^10\./,
+    /^172\.1[6-9]\./,
+    /^172\.2[0-9]\./,
+    /^172\.3[01]\./,
+    /^192\.168\./,
   ];
-  
+
   if (localIPs.includes(ip)) return true;
   if (process.env.NODE_ENV === "development") {
-    return privateRanges.some(range => range.test(ip));
+    return privateRanges.some((range) => range.test(ip));
   }
   return false;
-} 
+}

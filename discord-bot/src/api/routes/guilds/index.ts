@@ -43,7 +43,9 @@ guilds.get("/:guildId/discord", async (c) => {
     );
 
     if (!response.ok) {
-      logger.error(`Failed to fetch guild ${guildIdResult.data}: ${response.status}`);
+      logger.error(
+        `Failed to fetch guild ${guildIdResult.data}: ${response.status}`,
+      );
       return c.json(
         {
           status: "error",
@@ -108,7 +110,9 @@ guilds.get("/:guildId/channels", async (c) => {
     );
 
     if (!response.ok) {
-      logger.error(`Failed to fetch channels for guild ${guildIdResult.data}: ${response.status}`);
+      logger.error(
+        `Failed to fetch channels for guild ${guildIdResult.data}: ${response.status}`,
+      );
       return c.json(
         {
           status: "error",

@@ -1,2 +1,2 @@
-export * from "./scheduled-message";
 export * from "./guild";
+export * from "./scheduled-message";

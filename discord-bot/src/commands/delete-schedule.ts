@@ -1,4 +1,3 @@
-import { logger } from "@/lib/logger";
 import {
   deleteScheduledMessage,
   getScheduledMessageById,
@@ -8,6 +7,7 @@ import {
   MessageFlags,
   SlashCommandBuilder,
 } from "discord.js";
+import { logger } from "@/lib/logger";
 
 export const data = new SlashCommandBuilder()
   .setName("deleteschedule")

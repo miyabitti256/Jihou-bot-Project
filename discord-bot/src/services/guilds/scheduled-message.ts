@@ -4,8 +4,8 @@ import { prisma } from "@lib/prisma";
 import type { ScheduledMessage } from "@prisma/client";
 import cuid from "cuid";
 import { TextChannel } from "discord.js";
-import { schedule } from "node-cron";
 import type { ScheduledTask } from "node-cron";
+import { schedule } from "node-cron";
 
 export const cronJobs = new Map<string, ScheduledTask>();
 

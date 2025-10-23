@@ -1,4 +1,3 @@
-import { logger } from "@/lib/logger";
 import type { ScheduledMessage } from "@prisma/client";
 import { getScheduledMessages } from "@services/guilds/scheduled-message";
 import {
@@ -7,6 +6,7 @@ import {
   MessageFlags,
   SlashCommandBuilder,
 } from "discord.js";
+import { logger } from "@/lib/logger";
 
 export const data = new SlashCommandBuilder()
   .setName("scheduleinfo")

@@ -1,4 +1,3 @@
-import { logger } from "@/lib/logger";
 import rateLimitManager from "@handler/rate-limit";
 import { ChatRole } from "@prisma/client";
 import {
@@ -23,6 +22,7 @@ import {
   ThreadAutoArchiveDuration,
   type ThreadChannel,
 } from "discord.js";
+import { logger } from "@/lib/logger";
 
 export const data = new SlashCommandBuilder()
   .setName("chat")

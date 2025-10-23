@@ -1,8 +1,8 @@
 import { logger } from "@lib/logger";
 import {
-  OmikujiError,
   drawOmikuji,
   getOmikujiHistory,
+  OmikujiError,
 } from "@services/minigame/omikuji";
 import { Hono } from "hono";
 

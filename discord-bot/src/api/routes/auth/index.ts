@@ -1,7 +1,7 @@
+import { generateSecureJWT } from "@lib/auth-middleware";
+import { logger } from "@lib/logger";
 import { Hono } from "hono";
 import { verify } from "hono/jwt";
-import { logger } from "@lib/logger";
-import { generateSecureJWT } from "@lib/auth-middleware";
 
 const auth = new Hono();
 
@@ -9,7 +9,7 @@ const auth = new Hono();
 auth.post("/token", async (c) => {
   try {
     const { userId } = await c.req.json();
-    
+
     if (!userId) {
       return c.json(
         {
@@ -87,7 +87,7 @@ auth.post("/token", async (c) => {
 auth.post("/verify", async (c) => {
   try {
     const { token } = await c.req.json();
-    
+
     if (!token) {
       return c.json(
         {
@@ -138,4 +138,4 @@ auth.post("/verify", async (c) => {
   }
 });
 
-export { auth }; 
+export { auth };

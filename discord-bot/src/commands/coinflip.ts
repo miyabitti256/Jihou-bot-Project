@@ -1,8 +1,7 @@
-import { logger } from "@/lib/logger";
 import {
   type CoinChoice,
-  type CoinResult,
   CoinflipError,
+  type CoinResult,
   getUserMoneyStatus,
   playCoinflip,
 } from "@services/minigame/coinflip";
@@ -19,6 +18,7 @@ import {
   TextInputBuilder,
   TextInputStyle,
 } from "discord.js";
+import { logger } from "@/lib/logger";
 
 interface GameState {
   bet: number;
@@ -145,7 +145,9 @@ const createBetInputModal = (currentBet: number): ModalBuilder => {
     .addComponents(actionRow);
 };
 
-export async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
+export async function execute(
+  interaction: ChatInputCommandInteraction,
+): Promise<void> {
   try {
     const userMoney = await getUserMoneyStatus(interaction.user.id);
 

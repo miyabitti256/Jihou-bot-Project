@@ -1,14 +1,14 @@
 import {
-  SYSTEM_PROMPT,
   generateChatText,
   generateChatTextStream,
   generateTextStream,
+  SYSTEM_PROMPT,
 } from "@lib/gemini-client";
 import { logger } from "@lib/logger";
 import { prisma } from "@lib/prisma";
 import { estimateTokenCount } from "@lib/utils";
-import { ChatRole } from "@prisma/client";
 import type { ChatMessage, ChatThread } from "@prisma/client";
+import { ChatRole } from "@prisma/client";
 
 // エラークラス
 export class ChatServiceError extends Error {

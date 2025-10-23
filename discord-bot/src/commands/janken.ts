@@ -1,18 +1,18 @@
-import { logger } from "@/lib/logger";
-import * as JankenService from "@/services/minigame";
 import {
   ActionRowBuilder,
   ButtonBuilder,
+  type ButtonInteraction,
   ButtonStyle,
   type ChatInputCommandInteraction,
   EmbedBuilder,
   type Message,
-  SlashCommandBuilder,
-  type User,
-  type ButtonInteraction,
   type MessageComponentInteraction,
   MessageFlags,
+  SlashCommandBuilder,
+  type User,
 } from "discord.js";
+import { logger } from "@/lib/logger";
+import * as JankenService from "@/services/minigame";
 
 const CONSTANTS = {
   TIMEOUT_DURATION: 180000,
@@ -26,7 +26,12 @@ const CONSTANTS = {
 
 export type ChoiceKey = keyof typeof CONSTANTS.CHOICES;
 
-type GameState = "waiting_opponent" | "betting" | "playing" | "finished" | "rematch_confirm";
+type GameState =
+  | "waiting_opponent"
+  | "betting"
+  | "playing"
+  | "finished"
+  | "rematch_confirm";
 
 interface GameResult {
   challenger: User;
@@ -49,10 +54,16 @@ class JankenGame {
   private opponentBet = 0;
   private challengerChoice?: ChoiceKey;
   private opponentChoice?: ChoiceKey;
-  private collectors: Set<ReturnType<Message['createMessageComponentCollector']>> = new Set();
+  private collectors: Set<
+    ReturnType<Message["createMessageComponentCollector"]>
+  > = new Set();
   private isCleanedUp = false;
 
-  constructor(interaction: ChatInputCommandInteraction, challenger: User, isBetMode: boolean) {
+  constructor(
+    interaction: ChatInputCommandInteraction,
+    challenger: User,
+    isBetMode: boolean,
+  ) {
     this.interaction = interaction;
     this.challenger = challenger;
     this.isBetMode = isBetMode;
@@ -69,7 +80,9 @@ class JankenGame {
       }
     } catch (error: unknown) {
       logger.error(`[janken] Error starting game: ${error}`);
-      await this.handleError("ゲーム開始中にエラーが発生しました。もう一度お試しください。");
+      await this.handleError(
+        "ゲーム開始中にエラーが発生しました。もう一度お試しください。",
+      );
     }
   }
 
@@ -80,7 +93,7 @@ class JankenGame {
 
   private async startNewGame(): Promise<void> {
     this.message = await this.setupInitialMessage();
-    
+
     try {
       this.opponent = await this.waitForOpponent();
       await this.proceedToGame();
@@ -146,7 +159,8 @@ class JankenGame {
 
     return new Promise((resolve, reject) => {
       const collector = this.message!.createMessageComponentCollector({
-        filter: (i) => i.customId === "join_janken" && i.user.id !== this.challenger.id,
+        filter: (i) =>
+          i.customId === "join_janken" && i.user.id !== this.challenger.id,
         time: CONSTANTS.TIMEOUT_DURATION,
       });
 
@@ -194,7 +208,7 @@ class JankenGame {
         this.challenger,
         this.opponent,
       );
-      
+
       const challengerBalance = result.challengerBalance;
       const opponentBalance = result.opponentBalance;
 
@@ -203,7 +217,8 @@ class JankenGame {
     } catch (dbError: unknown) {
       logger.error(`[janken] Error fetching user balances: ${dbError}`);
       await this.interaction.followUp({
-        content: "ユーザーデータの取得中にエラーが発生しました。通常モードで続行します。",
+        content:
+          "ユーザーデータの取得中にエラーが発生しました。通常モードで続行します。",
         flags: MessageFlags.Ephemeral,
       });
       this.isBetMode = false;
@@ -211,7 +226,10 @@ class JankenGame {
     }
   }
 
-  private async collectBets(challengerBalance: number, opponentBalance: number): Promise<void> {
+  private async collectBets(
+    challengerBalance: number,
+    opponentBalance: number,
+  ): Promise<void> {
     if (!this.opponent) return;
 
     const betButtons = CONSTANTS.BET_AMOUNTS.map((amount) =>
@@ -222,7 +240,9 @@ class JankenGame {
         .setDisabled(amount > challengerBalance || amount > opponentBalance),
     );
 
-    const betRow = new ActionRowBuilder<ButtonBuilder>().addComponents(betButtons);
+    const betRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      betButtons,
+    );
     const betEmbed = this.createBetEmbed();
 
     await this.interaction.editReply({
@@ -248,7 +268,10 @@ class JankenGame {
           await i.deferUpdate();
 
           const amount = Number(i.customId.split("_")[1]);
-          const userBalance = i.user.id === this.challenger.id ? challengerBalance : opponentBalance;
+          const userBalance =
+            i.user.id === this.challenger.id
+              ? challengerBalance
+              : opponentBalance;
 
           if (userBalance < amount) {
             await i.followUp({
@@ -280,7 +303,8 @@ class JankenGame {
         if (reason === "time" && !(this.challengerBet && this.opponentBet)) {
           try {
             await this.interaction.editReply({
-              content: "賭け金設定がタイムアウトしました。じゃんけん勝負を終了します。",
+              content:
+                "賭け金設定がタイムアウトしました。じゃんけん勝負を終了します。",
               components: [],
               embeds: [],
             });
@@ -298,7 +322,7 @@ class JankenGame {
     if (!this.opponent) return;
 
     this.state = "playing";
-    
+
     const gameEmbed = this.createGameEmbed();
     const choiceRow = this.createChoiceButtons();
 
@@ -349,10 +373,14 @@ class JankenGame {
 
       collector.on("end", async (_collected, reason) => {
         this.cleanupCollector(collector);
-        if (reason === "time" && !(this.challengerChoice && this.opponentChoice)) {
+        if (
+          reason === "time" &&
+          !(this.challengerChoice && this.opponentChoice)
+        ) {
           try {
             await this.interaction.editReply({
-              content: "じゃんけんの手の選択がタイムアウトしました。じゃんけん勝負を終了します。",
+              content:
+                "じゃんけんの手の選択がタイムアウトしました。じゃんけん勝負を終了します。",
               components: [],
               embeds: [],
             });
@@ -367,14 +395,12 @@ class JankenGame {
   }
 
   private async determineWinner(): Promise<void> {
-    if (!this.opponent || !this.challengerChoice || !this.opponentChoice) return;
+    if (!this.opponent || !this.challengerChoice || !this.opponentChoice)
+      return;
 
     this.state = "finished";
 
-    const winner = this.getWinner(
-      this.challengerChoice,
-      this.opponentChoice,
-    );
+    const winner = this.getWinner(this.challengerChoice, this.opponentChoice);
 
     try {
       await JankenService.saveJankenResult({
@@ -394,7 +420,10 @@ class JankenGame {
     await this.showResult(winner);
   }
 
-  private getWinner(challengerChoice: ChoiceKey, opponentChoice: ChoiceKey): User | null {
+  private getWinner(
+    challengerChoice: ChoiceKey,
+    opponentChoice: ChoiceKey,
+  ): User | null {
     if (challengerChoice === opponentChoice) return null;
 
     if (
@@ -409,7 +438,8 @@ class JankenGame {
   }
 
   private async showResult(winner: User | null): Promise<void> {
-    if (!this.opponent || !this.challengerChoice || !this.opponentChoice) return;
+    if (!this.opponent || !this.challengerChoice || !this.opponentChoice)
+      return;
 
     const resultEmbed = new EmbedBuilder()
       .setTitle("じゃんけん結果！")
@@ -438,7 +468,9 @@ class JankenGame {
     } else {
       resultEmbed
         .setDescription(
-          this.challengerBet ? "引き分け！\n賭け金は返却されました。" : "引き分け！",
+          this.challengerBet
+            ? "引き分け！\n賭け金は返却されました。"
+            : "引き分け！",
         )
         .setColor("#FFFF00");
     }
@@ -479,24 +511,25 @@ class JankenGame {
         return;
       }
 
-      const collector = this.interaction.channel.createMessageComponentCollector({
-        filter: (i) =>
-          (i.customId === "janken_rematch" || i.customId === "janken_end") &&
-          i.message.interaction?.id === this.interaction.id,
-        time: CONSTANTS.TIMEOUT_DURATION,
-      });
+      const collector =
+        this.interaction.channel.createMessageComponentCollector({
+          filter: (i) =>
+            (i.customId === "janken_rematch" || i.customId === "janken_end") &&
+            i.message.interaction?.id === this.interaction.id,
+          time: CONSTANTS.TIMEOUT_DURATION,
+        });
 
       this.collectors.add(collector);
 
       collector.on("collect", async (i) => {
         try {
-                  if (!participantIds.includes(i.user.id)) {
-          await i.reply({
-            content: "このじゃんけん勝負の参加者ではありません。",
-            flags: MessageFlags.Ephemeral,
-          });
-          return;
-        }
+          if (!participantIds.includes(i.user.id)) {
+            await i.reply({
+              content: "このじゃんけん勝負の参加者ではありません。",
+              flags: MessageFlags.Ephemeral,
+            });
+            return;
+          }
 
           if (i.customId === "janken_end") {
             await i.update({
@@ -512,16 +545,25 @@ class JankenGame {
           if (i.customId === "janken_rematch") {
             if (rematchRequesterId === i.user.id) {
               await i.reply({
-                content: "あなたはすでにリマッチをリクエストしています。相手の返答を待っています。",
+                content:
+                  "あなたはすでにリマッチをリクエストしています。相手の返答を待っています。",
                 flags: MessageFlags.Ephemeral,
               });
               return;
             }
 
             rematchRequesterId = i.user.id;
-            const waitingUser = i.user.id === this.challenger.id ? this.opponent! : this.challenger;
+            const waitingUser =
+              i.user.id === this.challenger.id
+                ? this.opponent!
+                : this.challenger;
 
-            await this.handleRematchConfirmation(i, waitingUser, collector, resolve);
+            await this.handleRematchConfirmation(
+              i,
+              waitingUser,
+              collector,
+              resolve,
+            );
           }
         } catch (error: unknown) {
           logger.error(`[janken] Error in rematch collector: ${error}`);
@@ -549,8 +591,8 @@ class JankenGame {
   private async handleRematchConfirmation(
     rematchInteraction: MessageComponentInteraction,
     waitingUser: User,
-    parentCollector: ReturnType<Message['createMessageComponentCollector']>,
-    resolveParent: () => void
+    parentCollector: ReturnType<Message["createMessageComponentCollector"]>,
+    resolveParent: () => void,
   ): Promise<void> {
     const confirmRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
@@ -570,12 +612,14 @@ class JankenGame {
 
     if (!this.interaction.channel) return;
 
-    const confirmCollector = this.interaction.channel.createMessageComponentCollector({
-      filter: (i) =>
-        (i.customId === "confirm_rematch" || i.customId === "decline_rematch") &&
-        i.message.interaction?.id === this.interaction.id,
-      time: CONSTANTS.TIMEOUT_DURATION,
-    });
+    const confirmCollector =
+      this.interaction.channel.createMessageComponentCollector({
+        filter: (i) =>
+          (i.customId === "confirm_rematch" ||
+            i.customId === "decline_rematch") &&
+          i.message.interaction?.id === this.interaction.id,
+        time: CONSTANTS.TIMEOUT_DURATION,
+      });
 
     this.collectors.add(confirmCollector);
 
@@ -611,7 +655,11 @@ class JankenGame {
           this.cleanupCollector(parentCollector);
 
           // 新しいゲームインスタンスを作成してリマッチを開始
-          const rematchGame = new JankenGame(this.interaction, this.challenger, this.isBetMode);
+          const rematchGame = new JankenGame(
+            this.interaction,
+            this.challenger,
+            this.isBetMode,
+          );
           await rematchGame.startWithOpponent(this.opponent!);
           resolveParent();
         }
@@ -625,7 +673,8 @@ class JankenGame {
       if (reason === "time" && collected.size === 0) {
         try {
           await this.interaction.editReply({
-            content: "リマッチの応答がありませんでした。じゃんけん勝負を終了します。",
+            content:
+              "リマッチの応答がありませんでした。じゃんけん勝負を終了します。",
             components: [],
           });
           this.cleanupCollector(parentCollector);
@@ -640,11 +689,12 @@ class JankenGame {
   }
 
   private createChoiceButtons(): ActionRowBuilder<ButtonBuilder> {
-    const choiceButtons = Object.entries(CONSTANTS.CHOICES).map(([key, emoji]) =>
-      new ButtonBuilder()
-        .setCustomId(`choice_${key}`)
-        .setLabel(emoji)
-        .setStyle(ButtonStyle.Primary),
+    const choiceButtons = Object.entries(CONSTANTS.CHOICES).map(
+      ([key, emoji]) =>
+        new ButtonBuilder()
+          .setCustomId(`choice_${key}`)
+          .setLabel(emoji)
+          .setStyle(ButtonStyle.Primary),
     );
 
     return new ActionRowBuilder<ButtonBuilder>().addComponents(choiceButtons);
@@ -688,7 +738,9 @@ class JankenGame {
     return embed;
   }
 
-  private async updateBetEmbed(betRow: ActionRowBuilder<ButtonBuilder>): Promise<void> {
+  private async updateBetEmbed(
+    betRow: ActionRowBuilder<ButtonBuilder>,
+  ): Promise<void> {
     if (!this.opponent) return;
 
     const updatedBetEmbed = new EmbedBuilder()
@@ -738,7 +790,9 @@ class JankenGame {
     });
   }
 
-  private cleanupCollector(collector: ReturnType<Message['createMessageComponentCollector']>): void {
+  private cleanupCollector(
+    collector: ReturnType<Message["createMessageComponentCollector"]>,
+  ): void {
     if (this.collectors.has(collector)) {
       collector.stop();
       this.collectors.delete(collector);
@@ -747,9 +801,9 @@ class JankenGame {
 
   private cleanup(): void {
     if (this.isCleanedUp) return;
-    
+
     this.isCleanedUp = true;
-    
+
     // すべてのコレクターを停止・削除
     for (const collector of this.collectors) {
       try {
@@ -785,11 +839,17 @@ class JankenGame {
   private async handleError(message: string): Promise<void> {
     try {
       if (this.interaction.replied) {
-        await this.interaction.followUp({ content: message, flags: MessageFlags.Ephemeral });
+        await this.interaction.followUp({
+          content: message,
+          flags: MessageFlags.Ephemeral,
+        });
       } else if (this.interaction.deferred) {
         await this.interaction.editReply({ content: message });
       } else {
-        await this.interaction.reply({ content: message, flags: MessageFlags.Ephemeral });
+        await this.interaction.reply({
+          content: message,
+          flags: MessageFlags.Ephemeral,
+        });
       }
     } catch (error: unknown) {
       logger.error(`[janken] Error sending error message: ${error}`);
@@ -817,7 +877,7 @@ export async function execute(
     const isBetMode = interaction.options.getBoolean("bet", true);
 
     const game = new JankenGame(interaction, challenger, isBetMode);
-    
+
     if (rematchUsers) {
       await game.startWithOpponent(rematchUsers.opponent);
     } else {
@@ -841,7 +901,9 @@ async function handleRematch(
 ) {
   // 新しいClassベース実装では、リマッチ処理はJankenGameクラス内で処理される
   // この関数は下位互換性のためのプレースホルダー
-  logger.info("[janken] Legacy handleRematch called, but rematch is now handled in JankenGame class");
+  logger.info(
+    "[janken] Legacy handleRematch called, but rematch is now handled in JankenGame class",
+  );
 }
 
 // 安全にリプライを送信するヘルパー関数

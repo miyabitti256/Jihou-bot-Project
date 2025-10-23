@@ -1,9 +1,9 @@
 import { logger } from "@lib/logger";
 import {
-  UserServiceError,
   createOrUpdateUser,
   getUserData,
   getUsersFromSameGuilds,
+  UserServiceError,
   updateUserMoney,
 } from "@services/users/user";
 import { Hono } from "hono";
@@ -298,7 +298,9 @@ users.get("/:userId/discord", async (c) => {
     );
 
     if (!response.ok) {
-      logger.error(`Failed to fetch user ${userIdResult.data}: ${response.status}`);
+      logger.error(
+        `Failed to fetch user ${userIdResult.data}: ${response.status}`,
+      );
       return c.json(
         {
           status: "error",
@@ -365,7 +367,9 @@ users.get("/channels/:channelId/discord", async (c) => {
     );
 
     if (!response.ok) {
-      logger.error(`Failed to fetch channel ${channelIdResult.data}: ${response.status}`);
+      logger.error(
+        `Failed to fetch channel ${channelIdResult.data}: ${response.status}`,
+      );
       return c.json(
         {
           status: "error",

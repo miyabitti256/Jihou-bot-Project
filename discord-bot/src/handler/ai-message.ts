@@ -3,8 +3,8 @@ import { prisma } from "@lib/prisma";
 import { splitMessage, splitStreamingMessage } from "@lib/utils";
 import { ChatRole } from "@prisma/client";
 import {
-  ChatServiceError,
   archiveChatThread,
+  ChatServiceError,
   createChatMessage,
   generateThreadResponseStream,
 } from "@services/chat/chat";

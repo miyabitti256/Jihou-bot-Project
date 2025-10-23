@@ -11,7 +11,6 @@ import {
   updateMembersData,
   updateRolesData,
 } from "@services/db-sync/guild-sync";
-import { MessageFlags } from "discord.js";
 import type {
   ChatInputCommandInteraction,
   ColorResolvable,
@@ -23,6 +22,7 @@ import type {
   PartialGuildMember,
   Role,
 } from "discord.js";
+import { MessageFlags } from "discord.js";
 
 // デフォルトのロール設定
 const DEFAULT_ROLES = [

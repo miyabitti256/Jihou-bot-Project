@@ -1,11 +1,11 @@
-import { generateText } from "@/lib/gemini-client";
-import { logger } from "@/lib/logger";
-import { OmikujiError, drawOmikuji } from "@services/minigame/omikuji";
+import { drawOmikuji, OmikujiError } from "@services/minigame/omikuji";
 import {
   type ChatInputCommandInteraction,
   EmbedBuilder,
   SlashCommandBuilder,
 } from "discord.js";
+import { generateText } from "@/lib/gemini-client";
+import { logger } from "@/lib/logger";
 
 export const data = new SlashCommandBuilder()
   .setName("omikuji")

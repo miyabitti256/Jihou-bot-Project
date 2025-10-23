@@ -1,4 +1,4 @@
-import { type Context, type Next } from "hono";
+import type { Context, Next } from "hono";
 import { jwt } from "hono/jwt";
 import { logger } from "./logger";
 
@@ -7,31 +7,27 @@ import { logger } from "./logger";
  */
 function isLocalEnvironment(ip: string): boolean {
   // 完全一致でのローカルIP判定
-  const localIPs = [
-    "127.0.0.1",
-    "::1",
-    "localhost"
-  ];
-  
+  const localIPs = ["127.0.0.1", "::1", "localhost"];
+
   // プライベートネットワーク範囲（開発環境用）
   const privateRanges = [
-    /^10\./,           // 10.0.0.0/8
-    /^172\.1[6-9]\./,  // 172.16.0.0/12
+    /^10\./, // 10.0.0.0/8
+    /^172\.1[6-9]\./, // 172.16.0.0/12
     /^172\.2[0-9]\./,
     /^172\.3[01]\./,
-    /^192\.168\./      // 192.168.0.0/16
+    /^192\.168\./, // 192.168.0.0/16
   ];
-  
+
   // 完全一致チェック
   if (localIPs.includes(ip)) {
     return true;
   }
-  
+
   // 開発環境のみ：プライベートIPレンジをチェック
   if (process.env.NODE_ENV === "development") {
-    return privateRanges.some(range => range.test(ip));
+    return privateRanges.some((range) => range.test(ip));
   }
-  
+
   return false;
 }
 
@@ -153,4 +149,4 @@ export const hybridAuthMiddleware = async (c: Context, next: Next) => {
 
   // APIキー認証にフォールバック
   await legacyApiKeyAuthMiddleware(c, next);
-}; 
+};
