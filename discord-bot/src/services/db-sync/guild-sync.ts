@@ -344,24 +344,71 @@ export function createMemberDataFromGuildMember(member: GuildMember): {
 }
 
 /**
+ * ページネーションを使って全メンバーをDBに同期する
+ * 常に最大1000人分のメモリしか使わず、処理後即キャッシュから追い出す
+ */
+async function syncMembersInBatches(guild: Guild): Promise<void> {
+  let after: string | undefined = undefined;
+  let totalSynced = 0;
+
+  while (true) {
+    const members = await guild.members.list({ limit: 1000, after });
+    if (members.size === 0) break;
+
+    const memberData = [...members.values()]
+      .filter((m) => !m.user.bot)
+      .map((m) => ({
+        user: {
+          id: m.user.id,
+          username: m.user.username,
+          discriminator: m.user.discriminator || null,
+          avatarUrl: m.user.avatarURL() || null,
+        },
+        member: {
+          nickname: m.nickname,
+          joinedAt: m.joinedAt || new Date(),
+        },
+      }));
+
+    if (memberData.length > 0) {
+      await updateMembersData(guild.id, memberData);
+      totalSynced += memberData.length;
+    }
+
+    // 処理済みのメンバーをキャッシュから即追い出す
+    for (const [id] of members) {
+      guild.members.cache.delete(id);
+    }
+
+    after = members.last()?.id;
+    if (members.size < 1000) break;
+
+    // Discord REST APIレート制限対策
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+
+  logger.info(
+    `[db-sync] Synced ${totalSynced} members for "${guild.name}"`,
+  );
+}
+
+/**
  * ギルドの全データを同期する
  * @param guild Discordのギルドオブジェクト
  */
 export async function syncGuildAllData(guild: Guild): Promise<void> {
   try {
-    // Guild データを変換
     const guildData = createGuildDataFromGuild(guild);
     const channels = createChannelDataFromGuild(guild);
-    const members = createMemberDataFromGuild(guild);
     const roles = createRoleDataFromGuild(guild);
 
-    // 順番に更新処理を実行
     await updateGuildData(guildData);
     await updateChannelsData(guild.id, channels);
-    await updateMembersData(guild.id, members);
     await updateRolesData(guild.id, roles);
 
-    // 同期が完了したことをログに記録
+    // ページネーションで全メンバーを同期
+    await syncMembersInBatches(guild);
+
     logger.info(`[db-sync] Synchronized guild data for "${guild.name}"`);
   } catch (error) {
     logger.error(
