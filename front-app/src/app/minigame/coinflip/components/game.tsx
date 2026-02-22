@@ -42,7 +42,7 @@ export default function CoinflipGame({ userId }: Props) {
     setResult(null);
 
     try {
-      const data = await flipCoin(userId, bet, choice);
+      const data = await flipCoin(bet, choice);
       if (data.data) {
         setIsFlipping(true);
         setTimeout(() => {

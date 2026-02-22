@@ -30,7 +30,7 @@ export default function DrawOmikuji({ userId }: Props) {
   const getOmikuji = async () => {
     setIsDrawing(true);
 
-    const data: OmikujiResponse = await drawOmikuji(userId);
+    const data: OmikujiResponse = await drawOmikuji();
 
     setTimeout(() => {
       if (data.data) {
