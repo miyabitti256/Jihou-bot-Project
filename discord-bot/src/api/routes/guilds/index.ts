@@ -1,5 +1,10 @@
 import { logger } from "@lib/logger";
 import {
+  DiscordApiError,
+  fetchGuild,
+  fetchGuildChannels,
+} from "@services/discord/discord-api";
+import {
   GuildError,
   type GuildIncludeOptions,
   getGuildWithData,
@@ -33,38 +38,24 @@ guilds.get("/:guildId/discord", async (c) => {
   }
 
   try {
-    const response = await fetch(
-      `https://discord.com/api/v10/guilds/${guildIdResult.data}`,
-      {
-        headers: {
-          Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
-        },
-      },
-    );
-
-    if (!response.ok) {
-      logger.error(
-        `Failed to fetch guild ${guildIdResult.data}: ${response.status}`,
-      );
-      return c.json(
-        {
-          status: "error",
-          error: {
-            code: "GUILD_NOT_FOUND",
-            message: "Guild not found or bot lacks access",
-            details: null,
-          },
-        },
-        404,
-      );
-    }
-
-    const guildData = await response.json();
+    const guildData = await fetchGuild(guildIdResult.data);
     return c.json({
       status: "success",
       data: guildData,
     });
   } catch (error) {
+    if (error instanceof DiscordApiError) {
+      return c.json(
+        {
+          status: "error",
+          error: {
+            code: error.code,
+            message: error.message,
+          },
+        },
+        404,
+      );
+    }
     logger.error(`Discord API error: ${error}`);
     return c.json(
       {
@@ -72,7 +63,6 @@ guilds.get("/:guildId/discord", async (c) => {
         error: {
           code: "DISCORD_API_ERROR",
           message: "Failed to fetch guild data",
-          details: null,
         },
       },
       500,
@@ -100,38 +90,24 @@ guilds.get("/:guildId/channels", async (c) => {
   }
 
   try {
-    const response = await fetch(
-      `https://discord.com/api/v10/guilds/${guildIdResult.data}/channels`,
-      {
-        headers: {
-          Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
-        },
-      },
-    );
-
-    if (!response.ok) {
-      logger.error(
-        `Failed to fetch channels for guild ${guildIdResult.data}: ${response.status}`,
-      );
-      return c.json(
-        {
-          status: "error",
-          error: {
-            code: "CHANNELS_NOT_FOUND",
-            message: "Failed to fetch guild channels",
-            details: null,
-          },
-        },
-        404,
-      );
-    }
-
-    const channelsData = await response.json();
+    const channelsData = await fetchGuildChannels(guildIdResult.data);
     return c.json({
       status: "success",
       data: channelsData,
     });
   } catch (error) {
+    if (error instanceof DiscordApiError) {
+      return c.json(
+        {
+          status: "error",
+          error: {
+            code: error.code,
+            message: error.message,
+          },
+        },
+        404,
+      );
+    }
     logger.error(`Discord API error: ${error}`);
     return c.json(
       {
@@ -139,7 +115,6 @@ guilds.get("/:guildId/channels", async (c) => {
         error: {
           code: "DISCORD_API_ERROR",
           message: "Failed to fetch channels data",
-          details: null,
         },
       },
       500,

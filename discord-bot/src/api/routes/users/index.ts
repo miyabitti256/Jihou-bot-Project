@@ -1,5 +1,10 @@
 import { logger } from "@lib/logger";
 import {
+  DiscordApiError,
+  fetchChannel,
+  fetchDiscordUser,
+} from "@services/discord/discord-api";
+import {
   createOrUpdateUser,
   getUserData,
   getUsersFromSameGuilds,
@@ -288,38 +293,24 @@ users.get("/:userId/discord", async (c) => {
   }
 
   try {
-    const response = await fetch(
-      `https://discord.com/api/v10/users/${userIdResult.data}`,
-      {
-        headers: {
-          Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
-        },
-      },
-    );
-
-    if (!response.ok) {
-      logger.error(
-        `Failed to fetch user ${userIdResult.data}: ${response.status}`,
-      );
-      return c.json(
-        {
-          status: "error",
-          error: {
-            code: "USER_NOT_FOUND",
-            message: "User not found or bot lacks access",
-            details: null,
-          },
-        },
-        404,
-      );
-    }
-
-    const userData = await response.json();
+    const userData = await fetchDiscordUser(userIdResult.data);
     return c.json({
       status: "success",
       data: userData,
     });
   } catch (error) {
+    if (error instanceof DiscordApiError) {
+      return c.json(
+        {
+          status: "error",
+          error: {
+            code: error.code,
+            message: error.message,
+          },
+        },
+        404,
+      );
+    }
     logger.error(`Discord API error: ${error}`);
     return c.json(
       {
@@ -327,7 +318,6 @@ users.get("/:userId/discord", async (c) => {
         error: {
           code: "DISCORD_API_ERROR",
           message: "Failed to fetch user data",
-          details: null,
         },
       },
       500,
@@ -355,44 +345,24 @@ users.get("/channels/:channelId/discord", async (c) => {
   }
 
   try {
-    const response = await fetch(
-      `https://discord.com/api/v10/channels/${channelIdResult.data}`,
-      {
-        headers: {
-          Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        cache: "no-store",
-      },
-    );
-
-    if (!response.ok) {
-      logger.error(
-        `Failed to fetch channel ${channelIdResult.data}: ${response.status}`,
-      );
+    const channelData = await fetchChannel(channelIdResult.data);
+    return c.json({
+      status: "success",
+      data: channelData,
+    });
+  } catch (error) {
+    if (error instanceof DiscordApiError) {
       return c.json(
         {
           status: "error",
           error: {
-            code: "CHANNEL_NOT_FOUND",
-            message: "Channel not found or bot lacks access",
-            details: null,
+            code: error.code,
+            message: error.message,
           },
         },
         404,
       );
     }
-
-    const channelData = await response.json();
-    return c.json({
-      status: "success",
-      data: {
-        id: channelData.id,
-        name: channelData.name,
-        type: channelData.type,
-      },
-    });
-  } catch (error) {
     logger.error(`Discord API error: ${error}`);
     return c.json(
       {
@@ -400,7 +370,6 @@ users.get("/channels/:channelId/discord", async (c) => {
         error: {
           code: "DISCORD_API_ERROR",
           message: "Failed to fetch channel data",
-          details: null,
         },
       },
       500,
