@@ -1,7 +1,7 @@
+import type { ScheduledMessage } from "@generated/prisma/client/client.ts";
 import { client } from "@lib/client";
 import { logger } from "@lib/logger";
 import { prisma } from "@lib/prisma";
-import type { ScheduledMessage } from "@prisma/client";
 import cuid from "cuid";
 import { TextChannel } from "discord.js";
 import type { ScheduledTask } from "node-cron";

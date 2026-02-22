@@ -2,10 +2,7 @@ import type { User } from "discord.js";
 import type { ChoiceKey } from "@/commands/janken";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
-import {
-  ensureUserExists as ensureUser,
-  updateUserMoney,
-} from "@/services/users";
+import { ensureUserExists as ensureUser } from "@/services/users";
 
 interface JankenGameResult {
   challengerId: string;
@@ -91,18 +88,30 @@ export async function handleBetResult(
       return true;
     }
 
-    // userサービスの関数を使って賭け金を処理
+    // トランザクションでアトミックに賭け金を処理
     if (winnerId === challengerId) {
       // チャレンジャーの勝ち
-      await Promise.all([
-        updateUserMoney(challengerId, opponentBet, "add"),
-        updateUserMoney(opponentId, -opponentBet, "add"),
+      await prisma.$transaction([
+        prisma.users.update({
+          where: { id: challengerId },
+          data: { money: { increment: opponentBet } },
+        }),
+        prisma.users.update({
+          where: { id: opponentId },
+          data: { money: { increment: -opponentBet } },
+        }),
       ]);
     } else {
       // 対戦相手の勝ち
-      await Promise.all([
-        updateUserMoney(opponentId, challengerBet, "add"),
-        updateUserMoney(challengerId, -challengerBet, "add"),
+      await prisma.$transaction([
+        prisma.users.update({
+          where: { id: opponentId },
+          data: { money: { increment: challengerBet } },
+        }),
+        prisma.users.update({
+          where: { id: challengerId },
+          data: { money: { increment: -challengerBet } },
+        }),
       ]);
     }
     return true;

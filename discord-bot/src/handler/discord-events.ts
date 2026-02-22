@@ -73,7 +73,7 @@ async function handleInteraction(interaction: Interaction) {
   try {
     await command.execute(interaction as ChatInputCommandInteraction);
   } catch (error) {
-    logger.error("コマンド実行中にエラーが発生しました:", error);
+    logger.error({ err: error }, "コマンド実行中にエラーが発生しました:");
     await interaction.reply({
       content: "コマンドの実行中にエラーが発生しました。",
       flags: MessageFlags.Ephemeral,
@@ -159,7 +159,7 @@ async function handleGuildCreate(guild: Guild) {
     }));
     await updateRolesData(guild.id, roles);
   } catch (error) {
-    logger.error("ギルド参加時の処理でエラーが発生しました:", error);
+    logger.error({ err: error }, "ギルド参加時の処理でエラーが発生しました:");
   }
 }
 
@@ -170,7 +170,7 @@ async function handleGuildDelete(guild: Guild) {
   try {
     await deleteGuildData(guild.id);
   } catch (error) {
-    logger.error("ギルド退出時の処理でエラーが発生しました:", error);
+    logger.error({ err: error }, "ギルド退出時の処理でエラーが発生しました:");
   }
 }
 
@@ -183,7 +183,7 @@ async function handleGuildMemberAdd(member: GuildMember) {
     const memberData = createMemberDataFromGuildMember(member);
     await updateMembersData(member.guild.id, [memberData]);
   } catch (error) {
-    logger.error("メンバー参加時の処理でエラーが発生しました:", error);
+    logger.error({ err: error }, "メンバー参加時の処理でエラーが発生しました:");
   }
 }
 
@@ -196,7 +196,7 @@ async function handleGuildMemberRemove(
   try {
     await deleteMemberData(member.guild.id, member.user.id);
   } catch (error) {
-    logger.error("メンバー退出時の処理でエラーが発生しました:", error);
+    logger.error({ err: error }, "メンバー退出時の処理でエラーが発生しました:");
   }
 }
 

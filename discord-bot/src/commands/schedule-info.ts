@@ -1,4 +1,4 @@
-import type { ScheduledMessage } from "@prisma/client";
+import type { ScheduledMessage } from "@generated/prisma/client/client.ts";
 import { getScheduledMessages } from "@services/guilds/scheduled-message";
 import {
   type ChatInputCommandInteraction,

@@ -1,6 +1,6 @@
+import { Prisma } from "@generated/prisma/client/client.ts";
 import { logger } from "@lib/logger";
 import { prisma } from "@lib/prisma";
-import { Prisma } from "@prisma/client";
 
 // エラークラス
 export class UserServiceError extends Error {
@@ -245,7 +245,9 @@ export async function getUsersFromSameGuilds(
       return { users: [], total: 0, page, limit };
     }
 
-    const guildIds = userGuilds.map((guild) => guild.guildId);
+    const guildIds = userGuilds.map(
+      (guild: { guildId: string }) => guild.guildId,
+    );
 
     // 検索条件の構築
     const whereCondition: Prisma.GuildMembersWhereInput = {
@@ -270,7 +272,9 @@ export async function getUsersFromSameGuilds(
     });
 
     // 重複を除去したユーザーIDの配列
-    const uniqueUserIds = uniqueMembers.map((member) => member.userId);
+    const uniqueUserIds = uniqueMembers.map(
+      (member: { userId: string }) => member.userId,
+    );
 
     // 総数を計算
     const total = uniqueUserIds.length;

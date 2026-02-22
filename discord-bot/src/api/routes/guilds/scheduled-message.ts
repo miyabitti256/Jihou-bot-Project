@@ -32,9 +32,10 @@ message.get("/all", async (c) => {
       {
         status: "error",
         error: {
-          code: "INTERNALSERVERERROR",
+          code: "INTERNAL_SERVER_ERROR",
           message: "Internal server error",
-          details: error,
+          details:
+            process.env.NODE_ENV === "development" ? String(error) : null,
         },
       },
       500,
@@ -62,9 +63,10 @@ message.get("/:id", async (c) => {
       {
         status: "error",
         error: {
-          code: "INTERNALSERVERERROR",
+          code: "INTERNAL_SERVER_ERROR",
           message: "Internal server error",
-          details: error,
+          details:
+            process.env.NODE_ENV === "development" ? String(error) : null,
         },
       },
       500,
@@ -107,9 +109,10 @@ message.get("/details/:id", async (c) => {
       {
         status: "error",
         error: {
-          code: "INTERNALSERVERERROR",
+          code: "INTERNAL_SERVER_ERROR",
           message: "Internal server error",
-          details: error,
+          details:
+            process.env.NODE_ENV === "development" ? String(error) : null,
         },
       },
       500,
@@ -185,9 +188,10 @@ message.post("/", async (c) => {
       {
         status: "error",
         error: {
-          code: "INTERNALSERVERERROR",
+          code: "INTERNAL_SERVER_ERROR",
           message: "Internal server error",
-          details: error,
+          details:
+            process.env.NODE_ENV === "development" ? String(error) : null,
         },
       },
       500,
@@ -257,7 +261,7 @@ message.patch("/", async (c) => {
           {
             status: "error",
             error: {
-              code: "NOTFOUND",
+              code: "NOT_FOUND",
               message: "指定されたメッセージが見つかりません",
             },
           },
@@ -284,9 +288,10 @@ message.patch("/", async (c) => {
       {
         status: "error",
         error: {
-          code: "INTERNALSERVERERROR",
+          code: "INTERNAL_SERVER_ERROR",
           message: "Internal server error",
-          details: error,
+          details:
+            process.env.NODE_ENV === "development" ? String(error) : null,
         },
       },
       500,
@@ -354,9 +359,10 @@ message.delete("/", async (c) => {
       {
         status: "error",
         error: {
-          code: "INTERNALSERVERERROR",
+          code: "INTERNAL_SERVER_ERROR",
           message: "Internal server error",
-          details: error,
+          details:
+            process.env.NODE_ENV === "development" ? String(error) : null,
         },
       },
       500,

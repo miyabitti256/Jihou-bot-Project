@@ -2,9 +2,10 @@ import NoAuthRedirect from "@/components/noAuthRedirect";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { auth } from "@/lib/auth";
+import { authenticatedFetch } from "@/lib/auth-api";
 import type { UsersListResponse } from "@/types/api-response";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { FaUser } from "react-icons/fa";
 import UsersPagination from "./components/users-pagination";
 import UsersSearchForm from "./components/users-search-form";
@@ -38,11 +39,8 @@ export default async function UsersPage({
   }
 
   // APIリクエスト
-  const response = await fetch(apiUrl.toString(), {
+  const response = await authenticatedFetch(apiUrl.toString(), {
     method: "GET",
-    headers: {
-      "X-API-KEY": process.env.API_KEY ?? "",
-    },
     cache: "no-store", // SSRに変更
   });
 

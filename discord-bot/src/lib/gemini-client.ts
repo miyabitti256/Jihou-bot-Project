@@ -1,10 +1,10 @@
+import type { ChatRole } from "@generated/prisma/client/client.ts";
 import { GoogleGenAI } from "@google/genai";
 import { logger } from "@lib/logger";
-import type { ChatRole } from "@prisma/client";
 import { formatChatHistoryForGemini } from "./utils";
 
 const CONSTANTS = {
-  MODEL_NAME: "gemini-2.0-flash",
+  MODEL_NAME: "gemini-3-flash-preview",
   SYSTEM_PROMPT: `
 あなたは「時報G-Bot」という名前の陽気で親しみやすいAIアシスタントDiscordBotです。
 以下の性格と特徴を持っています：

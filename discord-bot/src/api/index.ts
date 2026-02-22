@@ -1,8 +1,7 @@
-import { jwtAuthWithAuthorizationMiddleware } from "@lib/auth-middleware";
-import { hybridAuthMiddleware } from "@lib/jwt-auth";
+import { apiKeyAuthMiddleware, apiKeyWithUserAuthMiddleware } from "@lib/auth";
+import { defaultRateLimiter, mutationRateLimiter } from "@lib/rate-limiter";
 import { type Context, Hono } from "hono";
 import { secureHeaders } from "hono/secure-headers";
-import { auth } from "./routes/auth";
 import { guilds } from "./routes/guilds";
 import { minigame } from "./routes/minigame";
 import { users } from "./routes/users";
@@ -35,19 +34,25 @@ app.use(
     },
   }),
 );
-// 認証エンドポイントは旧APIキー認証を使用（NextAuthで保護済み）
-app.route("/auth", auth);
 
-// ユーザーデータ関連APIは強化された認可チェックを使用
-app.use("/users/*", jwtAuthWithAuthorizationMiddleware);
-app.use("/minigame/*", jwtAuthWithAuthorizationMiddleware);
-
-// その他のAPIは既存のハイブリッド認証を使用
-app.use("/*", hybridAuthMiddleware);
+// ヘルスチェックは認証不要
 app.get("/health", (c: Context) => c.json({ status: "ok" }));
+
+// ユーザーデータ関連APIはユーザーID認可チェック付き
+app.use("/users/*", apiKeyWithUserAuthMiddleware);
+app.use("/minigame/*", apiKeyWithUserAuthMiddleware);
+
+// その他のAPIはAPIキー認証のみ
+app.use("/*", apiKeyAuthMiddleware);
+
+// レート制限（認証の後に適用）
+app.use("/minigame/*", defaultRateLimiter);
+app.use("/users/*", defaultRateLimiter);
+app.use("/guilds/*", mutationRateLimiter);
 
 app.route("/guilds", guilds);
 app.route("/users", users);
 app.route("/minigame", minigame);
 
 export default app;
+

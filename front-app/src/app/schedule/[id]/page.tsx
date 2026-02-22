@@ -1,5 +1,6 @@
 import NoAuthRedirect from "@/components/noAuthRedirect";
 import { auth } from "@/lib/auth";
+import { authenticatedFetch } from "@/lib/auth-api";
 import type {
   GuildChannel,
   GuildData,
@@ -28,13 +29,8 @@ export default async function SchedulePage({
   let channelData: GuildChannel[] | null = null;
 
   if (!isNew) {
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/guilds/scheduledmessage/details/${id}`,
-      {
-        headers: {
-          "X-API-Key": process.env.API_KEY as string,
-        },
-      },
     );
     scheduleData = await response.json().then((data) => data.data);
     guildId = scheduleData?.guildId;
@@ -43,13 +39,8 @@ export default async function SchedulePage({
   }
 
   if (guildId) {
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/guilds/${guildId}?includes=channels`,
-      {
-        headers: {
-          "X-API-Key": process.env.API_KEY as string,
-        },
-      },
     ).then((response) => response.json());
     guildData = response.data;
     channelData = response.data.channels.filter(

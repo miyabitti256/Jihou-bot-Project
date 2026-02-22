@@ -19,7 +19,7 @@ serve({
 
 logger.info("API server started on http://localhost:3001");
 
-client.on("ready", async () => {
+client.on("clientReady", async () => {
   logger.info("Discord client connected");
 
   loadCommands();

@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { auth } from "@/lib/auth";
+import { authenticatedFetch } from "@/lib/auth-api";
 import type { GuildChannel, Janken, UserData } from "@/types/api-response";
 import { formatDistance } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -38,14 +39,11 @@ export default async function UserDetailPage({
   }
 
   // ユーザーデータの取得
-  const userResponse = await fetch(
+  const userResponse = await authenticatedFetch(
     `${process.env.NEXT_PUBLIC_API_URL}/api/users/${id}?includes=scheduledmessage,omikuji,coinflip,janken`,
     {
       method: "GET",
-      headers: {
-        "X-API-KEY": process.env.API_KEY ?? "",
-      },
-      cache: "no-store", // SSRに変更
+      cache: "no-store",
     },
   );
 
@@ -80,9 +78,9 @@ export default async function UserDetailPage({
   const winRate =
     coinflip.length > 0
       ? (
-          (coinflip.filter((log) => log.win).length / coinflip.length) *
-          100
-        ).toFixed(1)
+        (coinflip.filter((log) => log.win).length / coinflip.length) *
+        100
+      ).toFixed(1)
       : "0.0";
 
   const jankenWinRate = (() => {
@@ -131,14 +129,11 @@ export default async function UserDetailPage({
 
   // サーバー情報を取得する関数
   const getGuildData = async (guildId: string) => {
-    const guildResponse = await fetch(
+    const guildResponse = await authenticatedFetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/guilds/${guildId}?includes=channels`,
       {
         method: "GET",
-        headers: {
-          "X-API-KEY": process.env.API_KEY ?? "",
-        },
-        cache: "no-store", // SSRに変更
+        cache: "no-store",
       },
     );
     return await guildResponse.json();
@@ -146,14 +141,11 @@ export default async function UserDetailPage({
 
   // ユーザー情報を取得する関数
   const getUserData = async (userId: string) => {
-    const userResponse = await fetch(
+    const userResponse = await authenticatedFetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`,
       {
         method: "GET",
-        headers: {
-          "X-API-KEY": process.env.API_KEY ?? "",
-        },
-        cache: "no-store", // SSRに変更
+        cache: "no-store",
       },
     );
     return await userResponse.json();
@@ -454,9 +446,8 @@ export default async function UserDetailPage({
                             <TableCell>{flip.bet.toLocaleString()}円</TableCell>
                             <TableCell>
                               <span
-                                className={`font-medium ${
-                                  flip.win ? "text-green-600" : "text-red-600"
-                                }`}
+                                className={`font-medium ${flip.win ? "text-green-600" : "text-red-600"
+                                  }`}
                               >
                                 {flip.win ? "勝ち" : "負け"}
                               </span>

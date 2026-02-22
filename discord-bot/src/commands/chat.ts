@@ -1,5 +1,5 @@
+import { ChatRole } from "@generated/prisma/client/client.ts";
 import rateLimitManager from "@handler/rate-limit";
-import { ChatRole } from "@prisma/client";
 import {
   ChatServiceError,
   createChatMessage,

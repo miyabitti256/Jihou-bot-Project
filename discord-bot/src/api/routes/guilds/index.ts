@@ -156,7 +156,7 @@ guilds.get("/:guildId", async (c) => {
       {
         status: "error",
         error: {
-          code: "INVALIDREQUEST",
+          code: "INVALID_REQUEST",
           message: "Invalid guildId",
           details: guildIdResult.error,
         },
@@ -176,7 +176,7 @@ guilds.get("/:guildId", async (c) => {
       {
         status: "error",
         error: {
-          code: "INVALIDREQUEST",
+          code: "INVALID_REQUEST",
           message: "Invalid includes parameter",
           details: includesResult.error,
         },
@@ -210,7 +210,7 @@ guilds.get("/:guildId", async (c) => {
         {
           status: "error",
           error: {
-            code: "NOTFOUND",
+            code: "NOT_FOUND",
             message: "Guild not found",
           },
         },
@@ -223,9 +223,10 @@ guilds.get("/:guildId", async (c) => {
       {
         status: "error",
         error: {
-          code: "INTERNALSERVERERROR",
+          code: "INTERNAL_SERVER_ERROR",
           message: "Internal server error",
-          details: error,
+          details:
+            process.env.NODE_ENV === "development" ? String(error) : null,
         },
       },
       500,
@@ -241,7 +242,7 @@ guilds.get("/members/:userId", async (c) => {
       {
         status: "error",
         error: {
-          code: "INVALIDREQUEST",
+          code: "INVALID_REQUEST",
           message: "Invalid userId",
         },
       },
@@ -265,9 +266,10 @@ guilds.get("/members/:userId", async (c) => {
       {
         status: "error",
         error: {
-          code: "INTERNALSERVERERROR",
+          code: "INTERNAL_SERVER_ERROR",
           message: "Internal server error",
-          details: error,
+          details:
+            process.env.NODE_ENV === "development" ? String(error) : null,
         },
       },
       500,

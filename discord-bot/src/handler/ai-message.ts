@@ -1,12 +1,12 @@
+import { ChatRole } from "@generated/prisma/client/client.ts";
 import { logger } from "@lib/logger";
-import { prisma } from "@lib/prisma";
 import { splitMessage, splitStreamingMessage } from "@lib/utils";
-import { ChatRole } from "@prisma/client";
 import {
   archiveChatThread,
   ChatServiceError,
   createChatMessage,
   generateThreadResponseStream,
+  getChatThread,
 } from "@services/chat/chat";
 import type { Message, TextChannel } from "discord.js";
 import { EmbedBuilder, ThreadChannel as ThreadChannelClass } from "discord.js";
@@ -103,13 +103,19 @@ export async function handleMessageCreate(message: Message): Promise<void> {
 
   // データベースでAIチャットスレッドかどうかを確認
   try {
-    const chatThread = await prisma.chatThread.findUnique({
-      where: { id: thread.id },
-      include: { messages: true },
-    });
-
-    // AIチャットスレッドでない場合は無視
-    if (!chatThread) return;
+    let chatThread;
+    try {
+      chatThread = await getChatThread(thread.id);
+    } catch (error) {
+      if (
+        error instanceof ChatServiceError &&
+        error.code === "THREAD_NOT_FOUND"
+      ) {
+        // AIチャットスレッドでない場合は無視
+        return;
+      }
+      throw error;
+    }
 
     // アーカイブコマンドの処理
     if (

@@ -1,3 +1,8 @@
+import type {
+  ChatMessage,
+  ChatThread,
+} from "@generated/prisma/client/client.ts";
+import { ChatRole } from "@generated/prisma/client/client.ts";
 import {
   generateChatText,
   generateChatTextStream,
@@ -7,8 +12,6 @@ import {
 import { logger } from "@lib/logger";
 import { prisma } from "@lib/prisma";
 import { estimateTokenCount } from "@lib/utils";
-import type { ChatMessage, ChatThread } from "@prisma/client";
-import { ChatRole } from "@prisma/client";
 
 // エラークラス
 export class ChatServiceError extends Error {
@@ -270,7 +273,7 @@ export async function generateThreadResponse(
         },
       ];
     } else {
-      messages = thread.messages.map((msg) => ({
+      messages = thread.messages.map((msg: ChatMessage) => ({
         role: msg.role,
         content: msg.content,
       }));
@@ -345,7 +348,7 @@ export async function generateThreadResponseStream(
         },
       ];
     } else {
-      messages = thread.messages.map((msg) => ({
+      messages = thread.messages.map((msg: ChatMessage) => ({
         role: msg.role,
         content: msg.content,
       }));

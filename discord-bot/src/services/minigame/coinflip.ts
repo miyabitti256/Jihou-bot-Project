@@ -61,21 +61,21 @@ export async function playCoinflip(
   const win = choice === result;
   const resultMoney = win ? bet : -bet;
 
-  // DB更新
-  const updatedUser = await prisma.users.update({
-    where: { id: userId },
-    data: { money: user.money + resultMoney },
-  });
-
-  // 履歴保存
-  await prisma.coinFlip.create({
-    data: {
-      userId,
-      bet,
-      win,
-      updatedMoney: updatedUser.money,
-    },
-  });
+  // DB更新（トランザクションでアトミックに実行）
+  const [updatedUser] = await prisma.$transaction([
+    prisma.users.update({
+      where: { id: userId },
+      data: { money: user.money + resultMoney },
+    }),
+    prisma.coinFlip.create({
+      data: {
+        userId,
+        bet,
+        win,
+        updatedMoney: user.money + resultMoney,
+      },
+    }),
+  ]);
 
   // 結果を返す
   return {
