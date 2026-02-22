@@ -6,20 +6,18 @@ import {
   playCoinflip,
 } from "@services/minigame/coinflip";
 import { Hono } from "hono";
+import { coinflipPlaySchema } from "../../schemas";
 
 export const coinflip = new Hono();
 
 // コインフリップをプレイするAPI
 coinflip.post("/play", async (c) => {
   try {
-    // JWTペイロードから認証済みユーザーIDを取得
     const userId = c.get("authenticatedUserId");
-    const { bet, choice } = await c.req.json();
 
     if (!userId) {
       return c.json(
         {
-
           error: {
             message: "認証されたユーザーIDが見つかりません",
             code: "MISSING_AUTHENTICATED_USER",
@@ -29,34 +27,24 @@ coinflip.post("/play", async (c) => {
       );
     }
 
-    if (bet === undefined || !choice) {
+    const body = await c.req.json();
+    const parsed = coinflipPlaySchema.safeParse(body);
+
+    if (!parsed.success) {
       return c.json(
         {
-
           error: {
-            message: "必須パラメータが不足しています（bet, choice）",
-            code: "MISSING_PARAMETERS",
+            code: "VALIDATION_ERROR",
+            message: "入力データが不正です",
+            details: parsed.error.issues,
           },
         },
         400,
       );
     }
 
-    // 有効なコイン選択肢かチェック
-    if (choice !== "heads" && choice !== "tails") {
-      return c.json(
-        {
-
-          error: {
-            message: "コインの選択は 'heads' か 'tails' である必要があります",
-            code: "INVALID_CHOICE",
-          },
-        },
-        400,
-      );
-    }
-
-    const result = await playCoinflip(userId, Number(bet), choice);
+    const { bet, choice } = parsed.data;
+    const result = await playCoinflip(userId, bet, choice);
 
     return c.json({
 

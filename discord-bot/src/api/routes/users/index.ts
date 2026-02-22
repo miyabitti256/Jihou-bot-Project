@@ -13,18 +13,17 @@ import {
 } from "@services/users/user";
 import { Hono } from "hono";
 import { z } from "zod";
+import {
+  discordIdSchema,
+  userMoneyUpdateSchema,
+  userQuerySchema,
+  userUpdateSchema,
+} from "../../schemas";
 
 export const users = new Hono();
 
-const QuerySchema = z.object({
-  userId: z.string().min(1),
-  includes: z
-    .array(z.enum(["scheduledmessage", "omikuji", "coinflip", "janken"]))
-    .default([]),
-});
-
 users.get("/:userId", async (c) => {
-  const result = QuerySchema.safeParse({
+  const result = userQuerySchema.safeParse({
     userId: c.req.param("userId"),
     includes: c.req.query("includes")?.split(",") ?? [],
   });
@@ -87,14 +86,15 @@ users.put("/:userId", async (c) => {
 
   try {
     const body = await c.req.json();
+    const parsed = userUpdateSchema.safeParse(body);
 
-    if (!userId || !body.username) {
+    if (!parsed.success) {
       return c.json(
         {
-
           error: {
-            code: "INVALID_DATA",
-            message: "ユーザーIDとユーザー名は必須です",
+            code: "VALIDATION_ERROR",
+            message: "入力データが不正です",
+            details: parsed.error.issues,
           },
         },
         400,
@@ -103,9 +103,7 @@ users.put("/:userId", async (c) => {
 
     const userData = {
       id: userId,
-      username: body.username,
-      discriminator: body.discriminator,
-      avatarUrl: body.avatarUrl,
+      ...parsed.data,
     };
 
     const updatedUser = await createOrUpdateUser(userData);
@@ -149,36 +147,22 @@ users.put("/:userId/money", async (c) => {
 
   try {
     const body = await c.req.json();
+    const parsed = userMoneyUpdateSchema.safeParse(body);
 
-    if (!userId || body.amount === undefined) {
+    if (!parsed.success) {
       return c.json(
         {
-
           error: {
-            code: "INVALID_DATA",
-            message: "ユーザーIDと金額は必須です",
+            code: "VALIDATION_ERROR",
+            message: "入力データが不正です",
+            details: parsed.error.issues,
           },
         },
         400,
       );
     }
 
-    const amount = Number(body.amount);
-    const operation = body.operation === "set" ? "set" : "add";
-
-    if (Number.isNaN(amount)) {
-      return c.json(
-        {
-
-          error: {
-            code: "INVALID_AMOUNT",
-            message: "金額は数値である必要があります",
-          },
-        },
-        400,
-      );
-    }
-
+    const { amount, operation } = parsed.data;
     const updatedUser = await updateUserMoney(userId, amount, operation);
 
     return c.json({

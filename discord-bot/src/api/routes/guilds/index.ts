@@ -12,6 +12,7 @@ import {
 } from "@services/guilds/guild";
 import { Hono } from "hono";
 import { z } from "zod";
+import { discordIdSchema } from "../../schemas";
 import { message } from "./scheduled-message";
 
 export const guilds = new Hono();
@@ -20,8 +21,7 @@ guilds.route("/scheduledmessage", message);
 
 // Guild情報取得エンドポイント（Discord API経由）
 guilds.get("/:guildId/discord", async (c) => {
-  const guildIdSchema = z.string().min(1);
-  const guildIdResult = guildIdSchema.safeParse(c.req.param("guildId"));
+  const guildIdResult = discordIdSchema.safeParse(c.req.param("guildId"));
 
   if (!guildIdResult.success) {
     return c.json(
@@ -72,8 +72,7 @@ guilds.get("/:guildId/discord", async (c) => {
 
 // Guildチャンネル一覧取得エンドポイント
 guilds.get("/:guildId/channels", async (c) => {
-  const guildIdSchema = z.string().min(1);
-  const guildIdResult = guildIdSchema.safeParse(c.req.param("guildId"));
+  const guildIdResult = discordIdSchema.safeParse(c.req.param("guildId"));
 
   if (!guildIdResult.success) {
     return c.json(
@@ -123,8 +122,7 @@ guilds.get("/:guildId/channels", async (c) => {
 });
 
 guilds.get("/:guildId", async (c) => {
-  const guildIdSchema = z.string().min(1);
-  const guildIdResult = guildIdSchema.safeParse(c.req.param("guildId"));
+  const guildIdResult = discordIdSchema.safeParse(c.req.param("guildId"));
 
   if (!guildIdResult.success) {
     return c.json(

@@ -5,17 +5,25 @@ import {
   OmikujiError,
 } from "@services/minigame/omikuji";
 import { Hono } from "hono";
+import { discordIdSchema } from "../../schemas";
+import { z } from "zod";
 
 export const omikuji = new Hono();
 
 // おみくじの履歴を取得するAPI
 omikuji.get("/result/:userId", async (c) => {
-  const userId = c.req.param("userId");
-  const takeQuery = c.req.query("take");
-  const take = takeQuery ? Number.parseInt(takeQuery) : 10;
+  const userIdResult = discordIdSchema.safeParse(c.req.param("userId"));
+  if (!userIdResult.success) {
+    return c.json(
+      { error: { code: "INVALID_REQUEST", message: "Invalid userId" } },
+      400,
+    );
+  }
+  const takeResult = z.coerce.number().int().min(1).max(100).default(10).safeParse(c.req.query("take"));
+  const take = takeResult.success ? takeResult.data : 10;
 
   try {
-    const data = await getOmikujiHistory(userId, take);
+    const data = await getOmikujiHistory(userIdResult.data, take);
 
     return c.json(
       {

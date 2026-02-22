@@ -6,7 +6,7 @@ import {
   MessageFlags,
   SlashCommandBuilder,
 } from "discord.js";
-import { logger } from "@/lib/logger";
+import { logger } from "@lib/logger";
 
 export const data = new SlashCommandBuilder()
   .setName("scheduleinfo")

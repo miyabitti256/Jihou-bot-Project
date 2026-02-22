@@ -11,8 +11,8 @@ import {
   SlashCommandBuilder,
   type User,
 } from "discord.js";
-import { logger } from "@/lib/logger";
-import * as JankenService from "@/services/minigame";
+import { logger } from "@lib/logger";
+import * as JankenService from "@services/minigame";
 
 const CONSTANTS = {
   TIMEOUT_DURATION: 180000,
