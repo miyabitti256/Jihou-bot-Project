@@ -26,7 +26,7 @@ guilds.get("/:guildId/discord", async (c) => {
   if (!guildIdResult.success) {
     return c.json(
       {
-        status: "error",
+
         error: {
           code: "INVALID_REQUEST",
           message: "Invalid guildId",
@@ -40,14 +40,14 @@ guilds.get("/:guildId/discord", async (c) => {
   try {
     const guildData = await fetchGuild(guildIdResult.data);
     return c.json({
-      status: "success",
+
       data: guildData,
     });
   } catch (error) {
     if (error instanceof DiscordApiError) {
       return c.json(
         {
-          status: "error",
+
           error: {
             code: error.code,
             message: error.message,
@@ -59,7 +59,7 @@ guilds.get("/:guildId/discord", async (c) => {
     logger.error(`Discord API error: ${error}`);
     return c.json(
       {
-        status: "error",
+
         error: {
           code: "DISCORD_API_ERROR",
           message: "Failed to fetch guild data",
@@ -78,7 +78,7 @@ guilds.get("/:guildId/channels", async (c) => {
   if (!guildIdResult.success) {
     return c.json(
       {
-        status: "error",
+
         error: {
           code: "INVALID_REQUEST",
           message: "Invalid guildId",
@@ -92,14 +92,14 @@ guilds.get("/:guildId/channels", async (c) => {
   try {
     const channelsData = await fetchGuildChannels(guildIdResult.data);
     return c.json({
-      status: "success",
+
       data: channelsData,
     });
   } catch (error) {
     if (error instanceof DiscordApiError) {
       return c.json(
         {
-          status: "error",
+
           error: {
             code: error.code,
             message: error.message,
@@ -111,7 +111,7 @@ guilds.get("/:guildId/channels", async (c) => {
     logger.error(`Discord API error: ${error}`);
     return c.json(
       {
-        status: "error",
+
         error: {
           code: "DISCORD_API_ERROR",
           message: "Failed to fetch channels data",
@@ -129,7 +129,7 @@ guilds.get("/:guildId", async (c) => {
   if (!guildIdResult.success) {
     return c.json(
       {
-        status: "error",
+
         error: {
           code: "INVALID_REQUEST",
           message: "Invalid guildId",
@@ -149,7 +149,7 @@ guilds.get("/:guildId", async (c) => {
   if (!includesResult.success) {
     return c.json(
       {
-        status: "error",
+
         error: {
           code: "INVALID_REQUEST",
           message: "Invalid includes parameter",
@@ -174,7 +174,7 @@ guilds.get("/:guildId", async (c) => {
 
     return c.json(
       {
-        status: "success",
+
         data,
       },
       200,
@@ -183,7 +183,7 @@ guilds.get("/:guildId", async (c) => {
     if (error instanceof GuildError && error.message === "GUILD_NOT_FOUND") {
       return c.json(
         {
-          status: "error",
+
           error: {
             code: "NOT_FOUND",
             message: "Guild not found",
@@ -196,7 +196,7 @@ guilds.get("/:guildId", async (c) => {
     logger.error(`[guild-api] Error: ${error}`);
     return c.json(
       {
-        status: "error",
+
         error: {
           code: "INTERNAL_SERVER_ERROR",
           message: "Internal server error",
@@ -215,7 +215,7 @@ guilds.get("/members/:userId", async (c) => {
   if (!userId) {
     return c.json(
       {
-        status: "error",
+
         error: {
           code: "INVALID_REQUEST",
           message: "Invalid userId",
@@ -230,7 +230,7 @@ guilds.get("/members/:userId", async (c) => {
 
     return c.json(
       {
-        status: "success",
+
         data,
       },
       200,
@@ -239,7 +239,7 @@ guilds.get("/members/:userId", async (c) => {
     logger.error(`[guild-api] Error getting user guilds: ${error}`);
     return c.json(
       {
-        status: "error",
+
         error: {
           code: "INTERNAL_SERVER_ERROR",
           message: "Internal server error",

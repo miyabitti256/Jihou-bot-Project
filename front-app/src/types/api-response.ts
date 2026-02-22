@@ -1,10 +1,9 @@
-export interface ApiResponse {
-  status: string;
-  data?: unknown;
+export interface ApiResponse<T = unknown> {
+  data?: T;
   error?: {
     code: string;
     message: string;
-    details: unknown;
+    details?: unknown;
   };
 }
 
@@ -112,7 +111,6 @@ export interface Janken {
 
 // ユーザー一覧レスポンスの型定義
 export interface UsersListResponse {
-  status: string;
   data: {
     users: User[];
     total: number;

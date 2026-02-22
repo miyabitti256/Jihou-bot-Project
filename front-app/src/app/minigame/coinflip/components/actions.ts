@@ -3,6 +3,7 @@
 import { authenticatedFetch } from "@/lib/auth-api";
 
 export const flipCoin = async (
+  userId: string,
   bet: number,
   choice: "heads" | "tails",
 ) => {

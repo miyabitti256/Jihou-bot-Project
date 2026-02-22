@@ -19,7 +19,7 @@ omikuji.get("/result/:userId", async (c) => {
 
     return c.json(
       {
-        status: "success",
+
         data,
       },
       200,
@@ -28,7 +28,7 @@ omikuji.get("/result/:userId", async (c) => {
     logger.error(`[omikuji-api] おみくじ履歴取得エラー: ${error}`);
     return c.json(
       {
-        status: "error",
+
         error: {
           code: "INTERNAL_SERVER_ERROR",
           message: "内部サーバーエラーが発生しました",
@@ -47,7 +47,7 @@ omikuji.post("/draw", async (c) => {
   if (!userId) {
     return c.json(
       {
-        status: "error",
+
         error: {
           message: "認証されたユーザーIDが見つかりません",
           code: "MISSING_AUTHENTICATED_USER",
@@ -62,7 +62,7 @@ omikuji.post("/draw", async (c) => {
 
     return c.json(
       {
-        status: "success",
+
         data: result,
       },
       200,
@@ -79,7 +79,7 @@ omikuji.post("/draw", async (c) => {
 
       return c.json(
         {
-          status: "error",
+
           error: {
             message: getOmikujiErrorMessage(error.message),
             code: error.message,
@@ -92,7 +92,7 @@ omikuji.post("/draw", async (c) => {
     logger.error(`[omikuji-api] おみくじ処理エラー: ${error}`);
     return c.json(
       {
-        status: "error",
+
         error: {
           message: "おみくじの処理に失敗しました",
           code: "INTERNAL_SERVER_ERROR",

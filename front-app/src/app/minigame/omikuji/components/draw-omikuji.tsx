@@ -33,7 +33,7 @@ export default function DrawOmikuji({ userId }: Props) {
     const data: OmikujiResponse = await drawOmikuji(userId);
 
     setTimeout(() => {
-      if (data.status === "success") {
+      if (data.data) {
         setOmikuji(data);
       } else {
         toast.error(data.error?.message ?? "エラーが発生しました");

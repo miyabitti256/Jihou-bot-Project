@@ -32,7 +32,7 @@ users.get("/:userId", async (c) => {
   if (!result.success) {
     return c.json(
       {
-        status: "error",
+
         error: {
           code: "INVALID_QUERY",
           message: "無効なクエリパラメータです",
@@ -49,7 +49,7 @@ users.get("/:userId", async (c) => {
     const data = await getUserData(userId, includes);
 
     return c.json({
-      status: "success",
+
       data,
     });
   } catch (error) {
@@ -57,7 +57,7 @@ users.get("/:userId", async (c) => {
       logger.error(`[users-api] ${error.code}: ${error.message}`);
       return c.json(
         {
-          status: "error",
+
           error: {
             code: error.code,
             message: error.message,
@@ -70,7 +70,7 @@ users.get("/:userId", async (c) => {
     logger.error(`[users-api] 不明なエラー: ${error}`);
     return c.json(
       {
-        status: "error",
+
         error: {
           code: "INTERNAL_SERVER_ERROR",
           message: "サーバー内部エラーが発生しました",
@@ -91,7 +91,7 @@ users.put("/:userId", async (c) => {
     if (!userId || !body.username) {
       return c.json(
         {
-          status: "error",
+
           error: {
             code: "INVALID_DATA",
             message: "ユーザーIDとユーザー名は必須です",
@@ -111,7 +111,7 @@ users.put("/:userId", async (c) => {
     const updatedUser = await createOrUpdateUser(userData);
 
     return c.json({
-      status: "success",
+
       data: updatedUser,
     });
   } catch (error) {
@@ -119,7 +119,7 @@ users.put("/:userId", async (c) => {
       logger.error(`[users-api] ${error.code}: ${error.message}`);
       return c.json(
         {
-          status: "error",
+
           error: {
             code: error.code,
             message: error.message,
@@ -132,7 +132,7 @@ users.put("/:userId", async (c) => {
     logger.error(`[users-api] ユーザー更新エラー: ${error}`);
     return c.json(
       {
-        status: "error",
+
         error: {
           code: "INTERNAL_SERVER_ERROR",
           message: "サーバー内部エラーが発生しました",
@@ -153,7 +153,7 @@ users.put("/:userId/money", async (c) => {
     if (!userId || body.amount === undefined) {
       return c.json(
         {
-          status: "error",
+
           error: {
             code: "INVALID_DATA",
             message: "ユーザーIDと金額は必須です",
@@ -169,7 +169,7 @@ users.put("/:userId/money", async (c) => {
     if (Number.isNaN(amount)) {
       return c.json(
         {
-          status: "error",
+
           error: {
             code: "INVALID_AMOUNT",
             message: "金額は数値である必要があります",
@@ -182,7 +182,7 @@ users.put("/:userId/money", async (c) => {
     const updatedUser = await updateUserMoney(userId, amount, operation);
 
     return c.json({
-      status: "success",
+
       data: {
         userId: updatedUser.id,
         money: updatedUser.money,
@@ -193,7 +193,7 @@ users.put("/:userId/money", async (c) => {
       logger.error(`[users-api] ${error.code}: ${error.message}`);
       return c.json(
         {
-          status: "error",
+
           error: {
             code: error.code,
             message: error.message,
@@ -206,7 +206,7 @@ users.put("/:userId/money", async (c) => {
     logger.error(`[users-api] 所持金更新エラー: ${error}`);
     return c.json(
       {
-        status: "error",
+
         error: {
           code: "INTERNAL_SERVER_ERROR",
           message: "サーバー内部エラーが発生しました",
@@ -227,7 +227,7 @@ users.get("/guilds/:userId", async (c) => {
   if (!userId) {
     return c.json(
       {
-        status: "error",
+
         error: {
           code: "INVALID_USER_ID",
           message: "ユーザーIDは必須です",
@@ -241,7 +241,7 @@ users.get("/guilds/:userId", async (c) => {
     const result = await getUsersFromSameGuilds(userId, page, limit, search);
 
     return c.json({
-      status: "success",
+
       data: result,
     });
   } catch (error) {
@@ -249,7 +249,7 @@ users.get("/guilds/:userId", async (c) => {
       logger.error(`[users-api] ${error.code}: ${error.message}`);
       return c.json(
         {
-          status: "error",
+
           error: {
             code: error.code,
             message: error.message,
@@ -262,7 +262,7 @@ users.get("/guilds/:userId", async (c) => {
     logger.error(`[users-api] ユーザー一覧取得エラー: ${error}`);
     return c.json(
       {
-        status: "error",
+
         error: {
           code: "INTERNAL_SERVER_ERROR",
           message: "サーバー内部エラーが発生しました",
@@ -281,7 +281,7 @@ users.get("/:userId/discord", async (c) => {
   if (!userIdResult.success) {
     return c.json(
       {
-        status: "error",
+
         error: {
           code: "INVALID_REQUEST",
           message: "Invalid userId",
@@ -295,14 +295,14 @@ users.get("/:userId/discord", async (c) => {
   try {
     const userData = await fetchDiscordUser(userIdResult.data);
     return c.json({
-      status: "success",
+
       data: userData,
     });
   } catch (error) {
     if (error instanceof DiscordApiError) {
       return c.json(
         {
-          status: "error",
+
           error: {
             code: error.code,
             message: error.message,
@@ -314,7 +314,7 @@ users.get("/:userId/discord", async (c) => {
     logger.error(`Discord API error: ${error}`);
     return c.json(
       {
-        status: "error",
+
         error: {
           code: "DISCORD_API_ERROR",
           message: "Failed to fetch user data",
@@ -333,7 +333,7 @@ users.get("/channels/:channelId/discord", async (c) => {
   if (!channelIdResult.success) {
     return c.json(
       {
-        status: "error",
+
         error: {
           code: "INVALID_REQUEST",
           message: "Invalid channelId",
@@ -347,14 +347,14 @@ users.get("/channels/:channelId/discord", async (c) => {
   try {
     const channelData = await fetchChannel(channelIdResult.data);
     return c.json({
-      status: "success",
+
       data: channelData,
     });
   } catch (error) {
     if (error instanceof DiscordApiError) {
       return c.json(
         {
-          status: "error",
+
           error: {
             code: error.code,
             message: error.message,
@@ -366,7 +366,7 @@ users.get("/channels/:channelId/discord", async (c) => {
     logger.error(`Discord API error: ${error}`);
     return c.json(
       {
-        status: "error",
+
         error: {
           code: "DISCORD_API_ERROR",
           message: "Failed to fetch channel data",
