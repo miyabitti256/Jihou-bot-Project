@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { FaPlus } from "react-icons/fa";
 import NoAuthRedirect from "@/components/noAuthRedirect";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -30,8 +32,6 @@ import type {
   GuildMember,
   ScheduledMessage,
 } from "@/types/api-response";
-import Link from "next/link";
-import { FaPlus } from "react-icons/fa";
 import DeleteButton from "./components/delete-button";
 
 export default async function SchedulePage() {
@@ -144,7 +144,7 @@ export default async function SchedulePage() {
                                   <h4 className="text-sm font-semibold mb-2">
                                     メッセージ内容
                                   </h4>
-                                  <p className="break-words whitespace-pre-wrap text-base">
+                                  <p className="wrap-break-word whitespace-pre-wrap text-base">
                                     {message.message}
                                   </p>
                                 </div>

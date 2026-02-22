@@ -1,5 +1,12 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Check, ChevronsUpDown, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { startTransition, useActionState, useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
+import * as z from "zod";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,14 +35,6 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import type { GuildChannel, ScheduledMessage } from "@/types/api-response";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, ChevronsUpDown, X } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { startTransition, useActionState } from "react";
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import toast from "react-hot-toast";
-import * as z from "zod";
 import { createSchedule, updateSchedule } from "./actions";
 
 const formSchema = z.object({
@@ -231,7 +230,6 @@ export function ScheduleForm({
                       <FormControl>
                         <Button
                           variant="outline"
-                          // biome-ignore lint/a11y/useSemanticElements: <explanation>
                           role="combobox"
                           className={cn(
                             "w-full justify-between",
@@ -275,22 +273,15 @@ export function ScheduleForm({
                                 .slice()
                                 .sort((a, b) => a.name.localeCompare(b.name))
                                 .map((channel) => (
-                                  <div
+                                  <button
                                     key={channel.id}
-                                    // biome-ignore lint/a11y/useSemanticElements: <explanation>
-                                    role="button"
-                                    tabIndex={0}
+                                    type="button"
                                     className={cn(
-                                      "flex items-center px-2 py-1.5 cursor-pointer rounded-sm hover:bg-accent",
+                                      "w-full flex items-center px-2 py-1.5 cursor-pointer text-left rounded-sm hover:bg-accent",
                                       channel.id === field.value && "bg-accent",
                                     )}
                                     onClick={() => {
                                       form.setValue("channelId", channel.id);
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter" || e.key === " ") {
-                                        form.setValue("channelId", channel.id);
-                                      }
                                     }}
                                   >
                                     <Check
@@ -304,7 +295,7 @@ export function ScheduleForm({
                                     <span className="flex-1">
                                       #{channel.name}
                                     </span>
-                                  </div>
+                                  </button>
                                 ))}
                             </div>
                           ) : (

@@ -1,4 +1,5 @@
 import type { ScheduledMessage } from "@generated/prisma/client/client.ts";
+import { logger } from "@lib/logger";
 import { getScheduledMessages } from "@services/guilds/scheduled-message";
 import {
   type ChatInputCommandInteraction,
@@ -6,7 +7,6 @@ import {
   MessageFlags,
   SlashCommandBuilder,
 } from "discord.js";
-import { logger } from "@lib/logger";
 
 export const data = new SlashCommandBuilder()
   .setName("scheduleinfo")

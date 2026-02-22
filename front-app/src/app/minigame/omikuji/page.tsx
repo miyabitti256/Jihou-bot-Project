@@ -1,9 +1,9 @@
+import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { authenticatedFetch } from "@/lib/auth-api";
 import { getTokyoDate, hasDrawnToday } from "@/lib/utils";
-import Image from "next/image";
-import Link from "next/link";
 import DrawOmikuji from "./components/draw-omikuji";
 
 export default async function OmikujiPage() {
@@ -54,6 +54,6 @@ export default async function OmikujiPage() {
       </Link>
     </div>
   ) : (
-    <DrawOmikuji userId={session.user.id} />
+    <DrawOmikuji />
   );
 }

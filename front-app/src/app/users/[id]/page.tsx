@@ -1,3 +1,8 @@
+import { formatDistance } from "date-fns";
+import { ja } from "date-fns/locale";
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { FaDiscord, FaUser } from "react-icons/fa";
 import NoAuthRedirect from "@/components/noAuthRedirect";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,11 +17,6 @@ import {
 import { auth } from "@/lib/auth";
 import { authenticatedFetch } from "@/lib/auth-api";
 import type { GuildChannel, Janken, UserData } from "@/types/api-response";
-import { formatDistance } from "date-fns";
-import { ja } from "date-fns/locale";
-import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
-import { FaDiscord, FaUser } from "react-icons/fa";
 
 // じゃんけんゲーム計算用のインターフェース拡張
 type JankenGameWithCalculations = Janken;
@@ -78,9 +78,9 @@ export default async function UserDetailPage({
   const winRate =
     coinflip.length > 0
       ? (
-        (coinflip.filter((log) => log.win).length / coinflip.length) *
-        100
-      ).toFixed(1)
+          (coinflip.filter((log) => log.win).length / coinflip.length) *
+          100
+        ).toFixed(1)
       : "0.0";
 
   const jankenWinRate = (() => {
@@ -213,53 +213,51 @@ export default async function UserDetailPage({
                         </TableCell>
                       </TableRow>
                     ) : (
-                      <>
-                        {scheduledMessages.map(async (message) => {
-                          const guildData = await getGuildData(message.guildId);
-                          return (
-                            <TableRow key={message.id}>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <Avatar>
-                                    <AvatarImage src={guildData.data.iconUrl} />
-                                    <AvatarFallback>
-                                      <FaDiscord />
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  {guildData.data.name}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                #
-                                {
-                                  guildData.data.channels.find(
-                                    (channel: GuildChannel) =>
-                                      channel.id === message.channelId,
-                                  )?.name
+                      scheduledMessages.map(async (message) => {
+                        const guildData = await getGuildData(message.guildId);
+                        return (
+                          <TableRow key={message.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Avatar>
+                                  <AvatarImage src={guildData.data.iconUrl} />
+                                  <AvatarFallback>
+                                    <FaDiscord />
+                                  </AvatarFallback>
+                                </Avatar>
+                                {guildData.data.name}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              #
+                              {
+                                guildData.data.channels.find(
+                                  (channel: GuildChannel) =>
+                                    channel.id === message.channelId,
+                                )?.name
+                              }
+                            </TableCell>
+                            <TableCell>
+                              <div className="max-w-[200px] truncate">
+                                {message.message}
+                              </div>
+                            </TableCell>
+                            <TableCell>{message.scheduleTime}</TableCell>
+                            <TableCell>
+                              <span
+                                className={
+                                  message.isActive
+                                    ? "text-green-600"
+                                    : "text-red-600"
                                 }
-                              </TableCell>
-                              <TableCell>
-                                <div className="max-w-[200px] truncate">
-                                  {message.message}
-                                </div>
-                              </TableCell>
-                              <TableCell>{message.scheduleTime}</TableCell>
-                              <TableCell>
-                                <span
-                                  className={
-                                    message.isActive
-                                      ? "text-green-600"
-                                      : "text-red-600"
-                                  }
-                                >
-                                  {message.isActive ? "🟢" : "🔴"}
-                                  {message.isActive ? "有効" : "無効"}
-                                </span>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </>
+                              >
+                                {message.isActive ? "🟢" : "🔴"}
+                                {message.isActive ? "有効" : "無効"}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>
@@ -391,22 +389,20 @@ export default async function UserDetailPage({
                         </TableCell>
                       </TableRow>
                     ) : (
-                      <>
-                        {omikuji.map((draw) => (
-                          <TableRow key={draw.id}>
-                            <TableCell className="font-medium">
-                              {draw.result}
-                            </TableCell>
-                            <TableCell>
-                              {formatDistance(
-                                new Date(draw.createdAt),
-                                new Date(),
-                                { locale: ja, addSuffix: true },
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </>
+                      omikuji.map((draw) => (
+                        <TableRow key={draw.id}>
+                          <TableCell className="font-medium">
+                            {draw.result}
+                          </TableCell>
+                          <TableCell>
+                            {formatDistance(
+                              new Date(draw.createdAt),
+                              new Date(),
+                              { locale: ja, addSuffix: true },
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
                     )}
                   </TableBody>
                 </Table>
@@ -440,28 +436,27 @@ export default async function UserDetailPage({
                         </TableCell>
                       </TableRow>
                     ) : (
-                      <>
-                        {recentCoinFlips.map((flip) => (
-                          <TableRow key={flip.id}>
-                            <TableCell>{flip.bet.toLocaleString()}円</TableCell>
-                            <TableCell>
-                              <span
-                                className={`font-medium ${flip.win ? "text-green-600" : "text-red-600"
-                                  }`}
-                              >
-                                {flip.win ? "勝ち" : "負け"}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              {formatDistance(
-                                new Date(flip.createdAt),
-                                new Date(),
-                                { locale: ja, addSuffix: true },
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </>
+                      recentCoinFlips.map((flip) => (
+                        <TableRow key={flip.id}>
+                          <TableCell>{flip.bet.toLocaleString()}円</TableCell>
+                          <TableCell>
+                            <span
+                              className={`font-medium ${
+                                flip.win ? "text-green-600" : "text-red-600"
+                              }`}
+                            >
+                              {flip.win ? "勝ち" : "負け"}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            {formatDistance(
+                              new Date(flip.createdAt),
+                              new Date(),
+                              { locale: ja, addSuffix: true },
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
                     )}
                   </TableBody>
                 </Table>

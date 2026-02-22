@@ -7,7 +7,7 @@ export default function Loading() {
 
   return (
     <div className="flex flex-col">
-      <div className="flex-grow p-4 md:p-8 space-y-4 md:space-y-6">
+      <div className="grow p-4 md:p-8 space-y-4 md:space-y-6">
         <h1 className="text-xl md:text-3xl font-bold">ユーザー一覧</h1>
 
         {/* 検索フォームのスケルトン */}

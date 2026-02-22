@@ -21,7 +21,6 @@ message.get("/all", async (c) => {
 
     return c.json(
       {
-
         data,
       },
       200,
@@ -30,7 +29,6 @@ message.get("/all", async (c) => {
     logger.error(`[scheduledmessage-api] Error getting all messages: ${error}`);
     return c.json(
       {
-
         error: {
           code: "INTERNAL_SERVER_ERROR",
           message: "Internal server error",
@@ -52,7 +50,6 @@ message.get("/:id", async (c) => {
 
     return c.json(
       {
-
         data,
       },
       200,
@@ -61,7 +58,6 @@ message.get("/:id", async (c) => {
     logger.error(`[scheduledmessage-api] Error getting messages: ${error}`);
     return c.json(
       {
-
         error: {
           code: "INTERNAL_SERVER_ERROR",
           message: "Internal server error",
@@ -80,7 +76,6 @@ message.get("/details/:id", async (c) => {
     const data = await getScheduledMessageById(id);
     return c.json(
       {
-
         data,
       },
       200,
@@ -92,7 +87,6 @@ message.get("/details/:id", async (c) => {
     ) {
       return c.json(
         {
-
           error: {
             code: "NOTFOUND",
             message: "Scheduled message not found",
@@ -107,7 +101,6 @@ message.get("/details/:id", async (c) => {
     );
     return c.json(
       {
-
         error: {
           code: "INTERNAL_SERVER_ERROR",
           message: "Internal server error",
@@ -135,7 +128,6 @@ message.post("/", async (c) => {
   if (!result.success) {
     return c.json(
       {
-
         error: {
           code: "VALIDATION_ERROR",
           message: "入力データが不正です",
@@ -159,7 +151,6 @@ message.post("/", async (c) => {
 
     return c.json(
       {
-
         data: {
           message: "メッセージのスケジュールに成功しました",
           scheduledMessage: createdMessage,
@@ -172,7 +163,6 @@ message.post("/", async (c) => {
       if (error.message === "INVALID_TIME_FORMAT") {
         return c.json(
           {
-
             error: {
               code: "VALIDATION_ERROR",
               message: "時刻のフォーマットが不正です",
@@ -186,7 +176,6 @@ message.post("/", async (c) => {
     logger.error(`[scheduledmessage-api] Error creating message: ${error}`);
     return c.json(
       {
-
         error: {
           code: "INTERNAL_SERVER_ERROR",
           message: "Internal server error",
@@ -220,7 +209,6 @@ message.patch("/", async (c) => {
   if (!result.success) {
     return c.json(
       {
-
         error: {
           code: "VALIDATION_ERROR",
           message: "入力データが不正です",
@@ -246,7 +234,6 @@ message.patch("/", async (c) => {
 
     return c.json(
       {
-
         data: {
           message: "メッセージの更新に成功しました",
           scheduledMessage: updatedMessage,
@@ -259,7 +246,6 @@ message.patch("/", async (c) => {
       if (error.message === "MESSAGE_NOT_FOUND") {
         return c.json(
           {
-
             error: {
               code: "NOT_FOUND",
               message: "指定されたメッセージが見つかりません",
@@ -272,7 +258,6 @@ message.patch("/", async (c) => {
       if (error.message === "INVALID_TIME_FORMAT") {
         return c.json(
           {
-
             error: {
               code: "VALIDATION_ERROR",
               message: "時刻のフォーマットが不正です",
@@ -286,7 +271,6 @@ message.patch("/", async (c) => {
     logger.error(`[scheduledmessage-api] Error updating message: ${error}`);
     return c.json(
       {
-
         error: {
           code: "INTERNAL_SERVER_ERROR",
           message: "Internal server error",
@@ -312,7 +296,6 @@ message.delete("/", async (c) => {
   if (!result.success) {
     return c.json(
       {
-
         error: {
           code: "VALIDATION_ERROR",
           message: "入力データが不正です",
@@ -330,7 +313,6 @@ message.delete("/", async (c) => {
 
     return c.json(
       {
-
         data: {
           message: "メッセージの削除に成功しました",
         },
@@ -344,7 +326,6 @@ message.delete("/", async (c) => {
     ) {
       return c.json(
         {
-
           error: {
             code: "NOTFOUND",
             message: "指定されたメッセージが見つかりません",
@@ -357,7 +338,6 @@ message.delete("/", async (c) => {
     logger.error(`[scheduledmessage-api] Error deleting message: ${error}`);
     return c.json(
       {
-
         error: {
           code: "INTERNAL_SERVER_ERROR",
           message: "Internal server error",

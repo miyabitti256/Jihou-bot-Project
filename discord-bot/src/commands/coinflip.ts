@@ -1,3 +1,4 @@
+import { logger } from "@lib/logger";
 import {
   type CoinChoice,
   CoinflipError,
@@ -18,7 +19,6 @@ import {
   TextInputBuilder,
   TextInputStyle,
 } from "discord.js";
-import { logger } from "@lib/logger";
 
 interface GameState {
   bet: number;

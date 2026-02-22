@@ -1,10 +1,10 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useEffect, useRef, useState } from "react";
 
 interface Message {
   sender: "player" | "bot";

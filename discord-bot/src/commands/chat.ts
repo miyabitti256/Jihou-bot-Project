@@ -1,5 +1,6 @@
 import { ChatRole } from "@generated/prisma/client/client.ts";
 import rateLimitManager from "@handler/rate-limit";
+import { logger } from "@lib/logger";
 import {
   ChatServiceError,
   createChatMessage,
@@ -22,7 +23,6 @@ import {
   ThreadAutoArchiveDuration,
   type ThreadChannel,
 } from "discord.js";
-import { logger } from "@lib/logger";
 
 export const data = new SlashCommandBuilder()
   .setName("chat")

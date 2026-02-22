@@ -47,7 +47,6 @@ coinflip.post("/play", async (c) => {
     const result = await playCoinflip(userId, bet, choice);
 
     return c.json({
-
       data: result,
     });
   } catch (error) {
@@ -56,7 +55,6 @@ coinflip.post("/play", async (c) => {
 
       return c.json(
         {
-
           error: {
             message: getErrorMessage(error.message),
             code: error.message,
@@ -69,7 +67,6 @@ coinflip.post("/play", async (c) => {
     logger.error(`[coinflip-api] コインフリップエラー: ${error}`);
     return c.json(
       {
-
         error: {
           message: "内部サーバーエラーが発生しました",
           code: "INTERNAL_SERVER_ERROR",
@@ -86,7 +83,6 @@ coinflip.get("/status/:userId", async (c) => {
   if (!userId) {
     return c.json(
       {
-
         error: {
           message: "ユーザーIDが指定されていません",
           code: "USER_ID_NOT_PROVIDED",
@@ -100,7 +96,6 @@ coinflip.get("/status/:userId", async (c) => {
     const money = await getUserMoneyStatus(userId);
 
     return c.json({
-
       data: {
         money,
       },
@@ -109,7 +104,6 @@ coinflip.get("/status/:userId", async (c) => {
     logger.error(`[coinflip-api] 所持金取得エラー: ${error}`);
     return c.json(
       {
-
         error: {
           message: "内部サーバーエラーが発生しました",
           code: "INTERNAL_SERVER_ERROR",
@@ -130,14 +124,12 @@ coinflip.get("/history/:userId", async (c) => {
     const history = await getCoinflipHistory(userId, take);
 
     return c.json({
-
       data: history,
     });
   } catch (error) {
     logger.error(`[coinflip-api] 履歴取得エラー: ${error}`);
     return c.json(
       {
-
         error: {
           message: "内部サーバーエラーが発生しました",
           code: "INTERNAL_SERVER_ERROR",

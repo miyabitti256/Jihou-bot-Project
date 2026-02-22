@@ -4,11 +4,11 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: '/(.*)',
+        source: "/(.*)",
         headers: [
           // Content Security Policy
           {
-            key: 'Content-Security-Policy',
+            key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // Next.js requires unsafe-eval and unsafe-inline
@@ -17,40 +17,40 @@ const nextConfig: NextConfig = {
               "font-src 'self' data:",
               "connect-src 'self' https://discord.com https://discordapp.com https://*.vercel.app https://*.fly.dev",
               "frame-ancestors 'none'",
-            ].join('; '),
+            ].join("; "),
           },
           // セキュリティヘッダー
           {
-            key: 'X-Frame-Options',
-            value: 'DENY',
+            key: "X-Frame-Options",
+            value: "DENY",
           },
           {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
+            key: "X-Content-Type-Options",
+            value: "nosniff",
           },
           {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
           },
           {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on',
+            key: "X-DNS-Prefetch-Control",
+            value: "on",
           },
           // Strict Transport Security (HTTPS強制)
           {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=31536000; includeSubDomains; preload',
+            key: "Strict-Transport-Security",
+            value: "max-age=31536000; includeSubDomains; preload",
           },
           // パーミッション制御
           {
-            key: 'Permissions-Policy',
+            key: "Permissions-Policy",
             value: [
-              'camera=()',
-              'microphone=()',
-              'geolocation=()',
-              'payment=()',
-              'usb=()',
-            ].join(', '),
+              "camera=()",
+              "microphone=()",
+              "geolocation=()",
+              "payment=()",
+              "usb=()",
+            ].join(", "),
           },
         ],
       },

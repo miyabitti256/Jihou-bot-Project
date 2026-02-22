@@ -5,8 +5,8 @@ import {
   OmikujiError,
 } from "@services/minigame/omikuji";
 import { Hono } from "hono";
-import { discordIdSchema } from "../../schemas";
 import { z } from "zod";
+import { discordIdSchema } from "../../schemas";
 
 export const omikuji = new Hono();
 
@@ -19,7 +19,13 @@ omikuji.get("/result/:userId", async (c) => {
       400,
     );
   }
-  const takeResult = z.coerce.number().int().min(1).max(100).default(10).safeParse(c.req.query("take"));
+  const takeResult = z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .default(10)
+    .safeParse(c.req.query("take"));
   const take = takeResult.success ? takeResult.data : 10;
 
   try {
@@ -27,7 +33,6 @@ omikuji.get("/result/:userId", async (c) => {
 
     return c.json(
       {
-
         data,
       },
       200,
@@ -36,7 +41,6 @@ omikuji.get("/result/:userId", async (c) => {
     logger.error(`[omikuji-api] おみくじ履歴取得エラー: ${error}`);
     return c.json(
       {
-
         error: {
           code: "INTERNAL_SERVER_ERROR",
           message: "内部サーバーエラーが発生しました",
@@ -55,7 +59,6 @@ omikuji.post("/draw", async (c) => {
   if (!userId) {
     return c.json(
       {
-
         error: {
           message: "認証されたユーザーIDが見つかりません",
           code: "MISSING_AUTHENTICATED_USER",
@@ -70,7 +73,6 @@ omikuji.post("/draw", async (c) => {
 
     return c.json(
       {
-
         data: result,
       },
       200,
@@ -87,7 +89,6 @@ omikuji.post("/draw", async (c) => {
 
       return c.json(
         {
-
           error: {
             message: getOmikujiErrorMessage(error.message),
             code: error.message,
@@ -100,7 +101,6 @@ omikuji.post("/draw", async (c) => {
     logger.error(`[omikuji-api] おみくじ処理エラー: ${error}`);
     return c.json(
       {
-
         error: {
           message: "おみくじの処理に失敗しました",
           code: "INTERNAL_SERVER_ERROR",

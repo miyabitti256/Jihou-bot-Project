@@ -55,4 +55,3 @@ app.route("/users", users);
 app.route("/minigame", minigame);
 
 export default app;
-

@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,14 +14,15 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
 import { messageDelete } from "./actions";
 
 export default function DeleteButton({
   messageId,
   guildId,
-}: { messageId: string; guildId: string }) {
+}: {
+  messageId: string;
+  guildId: string;
+}) {
   const router = useRouter();
   const handleDelete = async () => {
     interface DeleteResponse {

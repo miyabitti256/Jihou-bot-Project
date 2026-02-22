@@ -2,10 +2,7 @@
 
 import { authenticatedFetch } from "@/lib/auth-api";
 
-export const flipCoin = async (
-  bet: number,
-  choice: "heads" | "tails",
-) => {
+export const flipCoin = async (bet: number, choice: "heads" | "tails") => {
   // userIdはJWTトークンから自動取得されるため、パラメータから除去
   const response = await authenticatedFetch(
     `${process.env.NEXT_PUBLIC_API_URL}/api/minigame/coinflip/play`,

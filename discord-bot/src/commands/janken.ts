@@ -1,7 +1,8 @@
+import { logger } from "@lib/logger";
+import * as JankenService from "@services/minigame";
 import {
   ActionRowBuilder,
   ButtonBuilder,
-  type ButtonInteraction,
   ButtonStyle,
   type ChatInputCommandInteraction,
   EmbedBuilder,
@@ -11,8 +12,6 @@ import {
   SlashCommandBuilder,
   type User,
 } from "discord.js";
-import { logger } from "@lib/logger";
-import * as JankenService from "@services/minigame";
 
 const CONSTANTS = {
   TIMEOUT_DURATION: 180000,
@@ -342,7 +341,7 @@ class JankenGame {
       const collector = this.message!.createMessageComponentCollector({
         filter: (i) =>
           i.customId.startsWith("choice_") &&
-          (i.user.id === this.challenger.id || i.user.id === this.opponent!.id),
+          (i.user.id === this.challenger.id || i.user.id === this.opponent?.id),
         time: CONSTANTS.TIMEOUT_DURATION,
       });
 
@@ -515,7 +514,7 @@ class JankenGame {
         this.interaction.channel.createMessageComponentCollector({
           filter: (i) =>
             (i.customId === "janken_rematch" || i.customId === "janken_end") &&
-            i.message.interaction?.id === this.interaction.id,
+            i.message.interactionMetadata?.id === this.interaction.id,
           time: CONSTANTS.TIMEOUT_DURATION,
         });
 
@@ -617,7 +616,7 @@ class JankenGame {
         filter: (i) =>
           (i.customId === "confirm_rematch" ||
             i.customId === "decline_rematch") &&
-          i.message.interaction?.id === this.interaction.id,
+          i.message.interactionMetadata?.id === this.interaction.id,
         time: CONSTANTS.TIMEOUT_DURATION,
       });
 
@@ -890,20 +889,6 @@ export async function execute(
       "エラーが発生しました。もう一度お試しください。",
     );
   }
-}
-
-// 下位互換性のために残しておく関数（旧handleRematch実装との互換性）
-async function handleRematch(
-  interaction: ChatInputCommandInteraction,
-  _message: Message,
-  challenger: User,
-  opponent: User,
-) {
-  // 新しいClassベース実装では、リマッチ処理はJankenGameクラス内で処理される
-  // この関数は下位互換性のためのプレースホルダー
-  logger.info(
-    "[janken] Legacy handleRematch called, but rematch is now handled in JankenGame class",
-  );
 }
 
 // 安全にリプライを送信するヘルパー関数

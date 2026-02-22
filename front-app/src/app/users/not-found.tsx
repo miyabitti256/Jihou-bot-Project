@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { FaArrowLeft, FaUser } from "react-icons/fa";
+import { Button } from "@/components/ui/button";
 
 export default function NotFound() {
   return (

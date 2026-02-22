@@ -1,13 +1,20 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.4/schema.json",
   "vcs": {
     "enabled": false,
     "clientKind": "git",
     "useIgnoreFile": true
   },
   "files": {
-    "ignoreUnknown": false,
-    "ignore": ["node_modules", ".next", "dist", "public", "prisma", "supabase"]
+    "includes": [
+      "**/*",
+      "!node_modules",
+      "!.next",
+      "!dist",
+      "!public",
+      "!prisma",
+      "!supabase"
+    ]
   },
   "formatter": {
     "enabled": true,
@@ -16,8 +23,12 @@
     "lineWidth": 80,
     "formatWithErrors": true
   },
-  "organizeImports": {
-    "enabled": true
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
   },
   "linter": {
     "enabled": true,
@@ -25,7 +36,12 @@
       "recommended": true,
       "suspicious": {
         "noExplicitAny": "error",
-        "noConsoleLog": "warn"
+        "noConsole": {
+          "level": "warn",
+          "options": {
+            "allow": ["log"]
+          }
+        }
       }
     }
   },
@@ -33,6 +49,11 @@
     "formatter": {
       "quoteStyle": "double",
       "semicolons": "always"
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
     }
   }
 }

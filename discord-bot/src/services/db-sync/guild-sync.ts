@@ -348,7 +348,7 @@ export function createMemberDataFromGuildMember(member: GuildMember): {
  * 常に最大1000人分のメモリしか使わず、処理後即キャッシュから追い出す
  */
 async function syncMembersInBatches(guild: Guild): Promise<void> {
-  let after: string | undefined = undefined;
+  let after: string | undefined;
   let totalSynced = 0;
 
   while (true) {
@@ -387,9 +387,7 @@ async function syncMembersInBatches(guild: Guild): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 
-  logger.info(
-    `[db-sync] Synced ${totalSynced} members for "${guild.name}"`,
-  );
+  logger.info(`[db-sync] Synced ${totalSynced} members for "${guild.name}"`);
 }
 
 /**

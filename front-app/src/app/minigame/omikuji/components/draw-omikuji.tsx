@@ -1,17 +1,13 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import type { ApiResponse } from "@/types/api-response";
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { Button } from "@/components/ui/button";
+import type { ApiResponse } from "@/types/api-response";
 import { drawOmikuji } from "./actions";
-
-interface Props {
-  userId: string;
-}
 
 interface OmikujiResponse extends ApiResponse {
   data: {
@@ -22,7 +18,7 @@ interface OmikujiResponse extends ApiResponse {
   };
 }
 
-export default function DrawOmikuji({ userId }: Props) {
+export default function DrawOmikuji() {
   const router = useRouter();
   const [omikuji, setOmikuji] = useState<OmikujiResponse | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);

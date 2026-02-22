@@ -1,0 +1,43 @@
+src/api/routes/auth/index.ts(120,27): error TS2554: Expected 3 arguments, but got 2.
+src/commands/chat.ts(2,26): error TS2307: Cannot find module '@generated/prisma/client/index.js' or its corresponding type declarations.
+src/commands/schedule-info.ts(1,39): error TS2307: Cannot find module '@generated/prisma/client/index.js' or its corresponding type declarations.
+src/handler/ai-message.ts(4,26): error TS2307: Cannot find module '@generated/prisma/client/index.js' or its corresponding type declarations.
+src/handler/discord-events.ts(76,41): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(obj: "コマンド実行中にエラーが発生しました:", msg?: undefined): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+  Overload 2 of 3, '(obj: "コマンド実行中にエラーが発生しました:", msg?: undefined, ...args: unknown[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+src/handler/discord-events.ts(162,43): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(obj: "ギルド参加時の処理でエラーが発生しました:", msg?: undefined): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+  Overload 2 of 3, '(obj: "ギルド参加時の処理でエラーが発生しました:", msg?: undefined, ...args: unknown[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+src/handler/discord-events.ts(173,43): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(obj: "ギルド退出時の処理でエラーが発生しました:", msg?: undefined): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+  Overload 2 of 3, '(obj: "ギルド退出時の処理でエラーが発生しました:", msg?: undefined, ...args: unknown[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+src/handler/discord-events.ts(186,44): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(obj: "メンバー参加時の処理でエラーが発生しました:", msg?: undefined): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+  Overload 2 of 3, '(obj: "メンバー参加時の処理でエラーが発生しました:", msg?: undefined, ...args: unknown[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+src/handler/discord-events.ts(199,44): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(obj: "メンバー退出時の処理でエラーが発生しました:", msg?: undefined): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+  Overload 2 of 3, '(obj: "メンバー退出時の処理でエラーが発生しました:", msg?: undefined, ...args: unknown[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+src/lib/auth-middleware.ts(55,28): error TS2554: Expected 3 arguments, but got 2.
+src/lib/gemini-client.ts(3,31): error TS2307: Cannot find module '@generated/prisma/client/index.js' or its corresponding type declarations.
+src/lib/jwt-auth.ts(66,29): error TS2345: Argument of type '{ secret: string; }' is not assignable to parameter of type '{ secret: SignatureKey; cookie?: string | { key: string; secret?: string | BufferSource | undefined; prefixOptions?: CookiePrefixOptions | undefined; } | undefined; alg: "HS256" | ... 11 more ... | "EdDSA"; headerName?: string | undefined; verification?: VerifyOptions | undefined; }'.
+  Property 'alg' is missing in type '{ secret: string; }' but required in type '{ secret: SignatureKey; cookie?: string | { key: string; secret?: string | BufferSource | undefined; prefixOptions?: CookiePrefixOptions | undefined; } | undefined; alg: "HS256" | ... 11 more ... | "EdDSA"; headerName?: string | undefined; verification?: VerifyOptions | undefined; }'.
+src/lib/prisma.ts(3,30): error TS2307: Cannot find module '@generated/prisma/client/index.js' or its corresponding type declarations.
+src/lib/utils.ts(2,31): error TS2307: Cannot find module '@generated/prisma/client/index.js' or its corresponding type declarations.
+src/services/chat/chat.ts(10,46): error TS2307: Cannot find module '@generated/prisma/client/index.js' or its corresponding type declarations.
+src/services/chat/chat.ts(11,26): error TS2307: Cannot find module '@generated/prisma/client/index.js' or its corresponding type declarations.
+src/services/chat/chat.ts(273,39): error TS7006: Parameter 'msg' implicitly has an 'any' type.
+src/services/chat/chat.ts(348,39): error TS7006: Parameter 'msg' implicitly has an 'any' type.
+src/services/guilds/scheduled-message.ts(4,39): error TS2307: Cannot find module '@generated/prisma/client/index.js' or its corresponding type declarations.
+src/services/users/user.ts(3,24): error TS2307: Cannot find module '@generated/prisma/client/index.js' or its corresponding type declarations.
+src/services/users/user.ts(248,38): error TS7006: Parameter 'guild' implicitly has an 'any' type.
+src/services/users/user.ts(273,46): error TS7006: Parameter 'member' implicitly has an 'any' type.

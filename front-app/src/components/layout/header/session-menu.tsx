@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,7 +8,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { auth } from "@/lib/auth";
-import Link from "next/link";
 import { signInAction } from "./actions";
 import LogoutButton from "./logout-button";
 
@@ -24,7 +24,7 @@ export default async function SessionMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="focus:outline-none">
+      <DropdownMenuTrigger className="focus:outline-hidden">
         <Avatar>
           <AvatarImage src={session.user?.image ?? ""} />
           <AvatarFallback>

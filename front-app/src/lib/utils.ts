@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function getTokyoDate(): Date {
-  const now = new Date(new Date().getTime() - 5 * 60 * 60 * 1000);
+  const now = new Date(Date.now() - 5 * 60 * 60 * 1000);
   return new Date(now.toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo" }));
 }
 

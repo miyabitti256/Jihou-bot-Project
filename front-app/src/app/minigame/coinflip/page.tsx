@@ -14,7 +14,7 @@ export default async function CoinflipPage() {
 
   return (
     <div>
-      <CoinflipGame userId={session?.user.id} />
+      <CoinflipGame />
     </div>
   );
 }
