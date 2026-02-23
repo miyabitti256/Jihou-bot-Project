@@ -78,9 +78,9 @@ export default async function UserDetailPage({
   const winRate =
     coinflip.length > 0
       ? (
-        (coinflip.filter((log) => log.win).length / coinflip.length) *
-        100
-      ).toFixed(1)
+          (coinflip.filter((log) => log.win).length / coinflip.length) *
+          100
+        ).toFixed(1)
       : "0.0";
 
   const jankenWinRate = (() => {
@@ -441,8 +441,9 @@ export default async function UserDetailPage({
                           <TableCell>{flip.bet.toLocaleString()}円</TableCell>
                           <TableCell>
                             <span
-                              className={`font-medium ${flip.win ? "text-green-600" : "text-red-600"
-                                }`}
+                              className={`font-medium ${
+                                flip.win ? "text-green-600" : "text-red-600"
+                              }`}
                             >
                               {flip.win ? "勝ち" : "負け"}
                             </span>

@@ -1,4 +1,5 @@
 import { logger } from "@lib/logger";
+import { getUserGuilds, verifyUserGuildAccess } from "@services/guilds/guild";
 import {
   createScheduledMessage,
   deleteScheduledMessage,
@@ -10,10 +11,6 @@ import {
   type ScheduledMessageUpdateData,
   updateScheduledMessage,
 } from "@services/guilds/scheduled-message";
-import {
-  getUserGuilds,
-  verifyUserGuildAccess,
-} from "@services/guilds/guild";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -141,8 +138,7 @@ message.get("/details/:id", async (c) => {
           {
             error: {
               code: "FORBIDDEN",
-              message:
-                "Forbidden - Insufficient permissions for this guild",
+              message: "Forbidden - Insufficient permissions for this guild",
             },
           },
           403,

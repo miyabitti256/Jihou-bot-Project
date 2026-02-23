@@ -97,7 +97,7 @@ export default async function SchedulePage() {
 
           <CardContent>
             {guild.data.ScheduledMessage &&
-              guild.data.ScheduledMessage.length > 0 ? (
+            guild.data.ScheduledMessage.length > 0 ? (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>

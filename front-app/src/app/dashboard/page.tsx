@@ -53,9 +53,9 @@ export default async function Dashboard() {
   const winRate =
     coinflip.length > 0
       ? (
-        (coinflip.filter((log) => log.win).length / coinflip.length) *
-        100
-      ).toFixed(1)
+          (coinflip.filter((log) => log.win).length / coinflip.length) *
+          100
+        ).toFixed(1)
       : "0.0";
 
   const jankenWinRate = (() => {

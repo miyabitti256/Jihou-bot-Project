@@ -103,4 +103,3 @@ export const apiKeyWithUserAuthMiddleware = async (c: Context, next: Next) => {
 
   await next();
 };
-

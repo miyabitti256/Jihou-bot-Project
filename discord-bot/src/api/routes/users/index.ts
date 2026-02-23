@@ -4,6 +4,7 @@ import {
   fetchChannel,
   fetchDiscordUser,
 } from "@services/discord/discord-api";
+import { verifyUserGuildAccess } from "@services/guilds/guild";
 import {
   createOrUpdateUser,
   getUserData,
@@ -11,7 +12,6 @@ import {
   UserServiceError,
   updateUserMoney,
 } from "@services/users/user";
-import { verifyUserGuildAccess } from "@services/guilds/guild";
 import { Hono } from "hono";
 import { z } from "zod";
 import {
@@ -367,13 +367,17 @@ users.get("/channels/:channelId/discord", async (c) => {
     // Check if user is in the guild of the channel
     if (channelData.guildId) {
       const authenticatedUserId = c.get("authenticatedUserId");
-      const hasAccess = await verifyUserGuildAccess(authenticatedUserId, channelData.guildId);
+      const hasAccess = await verifyUserGuildAccess(
+        authenticatedUserId,
+        channelData.guildId,
+      );
       if (!hasAccess) {
         return c.json(
           {
             error: {
               code: "FORBIDDEN",
-              message: "Forbidden - Insufficient permissions to access this channel",
+              message:
+                "Forbidden - Insufficient permissions to access this channel",
             },
           },
           403,
