@@ -195,7 +195,7 @@ export async function getScheduledMessageById(id: string) {
  */
 export async function createScheduledMessage(data: ScheduledMessageCreateData) {
   try {
-    const validateTimeFormat = /^([0-9]{1,2}:[0-9]{2})$/;
+    const validateTimeFormat = /^([01]?\d|2[0-3]):([0-5]\d)$/;
     if (!validateTimeFormat.test(data.scheduleTime)) {
       throw new ScheduledMessageError("INVALID_TIME_FORMAT");
     }
@@ -247,7 +247,7 @@ export async function updateScheduledMessage(data: ScheduledMessageUpdateData) {
 
     // scheduleTimeが指定されていて、形式が不正な場合はエラー
     if (data.scheduleTime) {
-      const validateTimeFormat = /^([0-9]{1,2}:[0-9]{2})$/;
+      const validateTimeFormat = /^([01]?\d|2[0-3]):([0-5]\d)$/;
       if (!validateTimeFormat.test(data.scheduleTime)) {
         throw new ScheduledMessageError("INVALID_TIME_FORMAT");
       }

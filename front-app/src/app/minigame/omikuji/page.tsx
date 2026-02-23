@@ -13,14 +13,14 @@ export default async function OmikujiPage() {
   }
 
   const user = await authenticatedFetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/users/${session.user.id}`,
+    `${process.env.API_URL}/api/users/${session.user.id}`,
     {
       method: "GET",
     },
   );
 
   const omikuji = await authenticatedFetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/minigame/omikuji/result/${session.user.id}?take=1`,
+    `${process.env.API_URL}/api/minigame/omikuji/result/${session.user.id}?take=1`,
     {
       method: "GET",
     },

@@ -40,7 +40,7 @@ export default async function UserDetailPage({
 
   // ユーザーデータの取得
   const userResponse = await authenticatedFetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/users/${id}?includes=scheduledmessage,omikuji,coinflip,janken`,
+    `${process.env.API_URL}/api/users/${id}?includes=scheduledmessage,omikuji,coinflip,janken`,
     {
       method: "GET",
       cache: "no-store",
@@ -78,9 +78,9 @@ export default async function UserDetailPage({
   const winRate =
     coinflip.length > 0
       ? (
-          (coinflip.filter((log) => log.win).length / coinflip.length) *
-          100
-        ).toFixed(1)
+        (coinflip.filter((log) => log.win).length / coinflip.length) *
+        100
+      ).toFixed(1)
       : "0.0";
 
   const jankenWinRate = (() => {
@@ -130,7 +130,7 @@ export default async function UserDetailPage({
   // サーバー情報を取得する関数
   const getGuildData = async (guildId: string) => {
     const guildResponse = await authenticatedFetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/guilds/${guildId}?includes=channels`,
+      `${process.env.API_URL}/api/guilds/${guildId}?includes=channels`,
       {
         method: "GET",
         cache: "no-store",
@@ -142,7 +142,7 @@ export default async function UserDetailPage({
   // ユーザー情報を取得する関数
   const getUserData = async (userId: string) => {
     const userResponse = await authenticatedFetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`,
+      `${process.env.API_URL}/api/users/${userId}`,
       {
         method: "GET",
         cache: "no-store",
@@ -441,9 +441,8 @@ export default async function UserDetailPage({
                           <TableCell>{flip.bet.toLocaleString()}円</TableCell>
                           <TableCell>
                             <span
-                              className={`font-medium ${
-                                flip.win ? "text-green-600" : "text-red-600"
-                              }`}
+                              className={`font-medium ${flip.win ? "text-green-600" : "text-red-600"
+                                }`}
                             >
                               {flip.win ? "勝ち" : "負け"}
                             </span>

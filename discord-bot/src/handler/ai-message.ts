@@ -170,6 +170,15 @@ export async function handleMessageCreate(message: Message): Promise<void> {
       return;
     }
 
+    // メッセージ長の上限チェック（Prompt Injection 緩和）
+    const MAX_MESSAGE_LENGTH = 2000;
+    if (message.content.length > MAX_MESSAGE_LENGTH) {
+      await message.reply(
+        `メッセージが長すぎます。${MAX_MESSAGE_LENGTH}文字以内で送信してください。`,
+      );
+      return;
+    }
+
     // すでにボットが処理中の可能性があるので最近のメッセージをチェック
     const recentMessages = await thread.messages.fetch({ limit: 3 });
     const processingMessage = recentMessages.find(
@@ -195,9 +204,11 @@ export async function handleMessageCreate(message: Message): Promise<void> {
 
     try {
       // サービス層のメソッドを使用してレスポンスを生成
+      // Prompt Injection 緩和: ユーザー入力にプレフィックスを付与
+      const sanitizedContent = `[ユーザーメッセージ]: ${message.content}`;
       const response = await generateThreadResponseStream(
         chatThread.id,
-        message.content,
+        sanitizedContent,
       );
 
       let responseText = "";

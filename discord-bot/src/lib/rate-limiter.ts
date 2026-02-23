@@ -33,7 +33,10 @@ export function createRateLimiter(options: RateLimitOptions) {
   const { windowSeconds, maxRequests } = options;
 
   return async (c: Context, next: Next) => {
-    const userId = c.req.header("X-User-Id") ?? "anonymous";
+    const userId =
+      c.req.header("X-User-Id") ??
+      c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
+      "unknown";
     const path = new URL(c.req.url).pathname;
     const key = `${userId}:${path}`;
     const now = Date.now();

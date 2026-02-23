@@ -11,6 +11,7 @@ import {
   UserServiceError,
   updateUserMoney,
 } from "@services/users/user";
+import { verifyUserGuildAccess } from "@services/guilds/guild";
 import { Hono } from "hono";
 import { z } from "zod";
 import {
@@ -78,6 +79,19 @@ users.get("/:userId", async (c) => {
 // ユーザー情報更新API
 users.put("/:userId", async (c) => {
   const userId = c.req.param("userId");
+  const authenticatedUserId = c.get("authenticatedUserId");
+
+  if (userId !== authenticatedUserId) {
+    return c.json(
+      {
+        error: {
+          code: "FORBIDDEN",
+          message: "Forbidden - Insufficient permissions",
+        },
+      },
+      403,
+    );
+  }
 
   try {
     const body = await c.req.json();
@@ -136,6 +150,19 @@ users.put("/:userId", async (c) => {
 // 所持金更新API
 users.put("/:userId/money", async (c) => {
   const userId = c.req.param("userId");
+  const authenticatedUserId = c.get("authenticatedUserId");
+
+  if (userId !== authenticatedUserId) {
+    return c.json(
+      {
+        error: {
+          code: "FORBIDDEN",
+          message: "Forbidden - Insufficient permissions",
+        },
+      },
+      403,
+    );
+  }
 
   try {
     const body = await c.req.json();
@@ -209,6 +236,19 @@ users.get("/guilds/:userId", async (c) => {
     );
   }
 
+  const authenticatedUserId = c.get("authenticatedUserId");
+  if (userId !== authenticatedUserId) {
+    return c.json(
+      {
+        error: {
+          code: "FORBIDDEN",
+          message: "Forbidden - Insufficient permissions",
+        },
+      },
+      403,
+    );
+  }
+
   try {
     const result = await getUsersFromSameGuilds(userId, page, limit, search);
 
@@ -257,6 +297,19 @@ users.get("/:userId/discord", async (c) => {
         },
       },
       400,
+    );
+  }
+
+  const authenticatedUserId = c.get("authenticatedUserId");
+  if (userIdResult.data !== authenticatedUserId) {
+    return c.json(
+      {
+        error: {
+          code: "FORBIDDEN",
+          message: "Forbidden - Insufficient permissions",
+        },
+      },
+      403,
     );
   }
 
@@ -310,6 +363,24 @@ users.get("/channels/:channelId/discord", async (c) => {
 
   try {
     const channelData = await fetchChannel(channelIdResult.data);
+
+    // Check if user is in the guild of the channel
+    if (channelData.guildId) {
+      const authenticatedUserId = c.get("authenticatedUserId");
+      const hasAccess = await verifyUserGuildAccess(authenticatedUserId, channelData.guildId);
+      if (!hasAccess) {
+        return c.json(
+          {
+            error: {
+              code: "FORBIDDEN",
+              message: "Forbidden - Insufficient permissions to access this channel",
+            },
+          },
+          403,
+        );
+      }
+    }
+
     return c.json({
       data: channelData,
     });

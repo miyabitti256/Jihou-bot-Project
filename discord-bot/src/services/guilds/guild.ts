@@ -91,6 +91,32 @@ export async function getGuildMembers(guildId: string) {
 }
 
 /**
+ * 指定したユーザーが特定のギルドに所属しているか検証する
+ * @param userId ユーザーID
+ * @param guildId ギルドID
+ * @returns メンバーであれば true、そうでなければ false
+ */
+export async function verifyUserGuildAccess(
+  userId: string,
+  guildId: string,
+): Promise<boolean> {
+  try {
+    const member = await prisma.guildMembers.findUnique({
+      where: {
+        guildId_userId: {
+          guildId,
+          userId,
+        },
+      },
+    });
+    return member !== null;
+  } catch (error) {
+    logger.error(`[guild] Failed to verify user guild access: ${error}`);
+    return false;
+  }
+}
+
+/**
  * ギルドチャンネル情報を取得する
  * @param guildId ギルドID
  */

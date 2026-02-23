@@ -5,7 +5,7 @@ import { authenticatedFetch } from "@/lib/auth-api";
 export const drawOmikuji = async () => {
   // userIdはJWTトークンから自動取得されるため、パラメータとして送信しない
   const result = await authenticatedFetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/minigame/omikuji/draw`,
+    `${process.env.API_URL}/api/minigame/omikuji/draw`,
     {
       method: "POST",
       body: JSON.stringify({}), // 空のボディ

@@ -25,7 +25,7 @@ export default async function Dashboard() {
   }
 
   const userResponse = await authenticatedFetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/users/${session.user.id}?includes=scheduledmessage,omikuji,coinflip,janken`,
+    `${process.env.API_URL}/api/users/${session.user.id}?includes=scheduledmessage,omikuji,coinflip,janken`,
     {
       method: "GET",
     },
@@ -53,9 +53,9 @@ export default async function Dashboard() {
   const winRate =
     coinflip.length > 0
       ? (
-          (coinflip.filter((log) => log.win).length / coinflip.length) *
-          100
-        ).toFixed(1)
+        (coinflip.filter((log) => log.win).length / coinflip.length) *
+        100
+      ).toFixed(1)
       : "0.0";
 
   const jankenWinRate = (() => {
@@ -104,7 +104,7 @@ export default async function Dashboard() {
 
   const getGuildData = async (guildId: string) => {
     const guildResponse = await authenticatedFetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/guilds/${guildId}?includes=channels,roles`,
+      `${process.env.API_URL}/api/guilds/${guildId}?includes=channels,roles`,
       {
         method: "GET",
       },
@@ -114,7 +114,7 @@ export default async function Dashboard() {
 
   const getUserData = async (userId: string) => {
     const userResponse = await authenticatedFetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`,
+      `${process.env.API_URL}/api/users/${userId}`,
       {
         method: "GET",
       },

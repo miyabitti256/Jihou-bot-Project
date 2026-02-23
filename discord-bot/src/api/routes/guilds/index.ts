@@ -195,17 +195,33 @@ guilds.get("/:guildId", async (c) => {
 });
 
 guilds.get("/members/:userId", async (c) => {
-  const userId = c.req.param("userId");
+  const userIdResult = discordIdSchema.safeParse(c.req.param("userId"));
 
-  if (!userId) {
+  if (!userIdResult.success) {
     return c.json(
       {
         error: {
           code: "INVALID_REQUEST",
           message: "Invalid userId",
+          details: userIdResult.error,
         },
       },
       400,
+    );
+  }
+
+  const userId = userIdResult.data;
+  const authenticatedUserId = c.get("authenticatedUserId");
+
+  if (authenticatedUserId && userId !== authenticatedUserId) {
+    return c.json(
+      {
+        error: {
+          code: "FORBIDDEN",
+          message: "Forbidden - Insufficient permissions",
+        },
+      },
+      403,
     );
   }
 

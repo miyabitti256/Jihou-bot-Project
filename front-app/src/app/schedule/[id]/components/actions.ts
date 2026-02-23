@@ -9,7 +9,7 @@ export async function createSchedule(
 ) {
   try {
     const response = await authenticatedFetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/guilds/scheduledmessage`,
+      `${process.env.API_URL}/api/guilds/scheduledmessage`,
       {
         method: "POST",
         body: JSON.stringify({ data: Object.fromEntries(formData) }),
@@ -50,7 +50,7 @@ export async function updateSchedule(
     };
 
     const response = await authenticatedFetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/guilds/scheduledmessage`,
+      `${process.env.API_URL}/api/guilds/scheduledmessage`,
       {
         method: "PATCH",
         body: JSON.stringify({ data: updateData }),

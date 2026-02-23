@@ -115,5 +115,6 @@ export async function fetchChannel(channelId: string) {
     id: data.id,
     name: data.name,
     type: data.type,
+    guildId: data.guild_id,
   };
 }

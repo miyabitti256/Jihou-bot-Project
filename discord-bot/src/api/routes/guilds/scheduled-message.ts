@@ -10,6 +10,10 @@ import {
   type ScheduledMessageUpdateData,
   updateScheduledMessage,
 } from "@services/guilds/scheduled-message";
+import {
+  getUserGuilds,
+  verifyUserGuildAccess,
+} from "@services/guilds/guild";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -17,7 +21,20 @@ export const message = new Hono();
 
 message.get("/all", async (c) => {
   try {
-    const data = await getAllScheduledMessages();
+    const authenticatedUserId = c.get("authenticatedUserId");
+    if (!authenticatedUserId) {
+      return c.json(
+        { error: { code: "UNAUTHORIZED", message: "Unauthorized" } },
+        401,
+      );
+    }
+
+    // ユーザーが所属するギルドのメッセージのみ返す
+    const userGuilds = await getUserGuilds(authenticatedUserId);
+    const guildIds = userGuilds.map((g) => g.guildId);
+
+    const allMessages = await getAllScheduledMessages();
+    const data = allMessages.filter((msg) => guildIds.includes(msg.guildId));
 
     return c.json(
       {
@@ -44,6 +61,43 @@ message.get("/all", async (c) => {
 message.get("/:id", async (c) => {
   const id = c.req.param("id");
   const query = (c.req.query("type") as "user" | "guild") ?? "guild";
+
+  const authenticatedUserId = c.get("authenticatedUserId");
+  if (!authenticatedUserId) {
+    return c.json(
+      { error: { code: "UNAUTHORIZED", message: "Unauthorized" } },
+      401,
+    );
+  }
+
+  // ギルド照会時はギルドへのアクセス権を検証
+  if (query === "guild") {
+    const hasAccess = await verifyUserGuildAccess(authenticatedUserId, id);
+    if (!hasAccess) {
+      return c.json(
+        {
+          error: {
+            code: "FORBIDDEN",
+            message: "Forbidden - Insufficient permissions for this guild",
+          },
+        },
+        403,
+      );
+    }
+  } else {
+    // ユーザー照会時は自分のIDのみ許可
+    if (id !== authenticatedUserId) {
+      return c.json(
+        {
+          error: {
+            code: "FORBIDDEN",
+            message: "Forbidden - Insufficient permissions",
+          },
+        },
+        403,
+      );
+    }
+  }
 
   try {
     const data = await getScheduledMessages(id, query);
@@ -74,6 +128,28 @@ message.get("/details/:id", async (c) => {
   const id = c.req.param("id");
   try {
     const data = await getScheduledMessageById(id);
+
+    // メッセージのギルドへのアクセス権を検証
+    const authenticatedUserId = c.get("authenticatedUserId");
+    if (authenticatedUserId) {
+      const hasAccess = await verifyUserGuildAccess(
+        authenticatedUserId,
+        data.guildId,
+      );
+      if (!hasAccess) {
+        return c.json(
+          {
+            error: {
+              code: "FORBIDDEN",
+              message:
+                "Forbidden - Insufficient permissions for this guild",
+            },
+          },
+          403,
+        );
+      }
+    }
+
     return c.json(
       {
         data,
@@ -118,7 +194,7 @@ message.post("/", async (c) => {
   const scheduledMessageSchema = z.object({
     channelId: z.string().min(1),
     message: z.string().min(1).max(200),
-    scheduleTime: z.string().regex(/^([0-9]{1,2}:[0-9]{2})$/),
+    scheduleTime: z.string().regex(/^([01]?\d|2[0-3]):([0-5]\d)$/),
     guildId: z.string().min(1),
     userId: z.string().min(1),
   });
@@ -139,10 +215,38 @@ message.post("/", async (c) => {
   }
 
   const validatedData = result.data;
-  const { userId, ...rest } = validatedData;
+  const { userId, guildId, ...rest } = validatedData;
+
+  const authenticatedUserId = c.get("authenticatedUserId");
+
+  if (userId !== authenticatedUserId) {
+    return c.json(
+      {
+        error: {
+          code: "FORBIDDEN",
+          message: "Forbidden - Insufficient permissions",
+        },
+      },
+      403,
+    );
+  }
+
+  const hasAccess = await verifyUserGuildAccess(authenticatedUserId, guildId);
+  if (!hasAccess) {
+    return c.json(
+      {
+        error: {
+          code: "FORBIDDEN",
+          message: "Forbidden - Insufficient permissions for this guild",
+        },
+      },
+      403,
+    );
+  }
 
   const createData: ScheduledMessageCreateData = {
     ...rest,
+    guildId,
     createdUserId: userId,
   };
 
@@ -197,7 +301,7 @@ message.patch("/", async (c) => {
     message: z.string().min(1).max(200).optional(),
     scheduleTime: z
       .string()
-      .regex(/^([0-9]{1,2}:[0-9]{2})$/)
+      .regex(/^([01]?\d|2[0-3]):([0-5]\d)$/)
       .optional(),
     guildId: z.string().min(1),
     userId: z.string().min(1),
@@ -221,6 +325,33 @@ message.patch("/", async (c) => {
 
   const validatedData = result.data;
   const { id, guildId, userId, ...rest } = validatedData;
+
+  const authenticatedUserId = c.get("authenticatedUserId");
+
+  if (userId !== authenticatedUserId) {
+    return c.json(
+      {
+        error: {
+          code: "FORBIDDEN",
+          message: "Forbidden - Insufficient permissions",
+        },
+      },
+      403,
+    );
+  }
+
+  const hasAccess = await verifyUserGuildAccess(authenticatedUserId, guildId);
+  if (!hasAccess) {
+    return c.json(
+      {
+        error: {
+          code: "FORBIDDEN",
+          message: "Forbidden - Insufficient permissions for this guild",
+        },
+      },
+      403,
+    );
+  }
 
   const updateData: ScheduledMessageUpdateData = {
     id,
@@ -306,7 +437,21 @@ message.delete("/", async (c) => {
     );
   }
 
-  const { id } = result.data;
+  const { id, guildId } = result.data;
+  const authenticatedUserId = c.get("authenticatedUserId");
+
+  const hasAccess = await verifyUserGuildAccess(authenticatedUserId, guildId);
+  if (!hasAccess) {
+    return c.json(
+      {
+        error: {
+          code: "FORBIDDEN",
+          message: "Forbidden - Insufficient permissions for this guild",
+        },
+      },
+      403,
+    );
+  }
 
   try {
     await deleteScheduledMessage(id);

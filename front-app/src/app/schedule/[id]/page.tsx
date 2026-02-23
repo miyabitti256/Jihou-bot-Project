@@ -30,7 +30,7 @@ export default async function SchedulePage({
 
   if (!isNew) {
     const response = await authenticatedFetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/guilds/scheduledmessage/details/${id}`,
+      `${process.env.API_URL}/api/guilds/scheduledmessage/details/${id}`,
     );
     scheduleData = await response.json().then((data) => data.data);
     guildId = scheduleData?.guildId;
@@ -40,7 +40,7 @@ export default async function SchedulePage({
 
   if (guildId) {
     const response = await authenticatedFetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/guilds/${guildId}?includes=channels`,
+      `${process.env.API_URL}/api/guilds/${guildId}?includes=channels`,
     ).then((response) => response.json());
     guildData = response.data;
     channelData = response.data.channels.filter(

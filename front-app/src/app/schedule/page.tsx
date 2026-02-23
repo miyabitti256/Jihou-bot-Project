@@ -41,7 +41,7 @@ export default async function SchedulePage() {
   }
 
   const memberResponse = await authenticatedFetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/guilds/members/${session.user.id}`,
+    `${process.env.API_URL}/api/guilds/members/${session.user.id}`,
     {
       method: "GET",
     },
@@ -50,7 +50,7 @@ export default async function SchedulePage() {
   const memberData = await memberResponse.json().then((data) => data.data);
   const guildPromises = memberData.map((member: GuildMember) =>
     authenticatedFetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/guilds/${member.guildId}?includes=roles,channels,messages`,
+      `${process.env.API_URL}/api/guilds/${member.guildId}?includes=roles,channels,messages`,
       {
         method: "GET",
       },
@@ -97,7 +97,7 @@ export default async function SchedulePage() {
 
           <CardContent>
             {guild.data.ScheduledMessage &&
-            guild.data.ScheduledMessage.length > 0 ? (
+              guild.data.ScheduledMessage.length > 0 ? (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>

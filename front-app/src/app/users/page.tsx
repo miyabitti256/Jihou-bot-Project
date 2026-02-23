@@ -28,7 +28,7 @@ export default async function UsersPage({
 
   // APIからユーザー一覧を取得
   const apiUrl = new URL(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/users/guilds/${session.user.id}`,
+    `${process.env.API_URL}/api/users/guilds/${session.user.id}`,
   );
 
   // クエリパラメータの設定
