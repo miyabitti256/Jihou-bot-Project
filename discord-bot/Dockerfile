@@ -6,7 +6,8 @@ RUN bun install --frozen-lockfile
 
 COPY prisma ./prisma
 COPY prisma.config.ts ./
-RUN bunx prisma generate
+# Prisma v7 config evaluation at build time requires some URL to be present, even for 'generate'.
+RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" bunx prisma generate
 
 COPY . .
 
