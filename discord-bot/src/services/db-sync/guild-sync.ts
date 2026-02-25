@@ -245,10 +245,8 @@ export async function deleteGuildData(guildId: string) {
  */
 export async function deleteMemberData(guildId: string, userId: string) {
   try {
-    return await prisma.guildMembers.delete({
-      where: {
-        guildId_userId: { guildId, userId },
-      },
+    return await prisma.guildMembers.deleteMany({
+      where: { guildId, userId },
     });
   } catch (error) {
     logger.error(`[db-sync] Error deleting member data: ${error}`);
@@ -347,9 +345,10 @@ export function createMemberDataFromGuildMember(member: GuildMember): {
  * ページネーションを使って全メンバーをDBに同期する
  * 常に最大1000人分のメモリしか使わず、処理後即キャッシュから追い出す
  */
-async function syncMembersInBatches(guild: Guild): Promise<void> {
+async function syncMembersInBatches(guild: Guild): Promise<Set<string>> {
   let after: string | undefined;
   let totalSynced = 0;
+  const activeMemberIds = new Set<string>();
 
   while (true) {
     const members = await guild.members.list({ limit: 1000, after });
@@ -373,6 +372,7 @@ async function syncMembersInBatches(guild: Guild): Promise<void> {
     if (memberData.length > 0) {
       await updateMembersData(guild.id, memberData);
       totalSynced += memberData.length;
+      memberData.forEach((m) => activeMemberIds.add(m.user.id));
     }
 
     // 処理済みのメンバーをキャッシュから即追い出す
@@ -388,6 +388,7 @@ async function syncMembersInBatches(guild: Guild): Promise<void> {
   }
 
   logger.info(`[db-sync] Synced ${totalSynced} members for "${guild.name}"`);
+  return activeMemberIds;
 }
 
 /**
@@ -404,8 +405,45 @@ export async function syncGuildAllData(guild: Guild): Promise<void> {
     await updateChannelsData(guild.id, channels);
     await updateRolesData(guild.id, roles);
 
-    // ページネーションで全メンバーを同期
-    await syncMembersInBatches(guild);
+    // ページネーションで全メンバーを同期し、有効なメンバーIDのセットを取得
+    const activeMemberIds = await syncMembersInBatches(guild);
+
+    // 不要な（Discord上から消えた）ゴーストデータを一括削除
+    const activeChannelIds = channels.map((c) => c.id);
+    const activeRoleIds = roles.map((r) => r.id);
+
+    try {
+      await prisma.$transaction([
+        // チャンネルのクリーンアップ
+        prisma.guildChannels.deleteMany({
+          where: {
+            guildId: guild.id,
+            id: { notIn: activeChannelIds },
+          },
+        }),
+        // ロールのクリーンアップ
+        prisma.guildRoles.deleteMany({
+          where: {
+            guildId: guild.id,
+            id: { notIn: activeRoleIds },
+          },
+        }),
+        // メンバーのクリーンアップ
+        prisma.guildMembers.deleteMany({
+          where: {
+            guildId: guild.id,
+            userId: { notIn: Array.from(activeMemberIds) },
+          },
+        }),
+      ]);
+      logger.info(
+        `[db-sync] Cleaned up ghost records for guild "${guild.name}"`,
+      );
+    } catch (cleanupError) {
+      logger.error(
+        `[db-sync] Error cleaning up ghost records: ${cleanupError}`,
+      );
+    }
 
     logger.info(`[db-sync] Synchronized guild data for "${guild.name}"`);
   } catch (error) {

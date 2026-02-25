@@ -271,6 +271,28 @@ message.post("/", async (c) => {
           400,
         );
       }
+      if (error.message === "CHANNEL_NOT_TEXT_CHANNEL") {
+        return c.json(
+          {
+            error: {
+              code: "VALIDATION_ERROR",
+              message: "指定されたチャンネルはテキストチャンネルではありません",
+            },
+          },
+          400,
+        );
+      }
+      if (error.message === "CHANNEL_NOT_FOUND") {
+        return c.json(
+          {
+            error: {
+              code: "VALIDATION_ERROR",
+              message: "指定されたチャンネルが見つかりません",
+            },
+          },
+          404,
+        );
+      }
     }
 
     logger.error(`[scheduledmessage-api] Error creating message: ${error}`);
@@ -391,6 +413,28 @@ message.patch("/", async (c) => {
             },
           },
           400,
+        );
+      }
+      if (error.message === "CHANNEL_NOT_TEXT_CHANNEL") {
+        return c.json(
+          {
+            error: {
+              code: "VALIDATION_ERROR",
+              message: "指定されたチャンネルはテキストチャンネルではありません",
+            },
+          },
+          400,
+        );
+      }
+      if (error.message === "CHANNEL_NOT_FOUND") {
+        return c.json(
+          {
+            error: {
+              code: "VALIDATION_ERROR",
+              message: "指定されたチャンネルが見つかりません",
+            },
+          },
+          404,
         );
       }
     }

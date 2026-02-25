@@ -72,6 +72,10 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       if (error.message === "INVALID_TIME_FORMAT") {
         errorMessage =
           "時刻の形式が正しくありません。HH:MM の形式で指定してください";
+      } else if (error.message === "CHANNEL_NOT_TEXT_CHANNEL") {
+        errorMessage = "指定されたチャンネルはテキストチャンネルではありません";
+      } else if (error.message === "CHANNEL_NOT_FOUND") {
+        errorMessage = "指定されたチャンネル情報の取得に失敗しました";
       }
 
       await interaction.reply({

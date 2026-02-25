@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma/client"
@@ -29,13 +23,12 @@ model Guild {
 }
 
 model GuildChannels {
-  id      String @id @unique
-  guildId String
-  name    String
-  type    String
-
+  id               String             @id @unique
+  guildId          String
+  name             String
+  type             String
+  guild            Guild              @relation(fields: [guildId], references: [id], onDelete: Cascade)
   ScheduledMessage ScheduledMessage[]
-  guild            Guild              @relation(fields: [guildId], references: [id])
 
   @@map("guild_channels")
 }
@@ -50,8 +43,7 @@ model GuildRoles {
   permissions String
   managed     Boolean
   mentionable Boolean
-
-  guild Guild @relation(fields: [guildId], references: [id])
+  guild       Guild   @relation(fields: [guildId], references: [id], onDelete: Cascade)
 
   @@map("guild_roles")
 }
@@ -61,35 +53,33 @@ model GuildMembers {
   userId   String
   nickname String?
   joinedAt DateTime
-
-  guild Guild @relation(fields: [guildId], references: [id])
-  user  Users @relation(fields: [userId], references: [id])
+  guild    Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  user     Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([guildId, userId])
   @@map("guild_members")
 }
 
 model Users {
-  id            String    @id @unique
-  username      String
-  discriminator String?
-  avatarUrl     String?
-  money         Int       @default(1000)
-  lastDraw      DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  userSettings             UserSettings?
-  guildMembers             GuildMembers[]
-  ScheduledMessage         ScheduledMessage[] @relation("CreatedBy")
-  updatedScheduledMessages ScheduledMessage[] @relation("UpdatedBy")
-  Omikuji                  Omikuji[]
+  id                       String             @id @unique
+  username                 String
+  discriminator            String?
+  avatarUrl                String?
+  money                    Int                @default(1000)
+  lastDraw                 DateTime?
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @updatedAt
+  createdThreads           ChatThread[]
   CoinFlip                 CoinFlip[]
+  guildMembers             GuildMembers[]
   JankenChallenger         Janken[]           @relation("challenger")
   JankenOpponent           Janken[]           @relation("opponent")
-  JankenRoomHost           JankenRoom[]       @relation("RoomHost")
   JankenRoomGuest          JankenRoom[]       @relation("RoomGuest")
-  createdThreads           ChatThread[]
+  JankenRoomHost           JankenRoom[]       @relation("RoomHost")
+  Omikuji                  Omikuji[]
+  ScheduledMessage         ScheduledMessage[] @relation("CreatedBy")
+  updatedScheduledMessages ScheduledMessage[] @relation("UpdatedBy")
+  userSettings             UserSettings?
 
   @@map("users")
 }
@@ -99,34 +89,26 @@ model UserSettings {
   theme     theme   @default(system)
   locale    String?
   published Boolean @default(false)
-
-  user Users @relation(fields: [userId], references: [id])
+  user      Users   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_settings")
 }
 
-enum theme {
-  system
-  light
-  dark
-}
-
 model ScheduledMessage {
-  id                String   @id @unique @default(cuid())
-  guildId           String
+  id                String        @id @unique @default(cuid())
   channelId         String
   message           String
-  scheduleTime      String   @map("time")
+  scheduleTime      String        @map("time")
   createdUserId     String
   lastUpdatedUserId String
-  isActive          Boolean  @default(true)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  createdUser Users         @relation("CreatedBy", fields: [createdUserId], references: [id])
-  updatedUser Users         @relation("UpdatedBy", fields: [lastUpdatedUserId], references: [id])
-  guild       Guild         @relation(fields: [guildId], references: [id])
-  channel     GuildChannels @relation(fields: [channelId], references: [id])
+  isActive          Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  guildId           String
+  channel           GuildChannels @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  createdUser       Users         @relation("CreatedBy", fields: [createdUserId], references: [id], onDelete: Cascade)
+  guild             Guild         @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  updatedUser       Users         @relation("UpdatedBy", fields: [lastUpdatedUserId], references: [id], onDelete: Cascade)
 
   @@map("scheduled_messages")
 }
@@ -136,8 +118,7 @@ model Omikuji {
   userId    String
   result    String
   createdAt DateTime @default(now())
-
-  user Users @relation(fields: [userId], references: [id])
+  user      Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("omikuji")
 }
@@ -149,8 +130,7 @@ model CoinFlip {
   win          Boolean
   updatedMoney Int
   createdAt    DateTime @default(now())
-
-  user Users @relation(fields: [userId], references: [id])
+  user         Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("coin_flip")
 }
@@ -166,12 +146,11 @@ model Janken {
   opponentBet    Int?
   winnerUserId   String?
   createdAt      DateTime @default(now())
+  challenger     Users    @relation("challenger", fields: [challengerId], references: [id], onDelete: Cascade)
+  opponent       Users    @relation("opponent", fields: [opponentId], references: [id], onDelete: Cascade)
 
-  challenger Users @relation("challenger", fields: [challengerId], references: [id])
-  opponent   Users @relation("opponent", fields: [opponentId], references: [id])
-
-  @@index([challengerId], name: "challenger_id_idx")
-  @@index([opponentId], name: "opponent_id_idx")
+  @@index([challengerId], map: "challenger_id_idx")
+  @@index([opponentId], map: "opponent_id_idx")
   @@map("janken")
 }
 
@@ -199,13 +178,47 @@ model JankenRoom {
   expiresAt    DateTime
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+  guest        Users?     @relation("RoomGuest", fields: [guestId], references: [id], onDelete: Cascade)
+  host         Users      @relation("RoomHost", fields: [hostId], references: [id], onDelete: Cascade)
 
-  host  Users  @relation("RoomHost", fields: [hostId], references: [id])
-  guest Users? @relation("RoomGuest", fields: [guestId], references: [id])
-
-  @@index([status], name: "status_idx")
-  @@index([lastUpdated], name: "last_updated_idx")
+  @@index([status], map: "status_idx")
+  @@index([lastUpdated], map: "last_updated_idx")
   @@map("janken_rooms")
+}
+
+model ChatThread {
+  id        String        @id @unique
+  title     String?
+  guildId   String
+  channelId String
+  creatorId String
+  isActive  Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  messages  ChatMessage[]
+  creator   Users         @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([channelId], map: "channel_id_idx")
+  @@map("chat_threads")
+}
+
+model ChatMessage {
+  id         String     @id @unique @default(cuid())
+  threadId   String
+  content    String
+  role       ChatRole
+  tokenCount Int
+  createdAt  DateTime   @default(now())
+  thread     ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId], map: "thread_id_idx")
+  @@map("chat_messages")
+}
+
+enum theme {
+  system
+  light
+  dark
 }
 
 enum platform {
@@ -218,38 +231,6 @@ enum RoomStatus {
   PLAYING
   FINISHED
   CANCELLED
-}
-
-// チャット関連のモデル
-model ChatThread {
-  id        String   @id @unique
-  title     String?
-  guildId   String
-  channelId String
-  creatorId String
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  messages ChatMessage[]
-  creator  Users         @relation(fields: [creatorId], references: [id])
-
-  @@index([channelId], name: "channel_id_idx")
-  @@map("chat_threads")
-}
-
-model ChatMessage {
-  id         String   @id @unique @default(cuid())
-  threadId   String
-  content    String
-  role       ChatRole
-  tokenCount Int
-  createdAt  DateTime @default(now())
-
-  thread ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
-
-  @@index([threadId], name: "thread_id_idx")
-  @@map("chat_messages")
 }
 
 enum ChatRole {

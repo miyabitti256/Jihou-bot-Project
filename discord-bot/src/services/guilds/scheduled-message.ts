@@ -3,7 +3,7 @@ import { client } from "@lib/client";
 import { logger } from "@lib/logger";
 import { prisma } from "@lib/prisma";
 import cuid from "cuid";
-import { TextChannel } from "discord.js";
+
 import type { ScheduledTask } from "node-cron";
 import { schedule } from "node-cron";
 
@@ -50,14 +50,14 @@ export async function setCronJob(message: ScheduledMessage): Promise<void> {
     async () => {
       try {
         const channel = await client.channels.fetch(message.channelId);
-        if (channel instanceof TextChannel) {
+        if (channel?.isSendable()) {
           await channel.send(message.message);
           logger.info(
             `[scheduled-message] Message sent successfully, ID: ${message.id}`,
           );
         } else {
           logger.error(
-            `[scheduled-message] Channel is not a text channel for message ID: ${message.id}`,
+            `[scheduled-message] Channel is not a sendable channel for message ID: ${message.id}`,
           );
         }
       } catch (error) {
@@ -206,6 +206,16 @@ export async function createScheduledMessage(data: ScheduledMessageCreateData) {
       throw new ScheduledMessageError("INVALID_TIME_FORMAT");
     }
 
+    try {
+      const channel = await client.channels.fetch(data.channelId);
+      if (!channel?.isSendable()) {
+        throw new ScheduledMessageError("CHANNEL_NOT_TEXT_CHANNEL");
+      }
+    } catch (error) {
+      if (error instanceof ScheduledMessageError) throw error;
+      throw new ScheduledMessageError("CHANNEL_NOT_FOUND");
+    }
+
     const newMessage: ScheduledMessage = {
       id: cuid(),
       ...data,
@@ -256,6 +266,19 @@ export async function updateScheduledMessage(data: ScheduledMessageUpdateData) {
       const validateTimeFormat = /^([01]?\d|2[0-3]):([0-5]\d)$/;
       if (!validateTimeFormat.test(data.scheduleTime)) {
         throw new ScheduledMessageError("INVALID_TIME_FORMAT");
+      }
+    }
+
+    // channelIdが更新される場合は検証
+    if (data.channelId && data.channelId !== existingMessage.channelId) {
+      try {
+        const channel = await client.channels.fetch(data.channelId);
+        if (!channel?.isSendable()) {
+          throw new ScheduledMessageError("CHANNEL_NOT_TEXT_CHANNEL");
+        }
+      } catch (error) {
+        if (error instanceof ScheduledMessageError) throw error;
+        throw new ScheduledMessageError("CHANNEL_NOT_FOUND");
       }
     }
 
