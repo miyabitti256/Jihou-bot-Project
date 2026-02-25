@@ -48,15 +48,21 @@ export async function setCronJob(message: ScheduledMessage): Promise<void> {
   const job = schedule(
     `${minute} ${hour} * * *`,
     async () => {
-      const channel = client.channels.cache.get(message.channelId);
-      if (channel instanceof TextChannel) {
-        await channel.send(message.message);
-        logger.info(
-          `[scheduled-message] Message sent successfully, ID: ${message.id}`,
-        );
-      } else {
+      try {
+        const channel = await client.channels.fetch(message.channelId);
+        if (channel instanceof TextChannel) {
+          await channel.send(message.message);
+          logger.info(
+            `[scheduled-message] Message sent successfully, ID: ${message.id}`,
+          );
+        } else {
+          logger.error(
+            `[scheduled-message] Channel is not a text channel for message ID: ${message.id}`,
+          );
+        }
+      } catch (error) {
         logger.error(
-          `[scheduled-message] Channel not found for message ID: ${message.id}`,
+          `[scheduled-message] Channel not found for message ID: ${message.id}, error: ${error}`,
         );
       }
     },

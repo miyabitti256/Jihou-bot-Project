@@ -11,6 +11,13 @@ let statusUpdateJob: ScheduledTask | null = null;
  * @param startTime 起動時刻
  */
 export async function updateStatus(startTime: Date): Promise<void> {
+  // 起動してからの稼働時間を計算
+  const now = new Date();
+  const h = Math.floor((now.getTime() - startTime.getTime()) / 1000 / 60 / 60);
+  client.user?.setActivity(`${h}時間連続稼働中`, {
+    type: ActivityType.Custom,
+  });
+
   try {
     // すべてのギルドデータを同期
     for (const guild of client.guilds.cache.values()) {
@@ -19,13 +26,6 @@ export async function updateStatus(startTime: Date): Promise<void> {
   } catch (error) {
     logger.error(`Error occurred while updating guild data: ${error}`);
   }
-
-  // 起動してからの稼働時間を計算
-  const now = new Date();
-  const h = Math.floor((now.getTime() - startTime.getTime()) / 1000 / 60 / 60);
-  client.user?.setActivity(`${h}時間連続稼働中`, {
-    type: ActivityType.Custom,
-  });
 }
 
 /**
