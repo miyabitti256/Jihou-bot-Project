@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { flipCoin } from "./actions";
@@ -170,9 +170,8 @@ export default function CoinflipGame() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className={`p-4 rounded-lg text-center ${
-                result.win ? "bg-green-500" : "bg-red-500"
-              }`}
+              className={`p-4 rounded-lg text-center ${result.win ? "bg-green-500" : "bg-red-500"
+                }`}
             >
               <h2 className="text-2xl font-bold mb-2">
                 {result.win ? "勝ち！" : "負け..."}

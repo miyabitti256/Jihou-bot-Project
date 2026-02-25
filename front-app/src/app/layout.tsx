@@ -4,7 +4,7 @@ import Footer from "@/components/layout/footer";
 import Header from "@/components/layout/header";
 import { ThemeProvider } from "@/provider/theme-provider";
 import "./globals.css";
-import ToastProvider from "@/provider/toast-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 const noto_sans_jp = Noto_Sans_JP({
   subsets: ["latin"],
@@ -25,7 +25,7 @@ export default function RootLayout({
     <html lang="ja" suppressHydrationWarning>
       <body className={`${noto_sans_jp.className} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <ToastProvider />
+          <Toaster position="top-center" />
           <Header />
           <main className="container mx-auto px-4">{children}</main>
           <Footer />

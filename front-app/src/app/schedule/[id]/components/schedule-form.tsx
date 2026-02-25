@@ -5,7 +5,7 @@ import { Check, ChevronsUpDown, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { startTransition, useActionState, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import * as z from "zod";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -238,8 +238,8 @@ export function ScheduleForm({
                         >
                           {field.value
                             ? channels?.find(
-                                (channel) => channel.id === field.value,
-                              )?.name
+                              (channel) => channel.id === field.value,
+                            )?.name
                             : "チャンネルを選択"}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>

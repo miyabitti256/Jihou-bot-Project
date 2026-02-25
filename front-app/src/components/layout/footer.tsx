@@ -13,7 +13,7 @@ export default function Footer() {
         </Button>
       </div>
       <div className="flex justify-center items-center">
-        <p className="text-sm text-gray-500">© 2025 miyabitti</p>
+        <p className="text-sm text-gray-500">© 2026 miyabitti</p>
       </div>
     </footer>
   );
