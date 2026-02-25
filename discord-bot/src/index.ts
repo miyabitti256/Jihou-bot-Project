@@ -6,7 +6,7 @@ import { setupDiscordEventHandlers } from "@handler/discord-events";
 import { client } from "@lib/client";
 import { logger } from "@lib/logger";
 import { scheduleStatusUpdates, updateStatus } from "@lib/status-updater";
-import { initCronJobs } from "@services/guilds/scheduled-message";
+import { startScheduledMessageDispatcher } from "@services/guilds/scheduled-message";
 import { serve } from "bun";
 
 const token = process.env.DISCORD_TOKEN as string;
@@ -24,7 +24,7 @@ client.on("clientReady", async () => {
 
   loadCommands();
 
-  initCronJobs();
+  startScheduledMessageDispatcher();
 
   setupDiscordEventHandlers();
 

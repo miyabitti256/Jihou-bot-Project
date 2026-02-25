@@ -7,7 +7,19 @@ import cuid from "cuid";
 import type { ScheduledTask } from "node-cron";
 import { schedule } from "node-cron";
 
-export const cronJobs = new Map<string, ScheduledTask>();
+/**
+ * 自動無効化対象のDiscord APIエラーコード
+ * これらのエラーはチャンネルやギルドへの恒久的なアクセス不能を示すため、
+ * スケジュールを即座に無効化する
+ */
+const DEACTIVATION_ERROR_CODES = [
+  50001, // Missing Access
+  10003, // Unknown Channel
+  50013, // Missing Permissions
+  10004, // Unknown Guild
+];
+
+let dispatcherJob: ScheduledTask | null = null;
 
 export class ScheduledMessageError extends Error {
   constructor(message: string) {
@@ -35,74 +47,162 @@ export interface ScheduledMessageUpdateData {
 }
 
 /**
- * スケジュールされたメッセージ用のcronジョブを設定する
- * @param message ScheduledMessageオブジェクト
+ * 指定メッセージを無効化する（isActive: false に更新）
+ * @param messageId スケジュールメッセージID
+ * @param reason 無効化理由（ログ用）
  */
-export async function setCronJob(message: ScheduledMessage): Promise<void> {
-  const existingJob = cronJobs.get(message.id);
-  if (existingJob) {
-    existingJob.stop();
-  }
-
-  const [hour, minute] = message.scheduleTime.split(":");
-  const job = schedule(
-    `${minute} ${hour} * * *`,
-    async () => {
-      try {
-        const channel = await client.channels.fetch(message.channelId);
-        if (channel?.isSendable()) {
-          await channel.send(message.message);
-          logger.info(
-            `[scheduled-message] Message sent successfully, ID: ${message.id}`,
-          );
-        } else {
-          logger.error(
-            `[scheduled-message] Channel is not a sendable channel for message ID: ${message.id}`,
-          );
-        }
-      } catch (error) {
-        logger.error(
-          `[scheduled-message] Channel not found for message ID: ${message.id}, error: ${error}`,
-        );
-      }
-    },
-    {
-      timezone: "Asia/Tokyo",
-    },
-  );
-  cronJobs.set(message.id, job);
-}
-
-/**
- * スケジュールされたメッセージ用のcronジョブを停止する
- * @param message ScheduledMessageオブジェクト
- */
-export function stopCronJob(message: ScheduledMessage): void {
-  const existingJob = cronJobs.get(message.id);
-  if (existingJob) {
-    existingJob.stop();
-    cronJobs.delete(message.id);
-  }
-}
-
-/**
- * すべてのアクティブな予定メッセージのcronジョブを初期化する
- */
-export async function initCronJobs(): Promise<void> {
+async function deactivateMessage(
+  messageId: string,
+  reason: string,
+): Promise<void> {
   try {
-    const messages = await getAllActiveScheduledMessages();
-    for (const message of messages) {
-      await setCronJob(message);
-    }
-    logger.info(
-      `[scheduled-message] Initialized ${messages.length} scheduled messages`,
+    await prisma.scheduledMessage.update({
+      where: { id: messageId },
+      data: { isActive: false, updatedAt: new Date() },
+    });
+    logger.warn(
+      `[scheduled-message] Deactivated message ID: ${messageId}, reason: ${reason}`,
     );
   } catch (error) {
     logger.error(
-      `[scheduled-message] Failed to initialize scheduled messages: ${error}`,
+      `[scheduled-message] Failed to deactivate message ID: ${messageId}, error: ${error}`,
     );
   }
 }
+
+/**
+ * Discord API エラーコードを抽出する
+ */
+function getDiscordErrorCode(error: unknown): number | null {
+  if (
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    typeof (error as { code: unknown }).code === "number"
+  ) {
+    return (error as { code: number }).code;
+  }
+  return null;
+}
+
+/**
+ * 単一のスケジュールメッセージを送信する
+ * @returns 送信成功: true / 失敗: false
+ */
+async function sendScheduledMessage(
+  message: ScheduledMessage,
+): Promise<boolean> {
+  try {
+    const channel = await client.channels.fetch(message.channelId);
+    if (channel?.isSendable()) {
+      await channel.send(message.message);
+      logger.info(
+        `[scheduled-message] Message sent successfully, ID: ${message.id}`,
+      );
+      return true;
+    }
+
+    // 送信不可能なチャンネル
+    await deactivateMessage(message.id, "Channel is not sendable");
+    return false;
+  } catch (error) {
+    const errorCode = getDiscordErrorCode(error);
+
+    if (errorCode && DEACTIVATION_ERROR_CODES.includes(errorCode)) {
+      // アクセス不能 → 自動無効化
+      await deactivateMessage(
+        message.id,
+        `Discord API error: ${errorCode} - ${error}`,
+      );
+    } else {
+      // 一時的なエラー（ネットワーク障害等）はログのみ。次のサイクルで再試行される。
+      logger.error(
+        `[scheduled-message] Failed to send message ID: ${message.id}, error: ${error}`,
+      );
+    }
+    return false;
+  }
+}
+
+/**
+ * 毎分実行されるディスパッチャ関数
+ * 現在の HH:MM に一致するアクティブなメッセージをDBから取得し、並行送信する
+ *
+ * discord.js はレートリミット(チャンネルあたり5件/5秒)を内部で自動管理するため、
+ * 手動での遅延は不要。429レスポンス時は内部キューが自動的にリトライする。
+ */
+async function dispatchMessages(): Promise<void> {
+  const now = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" }),
+  );
+  const currentTime = `${now.getHours()}:${now.getMinutes().toString().padStart(2, "0")}`;
+
+  try {
+    const messages = await prisma.scheduledMessage.findMany({
+      where: {
+        isActive: true,
+        scheduleTime: currentTime,
+      },
+    });
+
+    if (messages.length === 0) return;
+
+    logger.info(
+      `[scheduled-message] Dispatching ${messages.length} messages for ${currentTime}`,
+    );
+
+    // 全メッセージを並行送信（discord.jsが内部でレートリミットを自動管理）
+    const results = await Promise.allSettled(
+      messages.map((message) => sendScheduledMessage(message)),
+    );
+
+    const succeeded = results.filter(
+      (r) => r.status === "fulfilled" && r.value,
+    ).length;
+    const failed = results.length - succeeded;
+
+    if (failed > 0) {
+      logger.warn(
+        `[scheduled-message] Dispatch completed: ${succeeded} succeeded, ${failed} failed`,
+      );
+    }
+  } catch (error) {
+    logger.error(
+      `[scheduled-message] Dispatch cycle failed: ${error}`,
+    );
+  }
+}
+
+/**
+ * スケジュールメッセージのディスパッチャを開始する
+ * 毎分実行し、現在時刻に一致するメッセージを送信する
+ */
+export function startScheduledMessageDispatcher(): void {
+  if (dispatcherJob) {
+    dispatcherJob.stop();
+  }
+
+  dispatcherJob = schedule("* * * * *", dispatchMessages, {
+    timezone: "Asia/Tokyo",
+  });
+
+  logger.info("[scheduled-message] Dispatcher started (runs every minute)");
+}
+
+/**
+ * スケジュールメッセージのディスパッチャを停止する
+ */
+export function stopScheduledMessageDispatcher(): void {
+  if (dispatcherJob) {
+    dispatcherJob.stop();
+    dispatcherJob = null;
+    logger.info("[scheduled-message] Dispatcher stopped");
+  }
+}
+
+// ============================================================
+// CRUD 操作（DB操作のみ。cronジョブ管理は不要）
+// ============================================================
 
 /**
  * 全アクティブなスケジュールメッセージを取得する
@@ -229,11 +329,6 @@ export async function createScheduledMessage(data: ScheduledMessageCreateData) {
       data: newMessage,
     });
 
-    // cronジョブの設定
-    if (createdMessage.isActive) {
-      await setCronJob(createdMessage);
-    }
-
     return createdMessage;
   } catch (error) {
     if (error instanceof ScheduledMessageError) {
@@ -294,20 +389,6 @@ export async function updateScheduledMessage(data: ScheduledMessageUpdateData) {
       },
     });
 
-    // アクティブ状態またはスケジュール時間が変更された場合はcronジョブを更新
-    if (
-      (data.isActive !== undefined &&
-        data.isActive !== existingMessage.isActive) ||
-      (data.scheduleTime !== undefined &&
-        data.scheduleTime !== existingMessage.scheduleTime)
-    ) {
-      if (updatedMessage.isActive) {
-        await setCronJob(updatedMessage);
-      } else {
-        stopCronJob(updatedMessage);
-      }
-    }
-
     return updatedMessage;
   } catch (error) {
     if (error instanceof ScheduledMessageError) {
@@ -335,9 +416,6 @@ export async function deleteScheduledMessage(id: string) {
       throw new ScheduledMessageError("MESSAGE_NOT_FOUND");
     }
 
-    // cronジョブを停止
-    stopCronJob(existingMessage);
-
     // メッセージを削除
     const deletedMessage = await prisma.scheduledMessage.delete({
       where: { id },
@@ -352,5 +430,31 @@ export async function deleteScheduledMessage(id: string) {
       `[scheduled-message] Failed to delete scheduled message: ${error}`,
     );
     throw new ScheduledMessageError("INTERNAL_SERVER_ERROR");
+  }
+}
+
+/**
+ * 指定チャンネルのスケジュールメッセージをすべて無効化する
+ * チャンネル削除時に使用
+ * @param channelId チャンネルID
+ */
+export async function deactivateScheduledMessagesByChannelId(
+  channelId: string,
+): Promise<void> {
+  try {
+    const result = await prisma.scheduledMessage.updateMany({
+      where: { channelId, isActive: true },
+      data: { isActive: false, updatedAt: new Date() },
+    });
+
+    if (result.count > 0) {
+      logger.info(
+        `[scheduled-message] Deactivated ${result.count} messages for channel: ${channelId}`,
+      );
+    }
+  } catch (error) {
+    logger.error(
+      `[scheduled-message] Failed to deactivate messages for channel ${channelId}: ${error}`,
+    );
   }
 }

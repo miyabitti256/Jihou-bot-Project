@@ -1,5 +1,6 @@
 import { logger } from "@lib/logger";
 import { prisma } from "@lib/prisma";
+import { deactivateScheduledMessagesByChannelId } from "@services/guilds/scheduled-message";
 import type { Guild, GuildMember } from "discord.js";
 
 // エラークラス
@@ -219,8 +220,27 @@ export async function updateRolesData(guildId: string, roles: RoleData[]) {
  */
 export async function deleteGuildData(guildId: string) {
   try {
+    // スケジュールメッセージを事前に無効化してログ出力
+    const scheduledMessages = await prisma.scheduledMessage.findMany({
+      where: { guildId, isActive: true },
+      select: { id: true, channelId: true },
+    });
+
+    if (scheduledMessages.length > 0) {
+      await prisma.scheduledMessage.updateMany({
+        where: { guildId, isActive: true },
+        data: { isActive: false, updatedAt: new Date() },
+      });
+      logger.warn(
+        `[db-sync] Deactivated ${scheduledMessages.length} scheduled messages for guild: ${guildId} (guild deletion)`,
+      );
+    }
+
     // 関連データを削除するため、トランザクションを使用
     return await prisma.$transaction([
+      prisma.scheduledMessage.deleteMany({
+        where: { guildId },
+      }),
       prisma.guildChannels.deleteMany({
         where: { guildId },
       }),
@@ -413,7 +433,30 @@ export async function syncGuildAllData(guild: Guild): Promise<void> {
     const activeRoleIds = roles.map((r) => r.id);
 
     try {
+      // ゴーストチャンネルに紐づくスケジュールメッセージを事前に無効化
+      // Cascade削除で暗黙的に消えるのを防ぎ、ログを残す
+      const ghostChannels = await prisma.guildChannels.findMany({
+        where: {
+          guildId: guild.id,
+          id: { notIn: activeChannelIds },
+        },
+        select: { id: true },
+      });
+
+      if (ghostChannels.length > 0) {
+        for (const channel of ghostChannels) {
+          await deactivateScheduledMessagesByChannelId(channel.id);
+        }
+      }
+
       await prisma.$transaction([
+        // ゴーストチャンネルに紐づくスケジュールメッセージを削除
+        prisma.scheduledMessage.deleteMany({
+          where: {
+            guildId: guild.id,
+            channelId: { notIn: activeChannelIds },
+          },
+        }),
         // チャンネルのクリーンアップ
         prisma.guildChannels.deleteMany({
           where: {
@@ -451,5 +494,28 @@ export async function syncGuildAllData(guild: Guild): Promise<void> {
       `[db-sync] Error occurred during guild synchronization: ${error}`,
     );
     throw new DbSyncError("SYNC_FAILED", "Failed to synchronize guild data");
+  }
+}
+
+/**
+ * DBに残っているがボットが参加していないギルドのデータを削除する
+ * @param activeGuildIds ボットが現在参加しているギルドIDのセット
+ */
+export async function cleanupGhostGuilds(
+  activeGuildIds: Set<string>,
+): Promise<void> {
+  try {
+    const dbGuilds = await prisma.guild.findMany({ select: { id: true } });
+
+    for (const dbGuild of dbGuilds) {
+      if (!activeGuildIds.has(dbGuild.id)) {
+        logger.warn(
+          `[db-sync] Removing ghost guild: ${dbGuild.id} (bot is no longer a member)`,
+        );
+        await deleteGuildData(dbGuild.id);
+      }
+    }
+  } catch (error) {
+    logger.error(`[db-sync] Error cleaning up ghost guilds: ${error}`);
   }
 }

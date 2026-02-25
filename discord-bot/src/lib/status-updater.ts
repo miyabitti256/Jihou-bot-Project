@@ -1,6 +1,6 @@
 import { client } from "@lib/client";
 import { logger } from "@lib/logger";
-import { syncGuildAllData } from "@services/db-sync/guild-sync";
+import { cleanupGhostGuilds, syncGuildAllData } from "@services/db-sync/guild-sync";
 import { ActivityType } from "discord.js";
 import cron, { type ScheduledTask } from "node-cron";
 
@@ -23,6 +23,11 @@ export async function updateStatus(startTime: Date): Promise<void> {
     for (const guild of client.guilds.cache.values()) {
       await syncGuildAllData(guild);
     }
+
+    // ゴーストギルドのクリーンアップ
+    // DBにあるがボットが参加していないギルドを削除（オフラインキック対策）
+    const activeGuildIds = new Set(client.guilds.cache.keys());
+    await cleanupGhostGuilds(activeGuildIds);
   } catch (error) {
     logger.error(`Error occurred while updating guild data: ${error}`);
   }

@@ -11,14 +11,17 @@ import {
   updateMembersData,
   updateRolesData,
 } from "@services/db-sync/guild-sync";
+import { deactivateScheduledMessagesByChannelId } from "@services/guilds/scheduled-message";
 import type {
   ChatInputCommandInteraction,
   ColorResolvable,
+  DMChannel,
   Guild,
   GuildBasedChannel,
   GuildMember,
   Interaction,
   Message,
+  NonThreadGuildBasedChannel,
   PartialGuildMember,
   Role,
 } from "discord.js";
@@ -54,6 +57,9 @@ export function setupDiscordEventHandlers(): void {
 
   // メンバー退出時
   client.on("guildMemberRemove", handleGuildMemberRemove);
+
+  // チャンネル削除時
+  client.on("channelDelete", handleChannelDelete);
 
   // メッセージ受信時
   client.on("messageCreate", handleMessageCreate);
@@ -197,6 +203,25 @@ async function handleGuildMemberRemove(
     await deleteMemberData(member.guild.id, member.user.id);
   } catch (error) {
     logger.error({ err: error }, "メンバー退出時の処理でエラーが発生しました:");
+  }
+}
+
+/**
+ * チャンネル削除時のハンドラ
+ */
+async function handleChannelDelete(
+  channel: DMChannel | NonThreadGuildBasedChannel,
+) {
+  // DMチャンネルの場合は無視
+  if (channel.isDMBased()) return;
+
+  try {
+    await deactivateScheduledMessagesByChannelId(channel.id);
+  } catch (error) {
+    logger.error(
+      { err: error },
+      "チャンネル削除時の処理でエラーが発生しました:",
+    );
   }
 }
 
