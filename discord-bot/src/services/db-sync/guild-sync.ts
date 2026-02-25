@@ -313,7 +313,7 @@ export function createRoleDataFromGuild(guild: Guild): RoleData[] {
   return [...guild.roles.cache.values()].map((role) => ({
     id: role.id,
     name: role.name,
-    color: role.color.toString(),
+    color: role.colors.toString(),
     position: role.position,
     permissions: JSON.stringify(role.permissions),
     hoist: role.hoist,

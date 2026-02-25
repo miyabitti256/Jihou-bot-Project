@@ -150,7 +150,7 @@ async function handleGuildCreate(guild: Guild) {
     const roles = [...guild.roles.cache.values()].map((role: Role) => ({
       id: role.id,
       name: role.name,
-      color: role.color.toString(),
+      color: role.colors.toString(),
       position: role.position,
       permissions: JSON.stringify(role.permissions),
       hoist: role.hoist,
