@@ -82,34 +82,33 @@ export async function updateGuildData(guildData: GuildData) {
 
 /**
  * チャンネルデータを更新する
+ *
+ * guild.channels.cache からの読み取りデータのみ使用（Discord APIコールなし）。
+ * リモートSupabaseへのラウンドトリップを最小化するため、
+ * 個別upsertではなく $transaction でバッチ処理する。
  */
 export async function updateChannelsData(
   guildId: string,
   channels: ChannelData[],
 ) {
   try {
-    const results = [];
-
-    for (const channel of channels) {
-      const result = await prisma.guildChannels.upsert({
-        where: { id: channel.id },
-        create: {
-          id: channel.id,
-          guildId: guildId,
-          name: channel.name,
-          type: channel.type,
-        },
-        update: {
-          name: channel.name,
-          type: channel.type,
-        },
-      });
-      results.push(result);
-      // レート制限を回避するための遅延
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-
-    return results;
+    return await prisma.$transaction(
+      channels.map((channel) =>
+        prisma.guildChannels.upsert({
+          where: { id: channel.id },
+          create: {
+            id: channel.id,
+            guildId: guildId,
+            name: channel.name,
+            type: channel.type,
+          },
+          update: {
+            name: channel.name,
+            type: channel.type,
+          },
+        }),
+      ),
+    );
   } catch (error) {
     logger.error(`[db-sync] Error updating channel data: ${error}`);
     throw new DbSyncError("UPDATE_FAILED", "Failed to update channel data");
@@ -118,50 +117,57 @@ export async function updateChannelsData(
 
 /**
  * メンバーデータを更新する
+ *
+ * Discord APIは経由せず、既にフェッチ済みのメンバーデータをDBに書き込むのみ。
+ * リモートSupabaseへのラウンドトリップを最小化するため、
+ * 最大50件ずつの $transaction バッチで処理する。
+ * （Supabaseのコネクションプール制限を考慮し、1トランザクションあたりの
+ *   クエリ数を抑えつつ、個別upsertの累積遅延を回避する）
  */
 export async function updateMembersData(
   guildId: string,
   members: { user: UserData; member: MemberData }[],
 ) {
   try {
+    const BATCH_SIZE = 50;
     const results = [];
 
-    for (const { user, member } of members) {
-      const result = await prisma.$transaction([
-        prisma.users.upsert({
-          where: { id: user.id },
-          create: {
-            id: user.id,
-            username: user.username,
-            discriminator: user.discriminator,
-            avatarUrl: user.avatarUrl,
-          },
-          update: {
-            username: user.username,
-            discriminator: user.discriminator,
-            avatarUrl: user.avatarUrl,
-          },
-        }),
-        prisma.guildMembers.upsert({
-          where: {
-            guildId_userId: { guildId: guildId, userId: user.id },
-          },
-          create: {
-            guildId: guildId,
-            userId: user.id,
-            nickname: member.nickname,
-            joinedAt: member.joinedAt,
-          },
-          update: {
-            nickname: member.nickname,
-            joinedAt: member.joinedAt,
-          },
-        }),
-      ]);
-
-      results.push(result);
-      // レート制限を回避するための遅延
-      await new Promise((resolve) => setTimeout(resolve, 100));
+    for (let i = 0; i < members.length; i += BATCH_SIZE) {
+      const batch = members.slice(i, i + BATCH_SIZE);
+      const batchResults = await prisma.$transaction(
+        batch.flatMap(({ user, member }) => [
+          prisma.users.upsert({
+            where: { id: user.id },
+            create: {
+              id: user.id,
+              username: user.username,
+              discriminator: user.discriminator,
+              avatarUrl: user.avatarUrl,
+            },
+            update: {
+              username: user.username,
+              discriminator: user.discriminator,
+              avatarUrl: user.avatarUrl,
+            },
+          }),
+          prisma.guildMembers.upsert({
+            where: {
+              guildId_userId: { guildId: guildId, userId: user.id },
+            },
+            create: {
+              guildId: guildId,
+              userId: user.id,
+              nickname: member.nickname,
+              joinedAt: member.joinedAt,
+            },
+            update: {
+              nickname: member.nickname,
+              joinedAt: member.joinedAt,
+            },
+          }),
+        ]),
+      );
+      results.push(...batchResults);
     }
 
     return results;
@@ -173,42 +179,40 @@ export async function updateMembersData(
 
 /**
  * ロールデータを更新する
+ *
+ * guild.roles.cache からの読み取りデータのみ使用（Discord APIコールなし）。
+ * リモートSupabaseへのラウンドトリップを最小化するため、
+ * 個別upsertではなく $transaction でバッチ処理する。
  */
 export async function updateRolesData(guildId: string, roles: RoleData[]) {
   try {
-    const results = [];
-
-    for (const role of roles) {
-      const result = await prisma.guildRoles.upsert({
-        where: { id: role.id },
-        create: {
-          id: role.id,
-          guildId: guildId,
-          name: role.name,
-          color: role.color,
-          position: role.position,
-          permissions: role.permissions,
-          hoist: role.hoist,
-          managed: role.managed,
-          mentionable: role.mentionable,
-        },
-        update: {
-          name: role.name,
-          color: role.color,
-          position: role.position,
-          permissions: role.permissions,
-          hoist: role.hoist,
-          managed: role.managed,
-          mentionable: role.mentionable,
-        },
-      });
-
-      results.push(result);
-      // レート制限を回避するための遅延
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-
-    return results;
+    return await prisma.$transaction(
+      roles.map((role) =>
+        prisma.guildRoles.upsert({
+          where: { id: role.id },
+          create: {
+            id: role.id,
+            guildId: guildId,
+            name: role.name,
+            color: role.color,
+            position: role.position,
+            permissions: role.permissions,
+            hoist: role.hoist,
+            managed: role.managed,
+            mentionable: role.mentionable,
+          },
+          update: {
+            name: role.name,
+            color: role.color,
+            position: role.position,
+            permissions: role.permissions,
+            hoist: role.hoist,
+            managed: role.managed,
+            mentionable: role.mentionable,
+          },
+        }),
+      ),
+    );
   } catch (error) {
     logger.error(`[db-sync] Error updating role data: ${error}`);
     throw new DbSyncError("UPDATE_FAILED", "Failed to update role data");
@@ -364,6 +368,12 @@ export function createMemberDataFromGuildMember(member: GuildMember): {
 /**
  * ページネーションを使って全メンバーをDBに同期する
  * 常に最大1000人分のメモリしか使わず、処理後即キャッシュから追い出す
+ *
+ * 【Discord APIレート制限について】
+ * guild.members.list() は Discord REST API を呼び出すため、
+ * バッチ間に1秒の遅延を入れてレート制限（10 req/10s）に対応している。
+ * この遅延は Discord API 側の制約であり、削除不可。
+ * （DB書き込みの updateMembersData は Discord API を経由しないため遅延不要）
  */
 async function syncMembersInBatches(guild: Guild): Promise<Set<string>> {
   let after: string | undefined;
@@ -403,7 +413,8 @@ async function syncMembersInBatches(guild: Guild): Promise<Set<string>> {
     after = members.last()?.id;
     if (members.size < 1000) break;
 
-    // Discord REST APIレート制限対策
+    // Discord REST API レート制限対策（guild.members.list は API コール）
+    // ※ DB書き込みではないため、この遅延は削除不可
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 

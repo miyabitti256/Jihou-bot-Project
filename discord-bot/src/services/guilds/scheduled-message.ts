@@ -21,6 +21,14 @@ const DEACTIVATION_ERROR_CODES = [
 
 let dispatcherJob: ScheduledTask | null = null;
 
+/**
+ * 前回ディスパッチ実行時刻を記録する。
+ * node-cronのtickがブロッキングI/O等で遅延した場合でも、
+ * 前回実行～現在時刻の間にスケジュールされたメッセージを漏れなく送信するために使用する。
+ * （node-cron v4 は missed tick を警告のみで再実行しないため、アプリ側で救済が必要）
+ */
+let lastDispatchTime: Date | null = null;
+
 export class ScheduledMessageError extends Error {
   constructor(message: string) {
     super(message);
@@ -125,30 +133,72 @@ async function sendScheduledMessage(
 }
 
 /**
+ * JST基準の "H:MM" 形式の時刻文字列を生成する
+ */
+function toJstTimeString(date: Date): string {
+  const jst = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
+  return `${jst.getHours()}:${jst.getMinutes().toString().padStart(2, "0")}`;
+}
+
+/**
  * 毎分実行されるディスパッチャ関数
- * 現在の HH:MM に一致するアクティブなメッセージをDBから取得し、並行送信する
  *
+ * 【missed tick 救済】
+ * node-cronのtickは、同一プロセス内のブロッキングI/Oや長時間の非同期処理チェーン
+ * （例: guild-sync のDB同期）によって遅延・スキップされることがある。
+ * node-cron v4 はmissed tickを警告ログに出すだけで再実行しないため、
+ * 前回実行時刻を記録し、前回～現在の間にスケジュールされた全メッセージを
+ * IN句で一括取得することで、取りこぼしを防止する。
+ *
+ * 【Discord レートリミット】
  * discord.js はレートリミット(チャンネルあたり5件/5秒)を内部で自動管理するため、
  * 手動での遅延は不要。429レスポンス時は内部キューが自動的にリトライする。
  */
 async function dispatchMessages(): Promise<void> {
-  const now = new Date(
-    new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" }),
-  );
-  const currentTime = `${now.getHours()}:${now.getMinutes().toString().padStart(2, "0")}`;
+  const now = new Date();
+  const currentTime = toJstTimeString(now);
+
+  // missed tick 救済: 前回実行～現在の全分をカバーするスケジュール時刻のセットを構築
+  const targetTimes = new Set<string>([currentTime]);
+
+  if (lastDispatchTime) {
+    const lastJst = new Date(
+      lastDispatchTime.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }),
+    );
+    const cursor = new Date(lastJst);
+    cursor.setSeconds(0, 0);
+    cursor.setMinutes(cursor.getMinutes() + 1);
+
+    const jstNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
+    while (cursor <= jstNow) {
+      targetTimes.add(
+        `${cursor.getHours()}:${cursor.getMinutes().toString().padStart(2, "0")}`,
+      );
+      cursor.setMinutes(cursor.getMinutes() + 1);
+    }
+
+    // 救済対象の分が2つ以上ある場合（= missed tickが発生した場合）はログに記録
+    if (targetTimes.size > 1) {
+      logger.warn(
+        `[scheduled-message] Recovering missed ticks: dispatching for ${[...targetTimes].join(", ")}`,
+      );
+    }
+  }
+
+  lastDispatchTime = now;
 
   try {
     const messages = await prisma.scheduledMessage.findMany({
       where: {
         isActive: true,
-        scheduleTime: currentTime,
+        scheduleTime: { in: [...targetTimes] },
       },
     });
 
     if (messages.length === 0) return;
 
     logger.info(
-      `[scheduled-message] Dispatching ${messages.length} messages for ${currentTime}`,
+      `[scheduled-message] Dispatching ${messages.length} messages for [${[...targetTimes].join(", ")}]`,
     );
 
     // 全メッセージを並行送信（discord.jsが内部でレートリミットを自動管理）

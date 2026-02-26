@@ -44,8 +44,12 @@ export function scheduleStatusUpdates(startTime: Date): void {
   }
 
   // 毎時実行されるようにスケジュール
+  // 秒数を30秒固定にすることで、毎分0秒に実行されるメッセージディスパッチャ
+  // （scheduled-message.ts）とのイベントループ上の競合を回避する。
+  // 起動時刻の秒をそのまま使うと偶然0秒だった場合にディスパッチャと衝突し、
+  // node-cronのmissed tickを引き起こすリスクがある。
   statusUpdateJob = cron.schedule(
-    `${startTime.getSeconds()} ${startTime.getMinutes()} * * * *`,
+    `30 ${startTime.getMinutes()} * * * *`,
     async () => {
       await updateStatus(startTime);
     },
