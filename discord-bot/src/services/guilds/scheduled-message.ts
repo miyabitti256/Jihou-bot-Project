@@ -133,11 +133,16 @@ async function sendScheduledMessage(
 }
 
 /**
- * JST基準の "H:MM" 形式の時刻文字列を生成する
+ * JST基準の "HH:MM" 形式の時刻文字列を生成する
+ *
+ * DBに格納される scheduleTime は "HH:MM"（先頭ゼロあり）形式のため、
+ * 時間にも padStart(2, "0") を適用して一致させる。
+ * （Discordコマンド: /^([01]\d|2[0-3]):([0-5]\d)$/ → "04:00" 等）
+ * （フロントエンド: <input type="time"> → "04:00" 等）
  */
 function toJstTimeString(date: Date): string {
   const jst = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
-  return `${jst.getHours()}:${jst.getMinutes().toString().padStart(2, "0")}`;
+  return `${jst.getHours().toString().padStart(2, "0")}:${jst.getMinutes().toString().padStart(2, "0")}`;
 }
 
 /**
@@ -172,7 +177,7 @@ async function dispatchMessages(): Promise<void> {
     const jstNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
     while (cursor <= jstNow) {
       targetTimes.add(
-        `${cursor.getHours()}:${cursor.getMinutes().toString().padStart(2, "0")}`,
+        `${cursor.getHours().toString().padStart(2, "0")}:${cursor.getMinutes().toString().padStart(2, "0")}`,
       );
       cursor.setMinutes(cursor.getMinutes() + 1);
     }
