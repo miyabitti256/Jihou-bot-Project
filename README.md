@@ -178,9 +178,30 @@ app.post("/play",
 
 バリデーション失敗時は一貫した `{ error: { code, message, details } }` フォーマットで返却する。
 
-### 5. メモリを意識したDiscord.jsキャッシュ設定
+### 5. メモリ最適化（Fly.io 512MB対応）
 
-512MB制限のデプロイ環境に合わせ、`Client` に`makeCache`制限を適用してメモリフットプリントを最小化している。
+512MB RAM / 1 shared CPUのデプロイ環境に合わせ、複数のレイヤーでメモリフットプリントを最小化している。  
+これらの最適化により、毎時のデータ同期処理中のメモリ使用量を **340MB → 282MB**（約17%削減）に抑えた。
+
+#### Raw SQL によるバルク同期
+
+Prismaの`upsert()`は内部で`SELECT + INSERT/UPDATE`の2本のSQLに分解されるため、1000人のメンバー同期で最大4,000本のSQLが生成されメモリを圧迫していた。PostgreSQLネイティブの`INSERT ... ON CONFLICT DO UPDATE`をpg Poolから直接実行し、**2本のSQL**（users + guild_members）で同等の処理を実現している。
+
+#### コネクションプールの制限
+
+```typescript
+const pool = new Pool({
+  connectionString,
+  max: 3,                  // デフォルト10 → 3に削減
+  idleTimeoutMillis: 10000 // アイドル接続を早期解放
+});
+```
+
+#### Bun `--smol` フラグ
+
+Dockerfileで`bun --smol run start`を指定し、JavaScriptCore（Bunの内部エンジン）のヒープサイズを低メモリ向けに設定。GCがより頻繁に実行され、メモリのピーク使用量を抑制する。
+
+#### Discord.js キャッシュ制限
 
 ```typescript
 makeCache: Options.cacheWithLimits({
@@ -191,7 +212,7 @@ makeCache: Options.cacheWithLimits({
 })
 ```
 
-メンバーの全件同期は `guild.members.list()` のページネーション（1000件/回）で実施し、各バッチをDB書き込み後に即キャッシュから追い出す設計とした。
+メンバーの全件同期は `guild.members.list()` のページネーション（200件/回）で実施し、各バッチをDB書き込み後に即キャッシュから追い出す設計とした。
 
 ### 6. ユーザーID単位のレート制限
 
