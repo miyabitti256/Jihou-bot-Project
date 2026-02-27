@@ -1,5 +1,5 @@
 import { logger } from "@lib/logger";
-import { prisma } from "@lib/prisma";
+import { pool, prisma } from "@lib/prisma";
 import { deactivateScheduledMessagesByChannelId } from "@services/guilds/scheduled-message";
 import type { Guild, GuildMember } from "discord.js";
 
@@ -116,61 +116,85 @@ export async function updateChannelsData(
 }
 
 /**
- * メンバーデータを更新する
+ * メンバーデータを一括更新する（Raw SQL版）
  *
- * Discord APIは経由せず、既にフェッチ済みのメンバーデータをDBに書き込むのみ。
- * リモートSupabaseへのラウンドトリップを最小化するため、
- * 最大50件ずつの $transaction バッチで処理する。
- * （Supabaseのコネクションプール制限を考慮し、1トランザクションあたりの
- *   クエリ数を抑えつつ、個別upsertの累積遅延を回避する）
+ * Prismaの upsert は内部で SELECT + INSERT/UPDATE の2本のSQLに分解されるため、
+ * 1000人のメンバーに対して最大4,000本のSQLが生成され、512MBメモリ環境では
+ * Prismaエンジンのメモリ消費でOOMが発生していた。
+ *
+ * PostgreSQLネイティブの INSERT ... ON CONFLICT DO UPDATE を使用することで、
+ * 同じ処理がたった2本のSQL（users + guild_members）で完了する。
+ * Prismaを経由せずpg Poolを直接使用するため、クエリエンジンのオーバーヘッドもゼロ。
  */
 export async function updateMembersData(
   guildId: string,
   members: { user: UserData; member: MemberData }[],
 ) {
+  if (members.length === 0) return;
+
   try {
-    const BATCH_SIZE = 50;
-    const results = [];
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
 
-    for (let i = 0; i < members.length; i += BATCH_SIZE) {
-      const batch = members.slice(i, i + BATCH_SIZE);
-      const batchResults = await prisma.$transaction(
-        batch.flatMap(({ user, member }) => [
-          prisma.users.upsert({
-            where: { id: user.id },
-            create: {
-              id: user.id,
-              username: user.username,
-              discriminator: user.discriminator,
-              avatarUrl: user.avatarUrl,
-            },
-            update: {
-              username: user.username,
-              discriminator: user.discriminator,
-              avatarUrl: user.avatarUrl,
-            },
-          }),
-          prisma.guildMembers.upsert({
-            where: {
-              guildId_userId: { guildId: guildId, userId: user.id },
-            },
-            create: {
-              guildId: guildId,
-              userId: user.id,
-              nickname: member.nickname,
-              joinedAt: member.joinedAt,
-            },
-            update: {
-              nickname: member.nickname,
-              joinedAt: member.joinedAt,
-            },
-          }),
-        ]),
+      // --- users テーブルの一括 upsert ---
+      // パラメータ: id, username, discriminator, avatarUrl の4カラム
+      const userValues: unknown[] = [];
+      const userPlaceholders: string[] = [];
+      for (let i = 0; i < members.length; i++) {
+        const u = members[i].user;
+        const offset = i * 4;
+        userPlaceholders.push(
+          `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, 1000, NOW(), NOW())`,
+        );
+        userValues.push(u.id, u.username, u.discriminator, u.avatarUrl);
+      }
+
+      await client.query(
+        `INSERT INTO "users" ("id", "username", "discriminator", "avatarUrl", "money", "createdAt", "updatedAt")
+         VALUES ${userPlaceholders.join(", ")}
+         ON CONFLICT ("id") DO UPDATE SET
+           "username" = EXCLUDED."username",
+           "discriminator" = EXCLUDED."discriminator",
+           "avatarUrl" = EXCLUDED."avatarUrl",
+           "updatedAt" = NOW()`,
+        userValues,
       );
-      results.push(...batchResults);
-    }
 
-    return results;
+      // --- guild_members テーブルの一括 upsert ---
+      // パラメータ: guildId, userId, nickname, joinedAt の4カラム
+      const memberValues: unknown[] = [];
+      const memberPlaceholders: string[] = [];
+      for (let i = 0; i < members.length; i++) {
+        const m = members[i];
+        const offset = i * 4;
+        memberPlaceholders.push(
+          `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4})`,
+        );
+        memberValues.push(
+          guildId,
+          m.user.id,
+          m.member.nickname,
+          m.member.joinedAt,
+        );
+      }
+
+      await client.query(
+        `INSERT INTO "guild_members" ("guildId", "userId", "nickname", "joinedAt")
+         VALUES ${memberPlaceholders.join(", ")}
+         ON CONFLICT ("guildId", "userId") DO UPDATE SET
+           "nickname" = EXCLUDED."nickname",
+           "joinedAt" = EXCLUDED."joinedAt"`,
+        memberValues,
+      );
+
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     logger.error(`[db-sync] Error updating member data: ${error}`);
     throw new DbSyncError("UPDATE_FAILED", "Failed to update member data");
@@ -380,8 +404,12 @@ async function syncMembersInBatches(guild: Guild): Promise<Set<string>> {
   let totalSynced = 0;
   const activeMemberIds = new Set<string>();
 
+  // Discord APIからの取得単位を200に縮小
+  // Raw SQLのパラメータ数上限（65535）を考慮し、1回あたりのメモリ消費を抑える
+  const FETCH_LIMIT = 200;
+
   while (true) {
-    const members = await guild.members.list({ limit: 1000, after });
+    const members = await guild.members.list({ limit: FETCH_LIMIT, after });
     if (members.size === 0) break;
 
     const memberData = [...members.values()]
@@ -413,7 +441,7 @@ async function syncMembersInBatches(guild: Guild): Promise<Set<string>> {
     }
 
     after = members.last()?.id;
-    if (members.size < 1000) break;
+    if (members.size < FETCH_LIMIT) break;
 
     // Discord REST API レート制限対策（guild.members.list は API コール）
     // ※ DB書き込みではないため、この遅延は削除不可

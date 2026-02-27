@@ -11,4 +11,6 @@ RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" bunx prisma gen
 
 COPY . .
 
-CMD ["bun", "run", "start"]
+# --smol: Bun(JavaScriptCore)のヒープを小さく保ちGCを頻繁に実行する
+# 512MBメモリ環境でのOOM防止に不可欠
+CMD ["bun", "--smol", "run", "start"]
