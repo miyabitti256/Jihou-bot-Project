@@ -15,11 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { auth } from "@/lib/auth";
-import { authenticatedFetch } from "@/lib/auth-api";
-import type { GuildChannel, Janken, UserData } from "@/types/api-response";
-
-// じゃんけんゲーム計算用のインターフェース拡張
-type JankenGameWithCalculations = Janken;
+import { createApiClient } from "@/lib/rpc-client";
 
 export default async function UserDetailPage({
   params,
@@ -33,19 +29,16 @@ export default async function UserDetailPage({
     return <NoAuthRedirect redirectPath="/" />;
   }
 
-  // ログインユーザー自身のページの場合、ダッシュボードページにリダイレクト
   if (session.user.id === id) {
     redirect("/dashboard");
   }
 
-  // ユーザーデータの取得
-  const userResponse = await authenticatedFetch(
-    `${process.env.API_URL}/api/users/${id}?includes=scheduledmessage,omikuji,coinflip,janken`,
-    {
-      method: "GET",
-      cache: "no-store",
-    },
-  );
+  const client = await createApiClient();
+
+  const userResponse = await client.api.users[":userId"].$get({
+    param: { userId: id },
+    query: { includes: "scheduledmessage,omikuji,coinflip,janken" },
+  });
 
   if (!userResponse.ok) {
     if (userResponse.status === 404) {
@@ -54,13 +47,12 @@ export default async function UserDetailPage({
     throw new Error("ユーザーデータの取得に失敗しました");
   }
 
-  const userData: UserData = await userResponse.json();
+  const userData = await userResponse.json();
 
-  if (!userData || !userData.data) {
+  if (!userData.data) {
     return notFound();
   }
 
-  // 必要なデータの準備
   const scheduledMessages = userData.data.ScheduledMessage ?? [];
   const omikuji = userData.data.Omikuji ?? [];
   const coinflip = userData.data.CoinFlip ?? [];
@@ -104,7 +96,7 @@ export default async function UserDetailPage({
     return hands[choice as keyof typeof hands] || choice;
   };
 
-  const calculateBalance = (games: JankenGameWithCalculations[]) => {
+  const calculateBalance = (games: typeof allJankenGames) => {
     return games.reduce((acc, game) => {
       const isChallenger = game.challengerId === id;
       const myBet = isChallenger
@@ -127,28 +119,20 @@ export default async function UserDetailPage({
     </span>
   );
 
-  // サーバー情報を取得する関数
   const getGuildData = async (guildId: string) => {
-    const guildResponse = await authenticatedFetch(
-      `${process.env.API_URL}/api/guilds/${guildId}?includes=channels`,
-      {
-        method: "GET",
-        cache: "no-store",
-      },
-    );
-    return await guildResponse.json();
+    const res = await client.api.guilds[":guildId"].$get({
+      param: { guildId },
+      query: { includes: "channels" },
+    });
+    return await res.json();
   };
 
-  // ユーザー情報を取得する関数
   const getUserData = async (userId: string) => {
-    const userResponse = await authenticatedFetch(
-      `${process.env.API_URL}/api/users/${userId}`,
-      {
-        method: "GET",
-        cache: "no-store",
-      },
-    );
-    return await userResponse.json();
+    const res = await client.api.users[":userId"].$get({
+      param: { userId },
+      query: {},
+    });
+    return await res.json();
   };
 
   return (
@@ -214,7 +198,15 @@ export default async function UserDetailPage({
                       </TableRow>
                     ) : (
                       scheduledMessages.map(async (message) => {
-                        const guildData = await getGuildData(message.guildId);
+                        const guildData = (await getGuildData(
+                          message.guildId,
+                        )) as {
+                          data: {
+                            iconUrl: string;
+                            name: string;
+                            channels: { id: string; name: string }[];
+                          };
+                        };
                         return (
                           <TableRow key={message.id}>
                             <TableCell>
@@ -232,8 +224,7 @@ export default async function UserDetailPage({
                               #
                               {
                                 guildData.data.channels.find(
-                                  (channel: GuildChannel) =>
-                                    channel.id === message.channelId,
+                                  (channel) => channel.id === message.channelId,
                                 )?.name
                               }
                             </TableCell>
@@ -398,7 +389,10 @@ export default async function UserDetailPage({
                             {formatDistance(
                               new Date(draw.createdAt),
                               new Date(),
-                              { locale: ja, addSuffix: true },
+                              {
+                                locale: ja,
+                                addSuffix: true,
+                              },
                             )}
                           </TableCell>
                         </TableRow>
@@ -452,7 +446,10 @@ export default async function UserDetailPage({
                             {formatDistance(
                               new Date(flip.createdAt),
                               new Date(),
-                              { locale: ja, addSuffix: true },
+                              {
+                                locale: ja,
+                                addSuffix: true,
+                              },
                             )}
                           </TableCell>
                         </TableRow>
@@ -493,73 +490,77 @@ export default async function UserDetailPage({
                         </TableCell>
                       </TableRow>
                     ) : (
-                      <>
-                        {recentJankenGames.map(async (game) => {
-                          const isChallenger = game.challengerId === id;
-                          const opponentId = isChallenger
-                            ? game.opponentId
-                            : game.challengerId;
-                          const myHand = isChallenger
-                            ? game.challengerHand
-                            : game.opponentHand;
-                          const opponentHand = isChallenger
-                            ? game.opponentHand
-                            : game.challengerHand;
-                          const myBet = isChallenger
-                            ? (game.challengerBet ?? 0)
-                            : (game.opponentBet ?? 0);
-                          const opponent = await getUserData(opponentId);
-                          const won = game.winnerUserId === id;
-                          const draw = game.winnerUserId === null;
+                      recentJankenGames.map(async (game) => {
+                        const isChallenger = game.challengerId === id;
+                        const opponentId = isChallenger
+                          ? game.opponentId
+                          : game.challengerId;
+                        const myHand = isChallenger
+                          ? game.challengerHand
+                          : game.opponentHand;
+                        const opponentHand = isChallenger
+                          ? game.opponentHand
+                          : game.challengerHand;
+                        const myBet = isChallenger
+                          ? (game.challengerBet ?? 0)
+                          : (game.opponentBet ?? 0);
+                        const opponent = (await getUserData(opponentId)) as {
+                          data: {
+                            avatarUrl: string;
+                            username: string;
+                          };
+                        };
+                        const won = game.winnerUserId === id;
+                        const draw = game.winnerUserId === null;
 
-                          return (
-                            <TableRow key={game.id}>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <Avatar>
-                                    <AvatarImage
-                                      src={opponent.data.avatarUrl ?? ""}
-                                    />
-                                    <AvatarFallback>
-                                      <FaUser className="h-5 w-5" />
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  {opponent.data.username}
-                                </div>
-                              </TableCell>
-                              <TableCell>{getHandEmoji(myHand)}</TableCell>
-                              <TableCell>
-                                {getHandEmoji(opponentHand)}
-                              </TableCell>
-                              <TableCell>
-                                {myBet === 0
-                                  ? "なし"
-                                  : `${myBet.toLocaleString()}円`}
-                              </TableCell>
-                              <TableCell>
-                                <span
-                                  className={
-                                    draw
-                                      ? "text-yellow-600"
-                                      : won
-                                        ? "text-green-600"
-                                        : "text-red-600"
-                                  }
-                                >
-                                  {draw ? "引き分け" : won ? "勝ち" : "負け"}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                {formatDistance(
-                                  new Date(game.createdAt),
-                                  new Date(),
-                                  { locale: ja, addSuffix: true },
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </>
+                        return (
+                          <TableRow key={game.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Avatar>
+                                  <AvatarImage
+                                    src={opponent.data.avatarUrl ?? ""}
+                                  />
+                                  <AvatarFallback>
+                                    <FaUser className="h-5 w-5" />
+                                  </AvatarFallback>
+                                </Avatar>
+                                {opponent.data.username}
+                              </div>
+                            </TableCell>
+                            <TableCell>{getHandEmoji(myHand)}</TableCell>
+                            <TableCell>{getHandEmoji(opponentHand)}</TableCell>
+                            <TableCell>
+                              {myBet === 0
+                                ? "なし"
+                                : `${myBet.toLocaleString()}円`}
+                            </TableCell>
+                            <TableCell>
+                              <span
+                                className={
+                                  draw
+                                    ? "text-yellow-600"
+                                    : won
+                                      ? "text-green-600"
+                                      : "text-red-600"
+                                }
+                              >
+                                {draw ? "引き分け" : won ? "勝ち" : "負け"}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              {formatDistance(
+                                new Date(game.createdAt),
+                                new Date(),
+                                {
+                                  locale: ja,
+                                  addSuffix: true,
+                                },
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>

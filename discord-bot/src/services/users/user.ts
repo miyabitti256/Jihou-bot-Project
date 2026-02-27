@@ -28,73 +28,49 @@ export async function getUserData(
   includes: IncludeType[] = [],
 ) {
   try {
-    const includeMap = {
-      ScheduledMessage: {
-        select: {
-          id: true,
-          guildId: true,
-          channelId: true,
-          message: true,
-          scheduleTime: true,
-          isActive: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      },
-      Omikuji: {
-        take: 10,
-        orderBy: {
-          createdAt: Prisma.SortOrder.desc,
-        },
-      },
-      CoinFlip: {
-        take: 100,
-        orderBy: {
-          createdAt: Prisma.SortOrder.desc,
-        },
-      },
-      JankenChallenger: {
-        take: 50,
-        orderBy: {
-          createdAt: Prisma.SortOrder.desc,
-        },
-      },
-      JankenOpponent: {
-        take: 50,
-        orderBy: {
-          createdAt: Prisma.SortOrder.desc,
-        },
-      },
-    };
-
-    const keyMap = {
-      scheduledmessage: "ScheduledMessage",
-      omikuji: "Omikuji",
-      coinflip: "CoinFlip",
-      janken: "Janken",
-    } as const;
-
-    // インクルード設定を構築
-    const include = includes.reduce((acc, key) => {
-      if (key === "janken") {
-        return Object.assign({}, acc, {
-          JankenChallenger: includeMap.JankenChallenger,
-          JankenOpponent: includeMap.JankenOpponent,
-        });
-      }
-      const mappedKey = keyMap[key];
-      if (mappedKey in includeMap) {
-        return Object.assign(acc, {
-          [mappedKey]: includeMap[mappedKey as keyof typeof includeMap],
-        });
-      }
-      return acc;
-    }, {});
-
-    // ユーザーデータを取得
+    // 全てのrelationを静的に定義（RPC型推論のため）
     const data = await prisma.users.findUnique({
       where: { id: userId },
-      include,
+      include: {
+        ScheduledMessage: includes.includes("scheduledmessage")
+          ? {
+              select: {
+                id: true,
+                guildId: true,
+                channelId: true,
+                message: true,
+                scheduleTime: true,
+                isActive: true,
+                createdAt: true,
+                updatedAt: true,
+              },
+            }
+          : false,
+        Omikuji: includes.includes("omikuji")
+          ? {
+              take: 10,
+              orderBy: { createdAt: Prisma.SortOrder.desc },
+            }
+          : false,
+        CoinFlip: includes.includes("coinflip")
+          ? {
+              take: 100,
+              orderBy: { createdAt: Prisma.SortOrder.desc },
+            }
+          : false,
+        JankenChallenger: includes.includes("janken")
+          ? {
+              take: 50,
+              orderBy: { createdAt: Prisma.SortOrder.desc },
+            }
+          : false,
+        JankenOpponent: includes.includes("janken")
+          ? {
+              take: 50,
+              orderBy: { createdAt: Prisma.SortOrder.desc },
+            }
+          : false,
+      },
     });
 
     if (!data) {

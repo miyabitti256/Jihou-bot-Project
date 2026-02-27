@@ -1,3 +1,4 @@
+import { zValidator } from "@hono/zod-validator";
 import { logger } from "@lib/logger";
 import {
   DiscordApiError,
@@ -11,241 +12,190 @@ import {
   getUserGuilds,
 } from "@services/guilds/guild";
 import { Hono } from "hono";
-import { z } from "zod";
-import { discordIdSchema } from "../../schemas";
+import type { AppEnv } from "../../env";
+import {
+  guildIdParamSchema,
+  guildIncludesQuerySchema,
+  userIdParamSchema,
+} from "../../schemas";
 import { message } from "./scheduled-message";
 
-export const guilds = new Hono();
+export const guilds = new Hono<AppEnv>()
+  .route("/scheduledmessage", message)
+  .get(
+    "/:guildId/discord",
+    zValidator("param", guildIdParamSchema),
+    async (c) => {
+      const { guildId } = c.req.valid("param");
 
-guilds.route("/scheduledmessage", message);
-
-// Guild情報取得エンドポイント（Discord API経由）
-guilds.get("/:guildId/discord", async (c) => {
-  const guildIdResult = discordIdSchema.safeParse(c.req.param("guildId"));
-
-  if (!guildIdResult.success) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_REQUEST",
-          message: "Invalid guildId",
-          details: guildIdResult.error,
-        },
-      },
-      400,
-    );
-  }
-
-  try {
-    const guildData = await fetchGuild(guildIdResult.data);
-    return c.json({
-      data: guildData,
-    });
-  } catch (error) {
-    if (error instanceof DiscordApiError) {
-      return c.json(
-        {
-          error: {
-            code: error.code,
-            message: error.message,
+      try {
+        const guildData = await fetchGuild(guildId);
+        return c.json(
+          {
+            data: guildData,
           },
-        },
-        404,
-      );
-    }
-    logger.error(`Discord API error: ${error}`);
-    return c.json(
-      {
-        error: {
-          code: "DISCORD_API_ERROR",
-          message: "Failed to fetch guild data",
-        },
-      },
-      500,
-    );
-  }
-});
-
-// Guildチャンネル一覧取得エンドポイント
-guilds.get("/:guildId/channels", async (c) => {
-  const guildIdResult = discordIdSchema.safeParse(c.req.param("guildId"));
-
-  if (!guildIdResult.success) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_REQUEST",
-          message: "Invalid guildId",
-          details: guildIdResult.error,
-        },
-      },
-      400,
-    );
-  }
-
-  try {
-    const channelsData = await fetchGuildChannels(guildIdResult.data);
-    return c.json({
-      data: channelsData,
-    });
-  } catch (error) {
-    if (error instanceof DiscordApiError) {
-      return c.json(
-        {
-          error: {
-            code: error.code,
-            message: error.message,
+          200,
+        );
+      } catch (error) {
+        if (error instanceof DiscordApiError) {
+          return c.json(
+            {
+              error: {
+                code: error.code,
+                message: error.message,
+              },
+            },
+            404,
+          );
+        }
+        logger.error(`Discord API error: ${error}`);
+        return c.json(
+          {
+            error: {
+              code: "DISCORD_API_ERROR",
+              message: "Failed to fetch guild data",
+            },
           },
-        },
-        404,
-      );
-    }
-    logger.error(`Discord API error: ${error}`);
-    return c.json(
-      {
-        error: {
-          code: "DISCORD_API_ERROR",
-          message: "Failed to fetch channels data",
-        },
-      },
-      500,
-    );
-  }
-});
+          500,
+        );
+      }
+    },
+  )
+  .get(
+    "/:guildId/channels",
+    zValidator("param", guildIdParamSchema),
+    async (c) => {
+      const { guildId } = c.req.valid("param");
 
-guilds.get("/:guildId", async (c) => {
-  const guildIdResult = discordIdSchema.safeParse(c.req.param("guildId"));
-
-  if (!guildIdResult.success) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_REQUEST",
-          message: "Invalid guildId",
-          details: guildIdResult.error,
-        },
-      },
-      400,
-    );
-  }
-
-  const includesSchema = z
-    .string()
-    .transform((str) => str.split(","))
-    .optional();
-  const includesResult = includesSchema.safeParse(c.req.query("includes"));
-
-  if (!includesResult.success) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_REQUEST",
-          message: "Invalid includes parameter",
-          details: includesResult.error,
-        },
-      },
-      400,
-    );
-  }
-
-  const includes = includesResult.data ?? [];
-
-  const includeOptions: GuildIncludeOptions = {
-    roles: includes.includes("roles"),
-    channels: includes.includes("channels"),
-    members: includes.includes("members"),
-    messages: includes.includes("messages"),
-  };
-
-  try {
-    const data = await getGuildWithData(guildIdResult.data, includeOptions);
-
-    return c.json(
-      {
-        data,
-      },
-      200,
-    );
-  } catch (error) {
-    if (error instanceof GuildError && error.message === "GUILD_NOT_FOUND") {
-      return c.json(
-        {
-          error: {
-            code: "NOT_FOUND",
-            message: "Guild not found",
+      try {
+        const channelsData = await fetchGuildChannels(guildId);
+        return c.json(
+          {
+            data: channelsData,
           },
-        },
-        404,
-      );
-    }
+          200,
+        );
+      } catch (error) {
+        if (error instanceof DiscordApiError) {
+          return c.json(
+            {
+              error: {
+                code: error.code,
+                message: error.message,
+              },
+            },
+            404,
+          );
+        }
+        logger.error(`Discord API error: ${error}`);
+        return c.json(
+          {
+            error: {
+              code: "DISCORD_API_ERROR",
+              message: "Failed to fetch channels data",
+            },
+          },
+          500,
+        );
+      }
+    },
+  )
+  .get(
+    "/:guildId",
+    zValidator("param", guildIdParamSchema),
+    zValidator("query", guildIncludesQuerySchema),
+    async (c) => {
+      const { guildId } = c.req.valid("param");
+      const { includes } = c.req.valid("query");
 
-    logger.error(`[guild-api] Error: ${error}`);
-    return c.json(
-      {
-        error: {
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Internal server error",
-          details:
-            process.env.NODE_ENV === "development" ? String(error) : null,
-        },
-      },
-      500,
-    );
-  }
-});
+      const includeOptions: GuildIncludeOptions = {
+        roles: includes.includes("roles"),
+        channels: includes.includes("channels"),
+        members: includes.includes("members"),
+        messages: includes.includes("messages"),
+      };
 
-guilds.get("/members/:userId", async (c) => {
-  const userIdResult = discordIdSchema.safeParse(c.req.param("userId"));
+      try {
+        const data = await getGuildWithData(guildId, includeOptions);
 
-  if (!userIdResult.success) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_REQUEST",
-          message: "Invalid userId",
-          details: userIdResult.error,
-        },
-      },
-      400,
-    );
-  }
+        return c.json(
+          {
+            data,
+          },
+          200,
+        );
+      } catch (error) {
+        if (
+          error instanceof GuildError &&
+          error.message === "GUILD_NOT_FOUND"
+        ) {
+          return c.json(
+            {
+              error: {
+                code: "NOT_FOUND",
+                message: "Guild not found",
+              },
+            },
+            404,
+          );
+        }
 
-  const userId = userIdResult.data;
-  const authenticatedUserId = c.get("authenticatedUserId");
+        logger.error(`[guild-api] Error: ${error}`);
+        return c.json(
+          {
+            error: {
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Internal server error",
+              details:
+                process.env.NODE_ENV === "development" ? String(error) : null,
+            },
+          },
+          500,
+        );
+      }
+    },
+  )
+  .get(
+    "/members/:userId",
+    zValidator("param", userIdParamSchema),
+    async (c) => {
+      const { userId } = c.req.valid("param");
+      const authenticatedUserId = c.get("authenticatedUserId");
 
-  if (authenticatedUserId && userId !== authenticatedUserId) {
-    return c.json(
-      {
-        error: {
-          code: "FORBIDDEN",
-          message: "Forbidden - Insufficient permissions",
-        },
-      },
-      403,
-    );
-  }
+      if (authenticatedUserId && userId !== authenticatedUserId) {
+        return c.json(
+          {
+            error: {
+              code: "FORBIDDEN",
+              message: "Forbidden - Insufficient permissions",
+            },
+          },
+          403,
+        );
+      }
 
-  try {
-    const data = await getUserGuilds(userId);
+      try {
+        const data = await getUserGuilds(userId);
 
-    return c.json(
-      {
-        data,
-      },
-      200,
-    );
-  } catch (error) {
-    logger.error(`[guild-api] Error getting user guilds: ${error}`);
-    return c.json(
-      {
-        error: {
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Internal server error",
-          details:
-            process.env.NODE_ENV === "development" ? String(error) : null,
-        },
-      },
-      500,
-    );
-  }
-});
+        return c.json(
+          {
+            data,
+          },
+          200,
+        );
+      } catch (error) {
+        logger.error(`[guild-api] Error getting user guilds: ${error}`);
+        return c.json(
+          {
+            error: {
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Internal server error",
+              details:
+                process.env.NODE_ENV === "development" ? String(error) : null,
+            },
+          },
+          500,
+        );
+      }
+    },
+  );

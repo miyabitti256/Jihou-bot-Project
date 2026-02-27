@@ -402,7 +402,9 @@ async function syncMembersInBatches(guild: Guild): Promise<Set<string>> {
     if (memberData.length > 0) {
       await updateMembersData(guild.id, memberData);
       totalSynced += memberData.length;
-      memberData.forEach((m) => activeMemberIds.add(m.user.id));
+      for (const member of memberData) {
+        activeMemberIds.add(member.user.id);
+      }
     }
 
     // 処理済みのメンバーをキャッシュから即追い出す

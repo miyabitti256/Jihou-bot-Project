@@ -6,15 +6,12 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import type { ApiResponse } from "@/types/api-response";
 import { drawOmikuji } from "./actions";
 
-interface OmikujiResponse extends ApiResponse {
+interface OmikujiResponse {
   data: {
-    id: string;
-    userId: string;
     result: string;
-    createdAt: Date;
+    money: number;
   };
 }
 
@@ -26,12 +23,12 @@ export default function DrawOmikuji() {
   const getOmikuji = async () => {
     setIsDrawing(true);
 
-    const data: OmikujiResponse = await drawOmikuji();
+    const data = await drawOmikuji();
 
     setTimeout(() => {
-      if (data.data) {
-        setOmikuji(data);
-      } else {
+      if ("data" in data) {
+        setOmikuji(data as OmikujiResponse);
+      } else if ("error" in data) {
         toast.error(data.error?.message ?? "エラーが発生しました");
       }
       setIsDrawing(false);

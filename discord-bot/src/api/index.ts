@@ -1,12 +1,13 @@
 import { apiKeyAuthMiddleware, apiKeyWithUserAuthMiddleware } from "@lib/auth";
 import { defaultRateLimiter, mutationRateLimiter } from "@lib/rate-limiter";
-import { type Context, Hono } from "hono";
+import { Hono } from "hono";
 import { secureHeaders } from "hono/secure-headers";
+import type { AppEnv } from "./env";
 import { guilds } from "./routes/guilds";
 import { minigame } from "./routes/minigame";
 import { users } from "./routes/users";
 
-const app = new Hono().basePath("/api");
+const app = new Hono<AppEnv>().basePath("/api");
 
 // セキュリティヘッダーの追加
 app.use(
@@ -35,9 +36,6 @@ app.use(
   }),
 );
 
-// ヘルスチェックは認証不要
-app.get("/health", (c: Context) => c.json({ status: "ok" }));
-
 // ユーザーデータ関連APIはユーザーID認可チェック付き
 app.use("/users/*", apiKeyWithUserAuthMiddleware);
 app.use("/minigame/*", apiKeyWithUserAuthMiddleware);
@@ -50,8 +48,12 @@ app.use("/minigame/*", defaultRateLimiter);
 app.use("/users/*", defaultRateLimiter);
 app.use("/guilds/*", mutationRateLimiter);
 
-app.route("/guilds", guilds);
-app.route("/users", users);
-app.route("/minigame", minigame);
+// ルートマウントをチェーン化して型をキャプチャ
+const routes = app
+  .get("/health", (c) => c.json({ status: "ok" }))
+  .route("/guilds", guilds)
+  .route("/users", users)
+  .route("/minigame", minigame);
 
+export type AppType = typeof routes;
 export default app;

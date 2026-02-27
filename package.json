@@ -1,0 +1,16 @@
+{
+  "name": "jihou-bot-project",
+  "private": true,
+  "workspaces": [
+    "discord-bot",
+    "front-app"
+  ],
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.4"
+  },
+  "scripts": {
+    "lint": "biome check .",
+    "lint:fix": "biome check --fix .",
+    "format": "biome format --write ."
+  }
+}

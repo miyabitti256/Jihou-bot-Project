@@ -34,7 +34,6 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import type { GuildChannel, ScheduledMessage } from "@/types/api-response";
 import { createSchedule, updateSchedule } from "./actions";
 
 const formSchema = z.object({
@@ -51,11 +50,19 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+// Server Componentから渡されるprops型
 interface ScheduleFormProps {
-  initialData: ScheduledMessage | null;
+  initialData: {
+    id: string;
+    message: string;
+    channelId: string;
+    scheduleTime: string;
+    guildId: string;
+    isActive: boolean;
+  } | null;
   isNew: boolean;
   guildData: { name: string; id: string; icon: string };
-  channels: GuildChannel[] | null;
+  channels: { id: string; name: string; type: string; guildId: string }[];
   userId: string;
 }
 
@@ -69,11 +76,7 @@ export function ScheduleForm({
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(
     isNew ? createSchedule : updateSchedule,
-    {
-      success: false,
-      data: null,
-      error: null,
-    },
+    null,
   );
 
   const handleSubmit = (data: FormData) => {
@@ -112,10 +115,14 @@ export function ScheduleForm({
         },
         {
           loading: "送信中...",
-          success: state.success
-            ? state.data?.message
-            : "メッセージの設定に成功しました",
-          error: state.error?.message ?? "エラーが発生しました",
+          success:
+            state && "data" in state
+              ? (state.data?.message ?? "メッセージの設定に成功しました")
+              : "メッセージの設定に成功しました",
+          error:
+            state && "error" in state
+              ? (state.error?.message ?? "エラーが発生しました")
+              : "エラーが発生しました",
         },
       );
     });
@@ -238,8 +245,8 @@ export function ScheduleForm({
                         >
                           {field.value
                             ? channels?.find(
-                              (channel) => channel.id === field.value,
-                            )?.name
+                                (channel) => channel.id === field.value,
+                              )?.name
                             : "チャンネルを選択"}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
@@ -312,9 +319,7 @@ export function ScheduleForm({
               )}
             />
 
-            {isNew ? (
-              <></>
-            ) : (
+            {!isNew && (
               <FormField
                 control={form.control}
                 name="isActive"

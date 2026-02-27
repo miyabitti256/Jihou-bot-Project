@@ -1,3 +1,4 @@
+import { zValidator } from "@hono/zod-validator";
 import { logger } from "@lib/logger";
 import {
   CoinflipError,
@@ -6,139 +7,127 @@ import {
   playCoinflip,
 } from "@services/minigame/coinflip";
 import { Hono } from "hono";
-import { coinflipPlaySchema } from "../../schemas";
-
-export const coinflip = new Hono();
+import type { AppEnv } from "../../env";
+import {
+  coinflipHistoryQuerySchema,
+  coinflipPlaySchema,
+  userIdParamSchema,
+} from "../../schemas";
 
 // コインフリップをプレイするAPI
-coinflip.post("/play", async (c) => {
-  try {
-    const userId = c.get("authenticatedUserId");
-
-    if (!userId) {
-      return c.json(
-        {
-          error: {
-            message: "認証されたユーザーIDが見つかりません",
-            code: "MISSING_AUTHENTICATED_USER",
-          },
-        },
-        401,
-      );
-    }
-
-    const body = await c.req.json();
-    const parsed = coinflipPlaySchema.safeParse(body);
-
-    if (!parsed.success) {
-      return c.json(
-        {
-          error: {
-            code: "VALIDATION_ERROR",
-            message: "入力データが不正です",
-            details: parsed.error.issues,
-          },
-        },
-        400,
-      );
-    }
-
-    const { bet, choice } = parsed.data;
-    const result = await playCoinflip(userId, bet, choice);
-
-    return c.json({
-      data: result,
-    });
-  } catch (error) {
-    if (error instanceof CoinflipError) {
-      const statusCode = getErrorStatusCode(error.message);
-
-      return c.json(
-        {
-          error: {
-            message: getErrorMessage(error.message),
-            code: error.message,
-          },
-        },
-        statusCode as 400 | 404 | 500,
-      );
-    }
-
-    logger.error(`[coinflip-api] コインフリップエラー: ${error}`);
-    return c.json(
-      {
-        error: {
-          message: "内部サーバーエラーが発生しました",
-          code: "INTERNAL_SERVER_ERROR",
-        },
-      },
-      500,
-    );
-  }
-});
-
 // ユーザーの所持金情報を取得するAPI
-coinflip.get("/status/:userId", async (c) => {
-  const userId = c.req.param("userId");
-  if (!userId) {
-    return c.json(
-      {
-        error: {
-          message: "ユーザーIDが指定されていません",
-          code: "USER_ID_NOT_PROVIDED",
-        },
-      },
-      400,
-    );
-  }
-
-  try {
-    const money = await getUserMoneyStatus(userId);
-
-    return c.json({
-      data: {
-        money,
-      },
-    });
-  } catch (error) {
-    logger.error(`[coinflip-api] 所持金取得エラー: ${error}`);
-    return c.json(
-      {
-        error: {
-          message: "内部サーバーエラーが発生しました",
-          code: "INTERNAL_SERVER_ERROR",
-        },
-      },
-      500,
-    );
-  }
-});
-
 // コインフリップの履歴を取得するAPI
-coinflip.get("/history/:userId", async (c) => {
-  const userId = c.req.param("userId");
-  const takeQuery = c.req.query("take");
-  const take = takeQuery ? Number.parseInt(takeQuery) : 100;
+export const coinflip = new Hono<AppEnv>()
+  .post("/play", zValidator("json", coinflipPlaySchema), async (c) => {
+    try {
+      const userId = c.get("authenticatedUserId");
 
-  try {
-    const history = await getCoinflipHistory(userId, take);
+      if (!userId) {
+        return c.json(
+          {
+            error: {
+              message: "認証されたユーザーIDが見つかりません",
+              code: "MISSING_AUTHENTICATED_USER",
+            },
+          },
+          401,
+        );
+      }
 
-    return c.json({
-      data: history,
-    });
-  } catch (error) {
-    logger.error(`[coinflip-api] 履歴取得エラー: ${error}`);
-    return c.json(
-      {
-        error: {
-          message: "内部サーバーエラーが発生しました",
-          code: "INTERNAL_SERVER_ERROR",
+      const { bet, choice } = c.req.valid("json");
+      const result = await playCoinflip(userId, bet, choice);
+
+      return c.json(
+        {
+          data: result,
         },
-      },
-      500,
-    );
-  }
-});
+        200,
+      );
+    } catch (error) {
+      if (error instanceof CoinflipError) {
+        const statusCode = getErrorStatusCode(error.message);
+
+        return c.json(
+          {
+            error: {
+              message: getErrorMessage(error.message),
+              code: error.message,
+            },
+          },
+          statusCode as 400 | 404 | 500,
+        );
+      }
+
+      logger.error(`[coinflip-api] コインフリップエラー: ${error}`);
+      return c.json(
+        {
+          error: {
+            message: "内部サーバーエラーが発生しました",
+            code: "INTERNAL_SERVER_ERROR",
+          },
+        },
+        500,
+      );
+    }
+  })
+  .get("/status/:userId", zValidator("param", userIdParamSchema), async (c) => {
+    const { userId } = c.req.valid("param");
+
+    try {
+      const money = await getUserMoneyStatus(userId);
+
+      return c.json(
+        {
+          data: {
+            money,
+          },
+        },
+        200,
+      );
+    } catch (error) {
+      logger.error(`[coinflip-api] 所持金取得エラー: ${error}`);
+      return c.json(
+        {
+          error: {
+            message: "内部サーバーエラーが発生しました",
+            code: "INTERNAL_SERVER_ERROR",
+          },
+        },
+        500,
+      );
+    }
+  })
+  .get(
+    "/history/:userId",
+    zValidator("param", userIdParamSchema),
+    zValidator("query", coinflipHistoryQuerySchema),
+    async (c) => {
+      const { userId } = c.req.valid("param");
+      const { take } = c.req.valid("query");
+
+      try {
+        const history = await getCoinflipHistory(userId, take);
+
+        return c.json(
+          {
+            data: history,
+          },
+          200,
+        );
+      } catch (error) {
+        logger.error(`[coinflip-api] 履歴取得エラー: ${error}`);
+        return c.json(
+          {
+            error: {
+              message: "内部サーバーエラーが発生しました",
+              code: "INTERNAL_SERVER_ERROR",
+            },
+          },
+          500,
+        );
+      }
+    },
+  );
 
 // エラーメッセージを取得する関数
 function getErrorMessage(errorCode: string): string {

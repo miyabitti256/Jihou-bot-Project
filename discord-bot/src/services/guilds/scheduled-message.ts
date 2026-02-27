@@ -141,7 +141,9 @@ async function sendScheduledMessage(
  * （フロントエンド: <input type="time"> → "04:00" 等）
  */
 function toJstTimeString(date: Date): string {
-  const jst = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
+  const jst = new Date(
+    date.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }),
+  );
   return `${jst.getHours().toString().padStart(2, "0")}:${jst.getMinutes().toString().padStart(2, "0")}`;
 }
 
@@ -174,7 +176,9 @@ async function dispatchMessages(): Promise<void> {
     cursor.setSeconds(0, 0);
     cursor.setMinutes(cursor.getMinutes() + 1);
 
-    const jstNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
+    const jstNow = new Date(
+      now.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }),
+    );
     while (cursor <= jstNow) {
       targetTimes.add(
         `${cursor.getHours().toString().padStart(2, "0")}:${cursor.getMinutes().toString().padStart(2, "0")}`,
@@ -222,9 +226,7 @@ async function dispatchMessages(): Promise<void> {
       );
     }
   } catch (error) {
-    logger.error(
-      `[scheduled-message] Dispatch cycle failed: ${error}`,
-    );
+    logger.error(`[scheduled-message] Dispatch cycle failed: ${error}`);
   }
 }
 

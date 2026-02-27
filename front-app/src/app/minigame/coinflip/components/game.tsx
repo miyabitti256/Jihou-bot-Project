@@ -39,17 +39,18 @@ export default function CoinflipGame() {
 
     try {
       const data = await flipCoin(bet, choice);
-      if (data.data) {
+      if ("data" in data) {
         setIsFlipping(true);
         setTimeout(() => {
           setResult(data.data);
           setIsFlipping(false);
         }, 1000);
-      } else {
+      } else if ("error" in data) {
         toast.error(data.error.message);
         setIsFlipping(false);
       }
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: <エラーをコンソールに出力するため>
       console.error(error);
       setIsFlipping(false);
     }
@@ -170,8 +171,9 @@ export default function CoinflipGame() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className={`p-4 rounded-lg text-center ${result.win ? "bg-green-500" : "bg-red-500"
-                }`}
+              className={`p-4 rounded-lg text-center ${
+                result.win ? "bg-green-500" : "bg-red-500"
+              }`}
             >
               <h2 className="text-2xl font-bold mb-2">
                 {result.win ? "勝ち！" : "負け..."}

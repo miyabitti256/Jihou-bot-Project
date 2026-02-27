@@ -14,8 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { auth } from "@/lib/auth";
-import { authenticatedFetch } from "@/lib/auth-api";
-import type { GuildChannel, Janken, UserData } from "@/types/api-response";
+import { createApiClient } from "@/lib/rpc-client";
 
 export default async function Dashboard() {
   const session = await auth();
@@ -24,17 +23,16 @@ export default async function Dashboard() {
     return <NoAuthRedirect redirectPath="/" />;
   }
 
-  const userResponse = await authenticatedFetch(
-    `${process.env.API_URL}/api/users/${session.user.id}?includes=scheduledmessage,omikuji,coinflip,janken`,
-    {
-      method: "GET",
-    },
-  );
-  const userData: UserData = await userResponse.json();
+  const client = await createApiClient();
 
-  if (!userData || !userData.data) {
+  const userResponse = await client.api.users[":userId"].$get({
+    param: { userId: session.user.id },
+    query: { includes: "scheduledmessage,omikuji,coinflip,janken" },
+  });
+  if (!userResponse.ok) {
     return <div>User data not found</div>;
   }
+  const userData = await userResponse.json();
 
   const scheduledMessages = userData.data.ScheduledMessage ?? [];
   const omikuji = userData.data.Omikuji ?? [];
@@ -79,7 +77,7 @@ export default async function Dashboard() {
     return hands[choice as keyof typeof hands] || choice;
   };
 
-  const calculateBalance = (games: Janken[]) => {
+  const calculateBalance = (games: typeof allJankenGames) => {
     return games.reduce((acc, game) => {
       const isChallenger = game.challengerId === session.user.id;
       const myBet = isChallenger
@@ -103,23 +101,19 @@ export default async function Dashboard() {
   );
 
   const getGuildData = async (guildId: string) => {
-    const guildResponse = await authenticatedFetch(
-      `${process.env.API_URL}/api/guilds/${guildId}?includes=channels,roles`,
-      {
-        method: "GET",
-      },
-    );
-    return await guildResponse.json();
+    const res = await client.api.guilds[":guildId"].$get({
+      param: { guildId },
+      query: { includes: "channels,roles" },
+    });
+    return await res.json();
   };
 
-  const getUserData = async (userId: string) => {
-    const userResponse = await authenticatedFetch(
-      `${process.env.API_URL}/api/users/${userId}`,
-      {
-        method: "GET",
-      },
-    );
-    return await userResponse.json();
+  const getUserDataById = async (userId: string) => {
+    const res = await client.api.users[":userId"].$get({
+      param: { userId },
+      query: {},
+    });
+    return await res.json();
   };
 
   return (
@@ -165,7 +159,15 @@ export default async function Dashboard() {
                       </TableRow>
                     ) : (
                       scheduledMessages.map(async (message) => {
-                        const guildData = await getGuildData(message.guildId);
+                        const guildData = (await getGuildData(
+                          message.guildId,
+                        )) as {
+                          data: {
+                            iconUrl: string;
+                            name: string;
+                            channels: { id: string; name: string }[];
+                          };
+                        };
                         return (
                           <TableRow key={message.id}>
                             <TableCell>
@@ -183,8 +185,7 @@ export default async function Dashboard() {
                               #
                               {
                                 guildData.data.channels.find(
-                                  (channel: GuildChannel) =>
-                                    channel.id === message.channelId,
+                                  (channel) => channel.id === message.channelId,
                                 )?.name
                               }
                             </TableCell>
@@ -343,7 +344,7 @@ export default async function Dashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {userData.data?.Omikuji?.length === 0 ? (
+                    {omikuji.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={2} className="text-center">
                           まだおみくじを引いたことがありません
@@ -481,7 +482,14 @@ export default async function Dashboard() {
                         const opponent = isChallenger
                           ? game.opponentId
                           : game.challengerId;
-                        const opponentData = await getUserData(opponent);
+                        const opponentData = (await getUserDataById(
+                          opponent,
+                        )) as {
+                          data: {
+                            avatarUrl: string;
+                            username: string;
+                          };
+                        };
                         const isWinner = game.winnerUserId === session.user.id;
 
                         return (

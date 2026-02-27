@@ -20,21 +20,3 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
 
   return headers;
 }
-
-/**
- * 認証済みfetchのヘルパー関数
- */
-export async function authenticatedFetch(
-  url: string,
-  options: RequestInit = {},
-): Promise<Response> {
-  const headers = await getAuthHeaders();
-
-  return fetch(url, {
-    ...options,
-    headers: {
-      ...headers,
-      ...options.headers,
-    },
-  });
-}

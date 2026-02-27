@@ -25,6 +25,21 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@api-types": [
+        "../discord-bot/src/api/app-type"
+      ],
+      "@lib/*": [
+        "../discord-bot/src/lib/*"
+      ],
+      "@services/*": [
+        "../discord-bot/src/services/*"
+      ],
+      "@generated/*": [
+        "../discord-bot/src/generated/*"
+      ],
+      "@commands/*": [
+        "../discord-bot/src/commands/*"
       ]
     }
   },

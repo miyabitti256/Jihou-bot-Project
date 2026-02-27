@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
-import { authenticatedFetch } from "@/lib/auth-api";
+import { createApiClient } from "@/lib/rpc-client";
 import { getTokyoDate, hasDrawnToday } from "@/lib/utils";
 import DrawOmikuji from "./components/draw-omikuji";
 
@@ -12,29 +12,31 @@ export default async function OmikujiPage() {
     return <div>ログインしてください</div>;
   }
 
-  const user = await authenticatedFetch(
-    `${process.env.API_URL}/api/users/${session.user.id}`,
-    {
-      method: "GET",
-    },
-  );
+  const client = await createApiClient();
 
-  const omikuji = await authenticatedFetch(
-    `${process.env.API_URL}/api/minigame/omikuji/result/${session.user.id}?take=1`,
-    {
-      method: "GET",
-    },
-  );
+  const userRes = await client.api.users[":userId"].$get({
+    param: { userId: session.user.id },
+    query: {},
+  });
+
+  const omikujiRes = await client.api.minigame.omikuji.result[":userId"].$get({
+    param: { userId: session.user.id },
+    query: { take: "1" },
+  });
 
   const data = {
-    user: await user.json(),
-    omikujiResults: await omikuji.json(),
+    user: await userRes.json(),
+    omikujiResults: await omikujiRes.json(),
   };
 
   const now = getTokyoDate();
-  const lastDraw = new Date(data.user?.data.lastDraw);
+  const lastDraw = new Date(
+    (data.user as { data: { lastDraw: string } }).data.lastDraw,
+  );
   const isDrawn = hasDrawnToday(now, lastDraw);
-  const latestResult = data.omikujiResults?.data[0];
+  const latestResult = (
+    data.omikujiResults as { data: Array<{ result: string }> }
+  ).data[0];
 
   return isDrawn ? (
     <div className="flex flex-col items-center justify-center p-8">

@@ -1,54 +1,37 @@
 {
+  "root": false,
   "$schema": "https://biomejs.dev/schemas/2.4.4/schema.json",
-  "vcs": {
-    "enabled": false,
-    "clientKind": "git",
-    "useIgnoreFile": true
-  },
+  "extends": ["../biome.json"],
   "files": {
     "includes": [
-      "**/*",
-      "!node_modules",
+      "**/*.ts",
+      "**/*.tsx",
+      "**/*.js",
+      "**/*.jsx",
+      "**/*.mjs",
       "!.next",
-      "!dist",
-      "!public",
-      "!prisma",
-      "!supabase"
+      "!public"
     ]
   },
-  "formatter": {
-    "enabled": true,
-    "indentStyle": "space",
-    "indentWidth": 2,
-    "lineWidth": 80,
-    "formatWithErrors": true
-  },
-  "assist": {
-    "actions": {
-      "source": {
-        "organizeImports": "on"
-      }
-    }
-  },
   "linter": {
-    "enabled": true,
     "rules": {
-      "recommended": true,
       "suspicious": {
-        "noExplicitAny": "error",
         "noConsole": {
           "level": "warn",
           "options": {
             "allow": ["log"]
           }
         }
+      },
+      "correctness": {
+        "useExhaustiveDependencies": "warn",
+        "useHookAtTopLevel": "error"
+      },
+      "a11y": {
+        "useAltText": "warn",
+        "noSvgWithoutTitle": "warn",
+        "useSemanticElements": "warn"
       }
-    }
-  },
-  "javascript": {
-    "formatter": {
-      "quoteStyle": "double",
-      "semicolons": "always"
     }
   },
   "css": {

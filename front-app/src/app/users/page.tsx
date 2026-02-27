@@ -5,8 +5,7 @@ import NoAuthRedirect from "@/components/noAuthRedirect";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { auth } from "@/lib/auth";
-import { authenticatedFetch } from "@/lib/auth-api";
-import type { UsersListResponse } from "@/types/api-response";
+import { createApiClient } from "@/lib/rpc-client";
 import UsersPagination from "./components/users-pagination";
 import UsersSearchForm from "./components/users-search-form";
 
@@ -21,37 +20,29 @@ export default async function UsersPage({
     return <NoAuthRedirect redirectPath="/" />;
   }
 
-  // 検索とページネーションの処理
   const { page, search } = await searchParams;
   const pageNumber = Number(page) || 1;
   const itemsPerPage = 12;
 
-  // APIからユーザー一覧を取得
-  const apiUrl = new URL(
-    `${process.env.API_URL}/api/users/guilds/${session.user.id}`,
-  );
+  const client = await createApiClient();
 
-  // クエリパラメータの設定
-  apiUrl.searchParams.set("page", pageNumber.toString());
-  apiUrl.searchParams.set("limit", itemsPerPage.toString());
-  if (search) {
-    apiUrl.searchParams.set("search", search);
-  }
-
-  // APIリクエスト
-  const response = await authenticatedFetch(apiUrl.toString(), {
-    method: "GET",
-    cache: "no-store", // SSRに変更
+  const res = await client.api.users.guilds[":userId"].$get({
+    param: { userId: session.user.id },
+    query: {
+      page: pageNumber.toString(),
+      limit: itemsPerPage.toString(),
+      ...(search ? { search } : {}),
+    },
   });
 
-  if (!response.ok) {
-    if (response.status === 404) {
+  if (!res.ok) {
+    if (res.status === 404) {
       return notFound();
     }
     throw new Error("ユーザー一覧の取得に失敗しました");
   }
 
-  const data: UsersListResponse = await response.json();
+  const data = await res.json();
   const { users, total } = data.data;
   const totalPages = Math.ceil(total / itemsPerPage);
 

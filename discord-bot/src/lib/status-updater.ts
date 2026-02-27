@@ -1,6 +1,9 @@
 import { client } from "@lib/client";
 import { logger } from "@lib/logger";
-import { cleanupGhostGuilds, syncGuildAllData } from "@services/db-sync/guild-sync";
+import {
+  cleanupGhostGuilds,
+  syncGuildAllData,
+} from "@services/db-sync/guild-sync";
 import { ActivityType } from "discord.js";
 import cron, { type ScheduledTask } from "node-cron";
 

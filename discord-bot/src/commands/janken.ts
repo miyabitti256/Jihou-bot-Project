@@ -32,15 +32,15 @@ type GameState =
   | "finished"
   | "rematch_confirm";
 
-interface GameResult {
-  challenger: User;
-  opponent: User;
-  challengerChoice: ChoiceKey;
-  opponentChoice: ChoiceKey;
-  winner: User | null;
-  challengerBet?: number;
-  opponentBet?: number;
-}
+// interface GameResult {
+//   challenger: User;
+//   opponent: User;
+//   challengerChoice: ChoiceKey;
+//   opponentChoice: ChoiceKey;
+//   winner: User | null;
+//   challengerBet?: number;
+//   opponentBet?: number;
+// }
 
 class JankenGame {
   private interaction: ChatInputCommandInteraction;
@@ -156,8 +156,9 @@ class JankenGame {
       throw new Error("Message not initialized");
     }
 
+    const message = this.message;
     return new Promise((resolve, reject) => {
-      const collector = this.message!.createMessageComponentCollector({
+      const collector = message.createMessageComponentCollector({
         filter: (i) =>
           i.customId === "join_janken" && i.user.id !== this.challenger.id,
         time: CONSTANTS.TIMEOUT_DURATION,
@@ -337,8 +338,9 @@ class JankenGame {
   private async collectChoices(): Promise<void> {
     if (!this.opponent || !this.message) return;
 
+    const message = this.message;
     return new Promise((resolve, reject) => {
-      const collector = this.message!.createMessageComponentCollector({
+      const collector = message.createMessageComponentCollector({
         filter: (i) =>
           i.customId.startsWith("choice_") &&
           (i.user.id === this.challenger.id || i.user.id === this.opponent?.id),
@@ -552,9 +554,10 @@ class JankenGame {
             }
 
             rematchRequesterId = i.user.id;
+            if (!this.opponent) return;
             const waitingUser =
               i.user.id === this.challenger.id
-                ? this.opponent!
+                ? this.opponent
                 : this.challenger;
 
             await this.handleRematchConfirmation(
@@ -659,7 +662,8 @@ class JankenGame {
             this.challenger,
             this.isBetMode,
           );
-          await rematchGame.startWithOpponent(this.opponent!);
+          if (!this.opponent) return;
+          await rematchGame.startWithOpponent(this.opponent);
           resolveParent();
         }
       } catch (error: unknown) {

@@ -1,15 +1,9 @@
 "use server";
 
-import { authenticatedFetch } from "@/lib/auth-api";
+import { createApiClient } from "@/lib/rpc-client";
 
 export const drawOmikuji = async () => {
-  // userIdはJWTトークンから自動取得されるため、パラメータとして送信しない
-  const result = await authenticatedFetch(
-    `${process.env.API_URL}/api/minigame/omikuji/draw`,
-    {
-      method: "POST",
-      body: JSON.stringify({}), // 空のボディ
-    },
-  );
-  return result.json();
+  const client = await createApiClient();
+  const res = await client.api.minigame.omikuji.draw.$post();
+  return res.json();
 };

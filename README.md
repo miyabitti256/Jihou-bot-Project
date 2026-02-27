@@ -1,7 +1,7 @@
 # Jihou-Bot Project
 
 Discordサーバー向け多機能Botと管理用Webフロントエンドからなる**フルスタックモノレポ**。  
-Bot本体がHono製REST APIを内包するサービスドリブンなアーキテクチャを採用し、Next.jsフロントエンドとのServer-to-Server通信を設計の中核に置いている。
+Bot本体がHono製REST APIを内包するサービスドリブンなアーキテクチャを採用し、**HonoRPCによるエンドツーエンド型安全**なNext.jsフロントエンドとのServer-to-Server通信を設計の中核に置いている。
 
 ---
 
@@ -21,7 +21,7 @@ Bot本体がHono製REST APIを内包するサービスドリブンなアーキ�
 │  ┌─────────────┐  ┌──────────────────────┐                  │
 │  │  Bot Core   │  │  REST API (Hono)      │                  │
 │  │  commands/  │  │  /api/guilds          │                  │
-│  │  handler/   │  │  /api/users           │◄─── HTTPS S2S ───┐
+│  │  handler/   │  │  /api/users           │◄── HonoRPC S2S ──┐
 │  │  services/  │  │  /api/minigame        │                  │
 │  └──────┬──────┘  └──────────┬───────────┘                  │
 │         └──────────┬─────────┘                              │
@@ -43,10 +43,10 @@ Bot本体がHono製REST APIを内包するサービスドリブンなアーキ�
            DBアクセスはdiscord-botのみ
            （front-appにPrismaの依存は存在しない）
 ┌──────────────────────────────────────────────────────────────┐
-│  front-app  (Next.js 15 App Router)                          │
+│  front-app  (Next.js 16 App Router)                          │
 │                                                              │
 │  Server Actions / Server Components                          │
-│     └─ 全データアクセス → discord-bot API経由 (S2S) ─────────┘
+│     └─ hc<AppType>() RPCクライアント経由 (S2S・型安全) ──────┘
 │                                                              │
 │  Discord OAuth2 (NextAuth.js v5)                             │
 │     └─ session.user.id → X-User-Id ヘッダーに乗せてS2S通信   │
@@ -62,15 +62,49 @@ Bot本体がHono製REST APIを内包するサービスドリブンなアーキ�
 
 ## 設計の軸
 
-### 1. Server-to-Server (S2S) 通信
+### 1. HonoRPC によるエンドツーエンド型安全 S2S 通信
 
-フロントエンド（Next.js Server Actions）からBotのAPIへの通信はすべてサーバーサイドで完結する。
+フロントエンド（Next.js Server Actions / Server Components）からBotのAPIへの通信は**HonoRPCクライアント**を使い、すべてサーバーサイドで完結する。APIルートの型定義がそのままフロントエンドに伝播するため、**手動の型定義やキャストは一切不要**。
 
 ```
-ブラウザ → Next.js Server Action → discord-bot API
-                ↑
-           クライアントにAPIキーは一切露出しない
+ブラウザ → Next.js Server Component → hc<AppType>() → discord-bot API
+                                          ↑
+               APIの入出力型がTypeScriptレベルで自動共有される
+               クライアントにAPIキーは一切露出しない
 ```
+
+#### RPCクライアント
+
+`front-app/src/lib/rpc-client.ts` で `hc<AppType>()` を生成し、認証ヘッダーを自動付与する。`AppType` は discord-bot の Hono アプリから export された型であり、**APIルートのリクエスト・レスポンスの型がコンパイル時に共有される**。
+
+```typescript
+// rpc-client.ts
+import type { AppType } from "@api-types";
+import { hc } from "hono/client";
+
+export async function createApiClient() {
+  const headers = await getAuthHeaders();
+  return hc<AppType>(process.env.API_URL as string, { headers });
+}
+```
+
+#### 型安全な呼び出し
+
+Server Component / Server Action から RPC クライアントを使うと、パスパラメータ・クエリパラメータ・レスポンスの型がすべて自動推論される。
+
+```typescript
+// Server Component での使用例
+const client = await createApiClient();
+const res = await client.api.users[":userId"].$get({
+  param: { userId: id },                    // ← パスパラメータも型チェック
+  query: { includes: "scheduledmessage" },   // ← クエリも型チェック
+});
+if (!res.ok) throw new Error("...");
+const data = await res.json();  // ← 推論型: { data: { id, username, ScheduledMessage[], ... } }
+//                                   手動キャスト不要！
+```
+
+#### 認証ヘッダー
 
 `front-app/src/lib/auth-api.ts` にAPIキーとユーザーIDを付与するヘルパーを集約し、認証情報が必要な全てのfetchがここを通る形を徹底している。
 
@@ -123,14 +157,23 @@ api/routes/minigame/coinflip.ts
 
 **フロントエンドはDBに一切直接アクセスしない**。`front-app/package.json` に `prisma` や `@prisma/client` の依存が存在しないことがその証拠である。データの読み書きはすべて discord-bot API への S2S リクエスト経由とすることで、ビジネスロジック・DBスキーマの詳細をBotサーバー内に完全に閉じ込めている。
 
-### 4. Zodによる一元バリデーション
+### 4. Zod + zValidator による型安全バリデーション
 
-`api/schemas.ts` に全エンドポイント共通のZodスキーマを定義し、ルートハンドラで `safeParse` を行う。
+`@hono/zod-validator` を活用し、Zodスキーマによるバリデーションと型推論を統合。バリデーション結果は `c.req.valid()` で型安全に取得でき、RPCクライアント側ではリクエストボディの型も自動推論される。
 
 ```typescript
-// schemas.ts
-export const discordIdSchema = z.string().min(1).regex(/^\d+$/, "Invalid ID format");
-export const coinflipPlaySchema = z.object({ bet: z.number().int().min(1), choice: z.enum(["heads", "tails"]) });
+// ルートハンドラでの使用例
+app.post("/play",
+  zValidator("json", z.object({
+    bet: z.number().int().min(1),
+    choice: z.enum(["heads", "tails"]),
+  })),
+  async (c) => {
+    const { bet, choice } = c.req.valid("json"); // ← 型安全
+    const result = await playCoinflip(userId, bet, choice);
+    return c.json({ data: result }, 200); // ← ステータスコード明示でRPC型推論に反映
+  }
+);
 ```
 
 バリデーション失敗時は一貫した `{ error: { code, message, details } }` フォーマットで返却する。
@@ -169,7 +212,9 @@ mutationRateLimiter  → 10秒間に15リクエスト（/guilds 書き込み系�
 |---|---|
 | **Bun** | ランタイム・パッケージマネージャ |
 | **discord.js v14** | Discord Gatewayクライアント |
-| **Hono v4** | 軽量REST APIフレームワーク |
+| **Hono v4** | REST APIフレームワーク + RPCサーバー（AppType export） |
+| **hono/client** | RPCクライアント型生成（front-appと型共有） |
+| **@hono/zod-validator** | Zodスキーマ統合バリデーション |
 | **Prisma v7 + pg** | ORM（`@prisma/adapter-pg` でpgネイティブ接続） |
 | **Zod** | スキーマバリデーション |
 | **node-cron** | 毎時ギルド同期・時報スケジューラ |
@@ -182,7 +227,8 @@ mutationRateLimiter  → 10秒間に15リクエスト（/guilds 書き込み系�
 
 | 技術 | 用途 |
 |---|---|
-| **Next.js 15** (App Router) | フロントエンドフレームワーク |
+| **Next.js 16** (App Router) | フロントエンドフレームワーク v15からアップデート |
+| **hono/client** (`hc<AppType>`) | HonoRPCクライアント（エンドツーエンド型安全） |
 | **NextAuth.js v5** | Discord OAuth2認証 |
 | **Tailwind CSS v4** | スタイリング |
 | **shadcn/ui** | UIコンポーネントライブラリ |
@@ -237,6 +283,7 @@ Jihou-bot-Project/
         ├── app/                # App Router ページ
         ├── components/         # UIコンポーネント
         └── lib/
+            ├── rpc-client.ts   # HonoRPCクライアント（hc<AppType>生成）
             ├── auth.ts         # NextAuth設定
             └── auth-api.ts     # S2S通信用認証ヘッダーヘルパー（Server専用）
 ```

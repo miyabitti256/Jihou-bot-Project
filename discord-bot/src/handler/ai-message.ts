@@ -103,7 +103,7 @@ export async function handleMessageCreate(message: Message): Promise<void> {
 
   // データベースでAIチャットスレッドかどうかを確認
   try {
-    let chatThread;
+    let chatThread: Awaited<ReturnType<typeof getChatThread>> | undefined;
     try {
       chatThread = await getChatThread(thread.id);
     } catch (error) {

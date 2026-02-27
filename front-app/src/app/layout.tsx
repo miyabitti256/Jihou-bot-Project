@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { Noto_Sans_JP } from "next/font/google";
+import { M_PLUS_Rounded_1c } from "next/font/google";
 import Footer from "@/components/layout/footer";
 import Header from "@/components/layout/header";
 import { ThemeProvider } from "@/provider/theme-provider";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
-const noto_sans_jp = Noto_Sans_JP({
+const m_plus_rounded_1c = M_PLUS_Rounded_1c({
+  weight: ["400", "700", "800"],
   subsets: ["latin"],
 });
 
@@ -23,7 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja" suppressHydrationWarning>
-      <body className={`${noto_sans_jp.className} antialiased`}>
+      <body className={`${m_plus_rounded_1c.className} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Toaster position="top-center" />
           <Header />

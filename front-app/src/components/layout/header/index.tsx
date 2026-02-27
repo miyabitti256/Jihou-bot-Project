@@ -12,7 +12,7 @@ export default async function Header() {
             <Navigation />
           </div>
           <h1 className="text-xl font-bold">
-            <Link href="/">Jihou-Bot-App</Link>
+            <Link href="/">Jihou Bot</Link>
           </h1>
         </div>
         <div className="hidden lg:block">
