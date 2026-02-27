@@ -1,10 +1,11 @@
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { M_PLUS_Rounded_1c } from "next/font/google";
 import Footer from "@/components/layout/footer";
 import Header from "@/components/layout/header";
+import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/provider/theme-provider";
 import "./globals.css";
-import { Toaster } from "@/components/ui/sonner";
 
 const m_plus_rounded_1c = M_PLUS_Rounded_1c({
   weight: ["400", "700", "800"],
@@ -31,6 +32,7 @@ export default function RootLayout({
           <main className="container mx-auto px-4">{children}</main>
           <Footer />
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );

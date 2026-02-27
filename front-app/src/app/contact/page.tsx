@@ -8,22 +8,22 @@ export default function Contact() {
 
       <div className="space-y-6">
         <p className="text-lg">
-          時報Botに関するご質問・ご要望がございましたら、以下の連絡先までお気軽にお問い合わせください。
+          時報Botに関するご質問・ご要望・不具合報告がございましたら、以下の連絡先までお気軽にお問い合わせください。
         </p>
 
         <div className="space-y-4">
           <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
             <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">
               <FaDiscord className="text-[#5865F2]" />
-              Discord
+              Discordサーバー
             </h2>
             <Link
-              href="https://discord.com/users/miyabitti"
+              href="https://discord.gg/Zxc9y3xdpy"
               className="text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-2"
               target="_blank"
               rel="noopener noreferrer"
             >
-              miyabitti
+              時報G お知らせサーバー
             </Link>
           </div>
 
