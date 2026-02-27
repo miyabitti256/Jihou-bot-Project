@@ -6,7 +6,8 @@
     "front-app"
   ],
   "devDependencies": {
-    "@biomejs/biome": "^2.4.4"
+    "@biomejs/biome": "^2.4.4",
+    "ts-analyzer": "^1.0.0"
   },
   "scripts": {
     "lint": "biome check .",
