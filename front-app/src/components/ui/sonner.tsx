@@ -16,6 +16,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme();
 
   return (
+    // useTheme() の戻り値は string | undefined だが、Sonner の theme prop は
+    // "light" | "dark" | "system" のリテラル型を要求する。
+    // next-themes の型定義が string を返すため、ここでの型アサーションは不可避。
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"

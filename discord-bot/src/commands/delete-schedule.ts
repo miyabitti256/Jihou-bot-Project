@@ -20,7 +20,8 @@ export const data = new SlashCommandBuilder()
   );
 
 export async function execute(interaction: ChatInputCommandInteraction) {
-  const id = interaction.options.getString("id") as string;
+  // setRequired(true) 指定済みのため getString の第2引数に true を渡すと string が返る
+  const id = interaction.options.getString("id", true);
 
   try {
     const message = await getScheduledMessageById(id);

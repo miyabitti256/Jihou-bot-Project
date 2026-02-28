@@ -68,13 +68,14 @@ export default async function Dashboard() {
     return ((wins / gamesExcludingDraws.length) * 100).toFixed(1);
   })();
 
+  const hands: Record<string, string> = {
+    ROCK: "グー ✊️",
+    SCISSORS: "チョキ ✌️",
+    PAPER: "パー 🖐️",
+  };
+
   const getHandEmoji = (choice: string) => {
-    const hands = {
-      ROCK: "グー ✊️",
-      SCISSORS: "チョキ ✌️",
-      PAPER: "パー 🖐️",
-    };
-    return hands[choice as keyof typeof hands] || choice;
+    return hands[choice] || choice;
   };
 
   const calculateBalance = (games: typeof allJankenGames) => {
@@ -105,6 +106,7 @@ export default async function Dashboard() {
       param: { guildId },
       query: { includes: ["channels", "roles"] },
     });
+    if (!res.ok) return null;
     return await res.json();
   };
 
@@ -113,6 +115,7 @@ export default async function Dashboard() {
       param: { userId },
       query: {},
     });
+    if (!res.ok) return null;
     return await res.json();
   };
 
@@ -159,21 +162,52 @@ export default async function Dashboard() {
                       </TableRow>
                     ) : (
                       scheduledMessages.map(async (message) => {
-                        const guildData = (await getGuildData(
-                          message.guildId,
-                        )) as {
-                          data: {
-                            iconUrl: string;
-                            name: string;
-                            channels: { id: string; name: string }[];
-                          };
-                        };
+                        const guildData = await getGuildData(message.guildId);
+                        if (!guildData) {
+                          return (
+                            <TableRow key={message.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <Avatar>
+                                    <AvatarFallback>
+                                      <FaDiscord />
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span className="text-muted-foreground">
+                                    不明なサーバー
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                取得失敗
+                              </TableCell>
+                              <TableCell className="max-w-[300px] truncate">
+                                {message.message}
+                              </TableCell>
+                              <TableCell>{message.scheduleTime}</TableCell>
+                              <TableCell>
+                                <span
+                                  className={
+                                    message.isActive
+                                      ? "text-green-600"
+                                      : "text-red-600"
+                                  }
+                                >
+                                  {message.isActive ? "🟢" : "🔴"}
+                                  {message.isActive ? "有効" : "無効"}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        }
                         return (
                           <TableRow key={message.id}>
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <Avatar>
-                                  <AvatarImage src={guildData.data.iconUrl} />
+                                  <AvatarImage
+                                    src={guildData.data.iconUrl ?? ""}
+                                  />
                                   <AvatarFallback>
                                     <FaDiscord />
                                   </AvatarFallback>
@@ -482,14 +516,49 @@ export default async function Dashboard() {
                         const opponent = isChallenger
                           ? game.opponentId
                           : game.challengerId;
-                        const opponentData = (await getUserDataById(
-                          opponent,
-                        )) as {
-                          data: {
-                            avatarUrl: string;
-                            username: string;
-                          };
-                        };
+                        const opponentData = await getUserDataById(opponent);
+                        if (!opponentData) {
+                          return (
+                            <TableRow key={game.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <Avatar>
+                                    <AvatarFallback>
+                                      <Skeleton className="h-10 w-10" />
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span className="text-muted-foreground">
+                                    不明なユーザー
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>{getHandEmoji(myChoice)}</TableCell>
+                              <TableCell>
+                                {getHandEmoji(opponentChoice)}
+                              </TableCell>
+                              <TableCell>
+                                {myBet === null || myBet === 0
+                                  ? "なし"
+                                  : `${myBet?.toLocaleString()}円`}
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-muted-foreground">
+                                  不明
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                {formatDistance(
+                                  new Date(game.createdAt),
+                                  new Date(),
+                                  {
+                                    addSuffix: true,
+                                    locale: ja,
+                                  },
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        }
                         const isWinner = game.winnerUserId === session.user.id;
 
                         return (
@@ -498,7 +567,7 @@ export default async function Dashboard() {
                               <div className="flex items-center gap-2">
                                 <Avatar>
                                   <AvatarImage
-                                    src={opponentData.data.avatarUrl}
+                                    src={opponentData.data.avatarUrl ?? ""}
                                   />
                                   <AvatarFallback>
                                     <Skeleton className="h-10 w-10" />

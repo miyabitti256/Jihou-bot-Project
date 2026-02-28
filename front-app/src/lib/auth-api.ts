@@ -1,6 +1,7 @@
 "use server";
 
 import { auth } from "@/lib/auth";
+import { env } from "@/lib/env";
 
 /**
  * Server Action用の認証ヘッダーを取得
@@ -10,7 +11,7 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
   const session = await auth();
 
   const headers: Record<string, string> = {
-    "X-API-Key": process.env.API_KEY as string,
+    "X-API-Key": env.API_KEY,
     "Content-Type": "application/json",
   };
 

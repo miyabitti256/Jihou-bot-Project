@@ -305,7 +305,11 @@ async function handleChannelType(
   try {
     if (channel.type === ChannelType.GuildText) {
       logger.info(`[chat] Creating new thread in text channel ${channel.id}`);
-      thread = await (channel as TextChannel).threads.create({
+      // ChannelType.GuildText ガード後、channel は GuildTextBasedChannel 型だが
+      // threads.create は TextChannel のメソッドであるため、型ナローイングが必要。
+      // Discord.js の channel 型ガードは isTextBased() では threads プロパティを推論しない。
+      const textChannel = channel as TextChannel;
+      thread = await textChannel.threads.create({
         name: title,
         autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
         reason: "AIとの会話用スレッド",
@@ -321,6 +325,8 @@ async function handleChannelType(
         });
       }
     } else if (channel.type === ChannelType.PublicThread) {
+      // ChannelType.PublicThread ガード後、channel は PublicThreadChannel 型に推論されるが
+      // ThreadChannel との型互換性のため明示的にキャストが必要。
       thread = channel as ThreadChannel;
       logger.info(`[chat] Using existing thread ${thread.id}`);
 
@@ -351,6 +357,9 @@ async function handleChannelType(
       }
     } else if (channel.type === ChannelType.DM) {
       const dmChannel = channel as DMChannel;
+      // Discord.js の DMChannel と ThreadChannel は共通の send() メソッドを持つが、
+      // 型階層が異なるため直接の互換性がない。
+      // この関数の戻り値型が ThreadChannel を要求するため、構造的なリファクタリングなしには as を除去できない。
       thread = dmChannel as unknown as ThreadChannel;
       logger.info(`[chat] Using DM channel ${dmChannel.id} as thread`);
 

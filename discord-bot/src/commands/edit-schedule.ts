@@ -46,14 +46,23 @@ export const data = new SlashCommandBuilder()
   );
 
 export async function execute(interaction: ChatInputCommandInteraction) {
-  const id = interaction.options.getString("id") as string;
-  const time = interaction.options.getString("time") as string | null;
-  const message = interaction.options.getString("message") as string | null;
-  const channelId = interaction.options.getString("channel") as string | null;
-  const isActive = interaction.options.getBoolean("isactive") as boolean | null;
+  // setRequired(true) 指定済みのため、getString の第2引数に true を渡すと string が返る
+  const id = interaction.options.getString("id", true);
+  const time = interaction.options.getString("time");
+  const message = interaction.options.getString("message");
+  const channelId = interaction.options.getString("channel");
+  const isActive = interaction.options.getBoolean("isactive");
 
   const lastUpdatedUserId = interaction.user.id;
-  const guildId = interaction.guild?.id as string;
+
+  if (!interaction.guild) {
+    await interaction.reply({
+      content: "このコマンドはサーバー内でのみ使用できます",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+  const guildId = interaction.guild.id;
 
   // 既存のスケジュールメッセージを取得して存在確認
   try {

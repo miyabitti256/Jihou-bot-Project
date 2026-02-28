@@ -1,6 +1,7 @@
 import type { AppType } from "@api-types";
 import { hc } from "hono/client";
 import { getAuthHeaders } from "./auth-api";
+import { env } from "./env";
 
 /**
  * HonoRPCクライアントを作成する
@@ -9,7 +10,7 @@ import { getAuthHeaders } from "./auth-api";
 export async function createApiClient() {
   const headers = await getAuthHeaders();
 
-  const client = hc<AppType>(process.env.API_URL as string, {
+  const client = hc<AppType>(env.API_URL, {
     headers,
   });
 

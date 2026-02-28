@@ -13,7 +13,14 @@ export const data = new SlashCommandBuilder()
   .setDescription("時報の情報を表示します");
 
 export async function execute(interaction: ChatInputCommandInteraction) {
-  const guildId = interaction.guildId as string;
+  if (!interaction.guildId) {
+    await interaction.reply({
+      content: "このコマンドはサーバー内でのみ使用できます",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+  const guildId = interaction.guildId;
   try {
     const messages = await getScheduledMessages(guildId);
     const embed = new EmbedBuilder()

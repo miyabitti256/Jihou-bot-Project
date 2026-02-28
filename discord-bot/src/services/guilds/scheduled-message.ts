@@ -86,9 +86,9 @@ function getDiscordErrorCode(error: unknown): number | null {
     error &&
     typeof error === "object" &&
     "code" in error &&
-    typeof (error as { code: unknown }).code === "number"
+    typeof error.code === "number"
   ) {
-    return (error as { code: number }).code;
+    return error.code;
   }
   return null;
 }

@@ -8,16 +8,14 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { drawOmikuji } from "./actions";
 
-interface OmikujiResponse {
-  data: {
-    result: string;
-    money: number;
-  };
-}
+type OmikujiResult = Extract<
+  Awaited<ReturnType<typeof drawOmikuji>>,
+  { data: unknown }
+>;
 
 export default function DrawOmikuji() {
   const router = useRouter();
-  const [omikuji, setOmikuji] = useState<OmikujiResponse | null>(null);
+  const [omikuji, setOmikuji] = useState<OmikujiResult | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
   const getOmikuji = async () => {
@@ -27,7 +25,7 @@ export default function DrawOmikuji() {
 
     setTimeout(() => {
       if ("data" in data) {
-        setOmikuji(data as OmikujiResponse);
+        setOmikuji(data);
       } else if ("error" in data) {
         toast.error(data.error?.message ?? "エラーが発生しました");
       }

@@ -1,15 +1,16 @@
 import "@api";
-import "./types/hono";
 import app from "@api";
 import { loadCommands } from "@handler/command";
 import { setupDiscordEventHandlers } from "@handler/discord-events";
 import { client } from "@lib/client";
+import { env } from "@lib/env";
 import { logger } from "@lib/logger";
 import { scheduleStatusUpdates, updateStatus } from "@lib/status-updater";
 import { startScheduledMessageDispatcher } from "@services/guilds/scheduled-message";
 import { serve } from "bun";
+import "./types/hono";
 
-const token = process.env.DISCORD_TOKEN as string;
+const token = env.DISCORD_TOKEN;
 
 // APIサーバーを起動
 serve({

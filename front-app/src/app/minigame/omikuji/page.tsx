@@ -24,19 +24,15 @@ export default async function OmikujiPage() {
     query: { take: "1" },
   });
 
-  const data = {
-    user: await userRes.json(),
-    omikujiResults: await omikujiRes.json(),
-  };
+  const userData = await userRes.json();
+  const omikujiData = await omikujiRes.json();
 
   const now = getTokyoDate();
   const lastDraw = new Date(
-    (data.user as { data: { lastDraw: string } }).data.lastDraw,
+    "data" in userData ? userData.data.lastDraw || new Date() : new Date(),
   );
   const isDrawn = hasDrawnToday(now, lastDraw);
-  const latestResult = (
-    data.omikujiResults as { data: Array<{ result: string }> }
-  ).data[0];
+  const latestResult = "data" in omikujiData ? omikujiData.data[0] : undefined;
 
   return isDrawn ? (
     <div className="flex flex-col items-center justify-center p-8">

@@ -15,7 +15,6 @@ import {
   MessageFlags,
   ModalBuilder,
   SlashCommandBuilder,
-  type TextChannel,
   TextInputBuilder,
   TextInputStyle,
 } from "discord.js";
@@ -177,9 +176,15 @@ export async function execute(
       components: buttons,
     });
 
-    const collector = (
-      interaction.channel as TextChannel
-    ).createMessageComponentCollector({
+    if (!interaction.channel || !interaction.channel.isTextBased()) {
+      await interaction.reply({
+        content: "このコマンドはテキストチャンネルでのみ使用できます",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    const collector = interaction.channel.createMessageComponentCollector({
       filter: (i) => i.user.id === interaction.user.id,
       idle: CONSTANTS.TIMEOUT_MS,
     });
@@ -209,10 +214,12 @@ export async function execute(
           await i.deferUpdate();
 
           try {
+            // L208 の条件分岐により i.customId は "heads" | "tails" に絞り込まれている
+            const choice: CoinChoice = i.customId;
             const result = await playCoinflip(
               interaction.user.id,
               gameState.bet,
-              i.customId as CoinChoice,
+              choice,
             );
 
             gameState = {

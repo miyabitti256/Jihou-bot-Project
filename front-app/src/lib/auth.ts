@@ -25,6 +25,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
     async session({ session, token }) {
       if (token) {
+        // NextAuth の JWT token 型には `id` プロパティが定義されていないため、
+        // module augmentation で完全に対応するには NextAuth 内部型の拡張が必要。
+        // 現状は `as string` で対応。
         session.user.id = token.id as string;
       }
       return session;

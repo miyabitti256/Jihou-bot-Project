@@ -13,8 +13,6 @@ import {
 } from "@services/db-sync/guild-sync";
 import { deactivateScheduledMessagesByChannelId } from "@services/guilds/scheduled-message";
 import type {
-  ChatInputCommandInteraction,
-  ColorResolvable,
   DMChannel,
   Guild,
   GuildBasedChannel,
@@ -31,11 +29,11 @@ import { MessageFlags } from "discord.js";
 const DEFAULT_ROLES = [
   {
     name: "ぬべ吉",
-    color: "#f0ff00",
+    color: "#f0ff00" as const,
   },
   {
     name: "ヌベキチ└(՞ةڼ◔)」",
-    color: "#b32be8",
+    color: "#b32be8" as const,
   },
 ];
 
@@ -77,7 +75,8 @@ async function handleInteraction(interaction: Interaction) {
   if (!command) return;
 
   try {
-    await command.execute(interaction as ChatInputCommandInteraction);
+    // isChatInputCommand() ガード後は ChatInputCommandInteraction 型に推論される
+    await command.execute(interaction);
   } catch (error) {
     logger.error({ err: error }, "コマンド実行中にエラーが発生しました:");
     await interaction.reply({
@@ -140,14 +139,14 @@ async function handleGuildCreate(guild: Guild) {
       if (!nubekichiRole) {
         await guild.roles.create({
           name: DEFAULT_ROLES[0].name,
-          color: DEFAULT_ROLES[0].color as ColorResolvable,
+          color: DEFAULT_ROLES[0].color,
         });
       }
 
       if (!badNubekichiRole) {
         await guild.roles.create({
           name: DEFAULT_ROLES[1].name,
-          color: DEFAULT_ROLES[1].color as ColorResolvable,
+          color: DEFAULT_ROLES[1].color,
         });
       }
     }

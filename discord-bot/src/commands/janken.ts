@@ -28,6 +28,11 @@ const CONSTANTS = {
 
 export type ChoiceKey = keyof typeof CONSTANTS.CHOICES;
 
+// ChoiceKey 型かどうかを検証する型ガード
+function isChoiceKey(value: string): value is ChoiceKey {
+  return value in CONSTANTS.CHOICES;
+}
+
 class JankenGame {
   private interaction: ChatInputCommandInteraction;
   private challenger: User;
@@ -109,7 +114,7 @@ class JankenGame {
       components: [],
     });
 
-    this.message = (await this.interaction.fetchReply()) as Message;
+    this.message = await this.interaction.fetchReply();
     await this.proceedToGame();
   }
 
@@ -133,7 +138,7 @@ class JankenGame {
       components: [row],
     });
 
-    return (await this.interaction.fetchReply()) as Message;
+    return await this.interaction.fetchReply();
   }
 
   private async waitForOpponent(): Promise<User> {
@@ -334,7 +339,9 @@ class JankenGame {
         try {
           await i.deferUpdate();
 
-          const choice = i.customId.split("_")[1] as ChoiceKey;
+          const choiceStr = i.customId.split("_")[1];
+          if (!choiceStr || !isChoiceKey(choiceStr)) return;
+          const choice = choiceStr;
 
           if (i.user.id === this.challenger.id) {
             this.challengerChoice = choice;

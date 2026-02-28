@@ -54,7 +54,7 @@ export const coinflip = new Hono<AppEnv>()
               code: error.message,
             },
           },
-          statusCode as 400 | 404 | 500,
+          statusCode,
         );
       }
 
@@ -146,7 +146,7 @@ function getErrorMessage(errorCode: string): string {
 }
 
 // エラーコードに応じたHTTPステータスコードを取得する関数
-function getErrorStatusCode(errorCode: string): number {
+function getErrorStatusCode(errorCode: string): 400 | 404 | 500 {
   switch (errorCode) {
     case "MONEY_DATA_NOT_FOUND":
       return 404;

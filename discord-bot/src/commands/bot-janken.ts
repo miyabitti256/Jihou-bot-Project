@@ -19,13 +19,18 @@ export const data = new SlashCommandBuilder()
       ),
   );
 
-type Hand = "g" | "c" | "p";
-
-const HANDS: Record<Hand, number> = {
+const HANDS = {
   g: 0,
   c: 1,
   p: 2,
-};
+} as const;
+
+type Hand = keyof typeof HANDS;
+
+// Hand 型かどうかを検証する型ガード
+function isHand(value: string): value is Hand {
+  return value in HANDS;
+}
 
 const getResult = (userHand: Hand, enemyHand: Hand): string => {
   const userValue = HANDS[userHand];
@@ -46,9 +51,26 @@ const getResult = (userHand: Hand, enemyHand: Hand): string => {
 };
 
 export const execute = async (i: ChatInputCommandInteraction) => {
-  const userHand = i.options.getString("出す手") as Hand;
+  const userHandStr = i.options.getString("出す手", true);
+  if (!isHand(userHandStr)) {
+    await i.reply({
+      content: "無効な手が指定されました",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+  const userHand = userHandStr;
   const randomValue = Math.floor(Math.random() * 3);
-  const enemyHand = Object.keys(HANDS)[randomValue] as Hand;
+  const handKeys = Object.keys(HANDS);
+  const enemyHandStr = handKeys[randomValue];
+  if (!enemyHandStr || !isHand(enemyHandStr)) {
+    await i.reply({
+      content: "エラーが発生しました",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+  const enemyHand = enemyHandStr;
 
   try {
     const result = getResult(userHand, enemyHand);

@@ -98,7 +98,8 @@ export async function handleMessageCreate(message: Message): Promise<void> {
   if (!(message.channel instanceof ThreadChannelClass)) return;
 
   // スレッドの情報を取得
-  const thread = message.channel as ThreadChannelClass;
+  // instanceof ThreadChannelClass チェック済みのため、直接使用可能
+  const thread = message.channel;
   const channelId = thread.id;
 
   // データベースでAIチャットスレッドかどうかを確認
@@ -252,6 +253,10 @@ export async function handleMessageCreate(message: Message): Promise<void> {
 
         // 残りのメッセージを別途送信（2つ目以降）
         if (wasChunked && chunks.length > 1) {
+          // sendRemainingChunks 関数が TextChannel 型を要求するが、
+          // ThreadChannel は TextChannel のサブクラスではないため直接の互換性がない。
+          // 実際には send() メソッドを持つため動作するが、
+          // 構造的なリファクタリング（sendRemainingChunks の引数型を変更）なしには as を除去できない。
           const textChannel = thread as unknown as TextChannel;
           const remainingChunks = chunks.slice(1);
 

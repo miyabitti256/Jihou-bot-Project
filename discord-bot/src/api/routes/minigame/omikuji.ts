@@ -70,13 +70,7 @@ export const omikuji = new Hono<AppEnv>()
       );
     } catch (error) {
       if (error instanceof OmikujiError) {
-        // エラーコードに基づいて適切なステータスコードを設定
-        let statusCode = 500;
-        if (error.message === "USER_NOT_FOUND") {
-          statusCode = 404;
-        } else if (error.message === "ALREADY_DRAWN") {
-          statusCode = 400;
-        }
+        const statusCode = getOmikujiStatusCode(error.message);
 
         return c.json(
           {
@@ -85,7 +79,7 @@ export const omikuji = new Hono<AppEnv>()
               code: error.message,
             },
           },
-          statusCode as 400 | 404 | 500,
+          statusCode,
         );
       }
 
@@ -111,5 +105,17 @@ function getOmikujiErrorMessage(errorCode: string): string {
       return "おみくじは一日に一度しか引けません";
     default:
       return "おみくじの処理に失敗しました";
+  }
+}
+
+// エラーコードに応じたHTTPステータスコードを取得する関数
+function getOmikujiStatusCode(errorCode: string): 400 | 404 | 500 {
+  switch (errorCode) {
+    case "USER_NOT_FOUND":
+      return 404;
+    case "ALREADY_DRAWN":
+      return 400;
+    default:
+      return 500;
   }
 }

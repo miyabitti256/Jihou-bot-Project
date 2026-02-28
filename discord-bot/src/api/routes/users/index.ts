@@ -5,7 +5,7 @@ import {
   fetchChannel,
   fetchDiscordUser,
 } from "@services/discord/discord-api";
-import { verifyUserGuildAccess } from "@services/guilds/guild";
+import { getUserGuilds, verifyUserGuildAccess } from "@services/guilds/guild";
 import {
   createOrUpdateUser,
   getUserData,
@@ -35,6 +35,35 @@ export const users = new Hono<AppEnv>()
 
       try {
         const data = await getUserData(userId, includes);
+
+        // 他ユーザーのプロフィールを閲覧する場合、
+        // 認証ユーザーが所属していないギルドの時報を非表示にする。
+        // ギルドIDの漏洩はデフォルトパーミッションでは非公開情報のため。
+        const authenticatedUserId = c.get("authenticatedUserId");
+        if (
+          authenticatedUserId &&
+          authenticatedUserId !== userId &&
+          data.ScheduledMessage &&
+          Array.isArray(data.ScheduledMessage) &&
+          data.ScheduledMessage.length > 0
+        ) {
+          const viewerGuilds = await getUserGuilds(authenticatedUserId);
+          const viewerGuildIds = new Set(viewerGuilds.map((g) => g.guildId));
+
+          const filteredMessages = data.ScheduledMessage.filter(
+            (msg: { guildId: string }) => viewerGuildIds.has(msg.guildId),
+          );
+
+          return c.json(
+            {
+              data: {
+                ...data,
+                ScheduledMessage: filteredMessages,
+              },
+            },
+            200,
+          );
+        }
 
         return c.json(
           {

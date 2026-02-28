@@ -1,13 +1,11 @@
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { REST } from "@discordjs/rest";
+import { env } from "@lib/env";
 import { logger } from "@lib/logger";
 import { type APIApplicationCommand, Routes } from "discord-api-types/v10";
 
-const token = process.env.DISCORD_TOKEN as string;
-const clientId = process.env.DISCORD_CLIENT_ID as string;
-
-const rest = new REST({ version: "10" }).setToken(token);
+const rest = new REST({ version: "10" }).setToken(env.DISCORD_TOKEN);
 
 const commands: APIApplicationCommand[] = [];
 const commandFiles = readdirSync(
@@ -25,7 +23,9 @@ for (const file of commandFiles) {
   try {
     logger.info("Started registering application (/) commands.");
 
-    await rest.put(Routes.applicationCommands(clientId), { body: commands });
+    await rest.put(Routes.applicationCommands(env.DISCORD_CLIENT_ID), {
+      body: commands,
+    });
 
     logger.info("Successfully registered application (/) commands.");
   } catch (error) {

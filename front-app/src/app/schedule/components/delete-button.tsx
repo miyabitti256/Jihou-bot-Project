@@ -47,9 +47,9 @@ export default function DeleteButton({
           typeof error.error === "object" &&
           "message" in error.error
         )
-          return (error.error as { message: string }).message;
+          return String(error.error.message);
         if (error && typeof error === "object" && "message" in error)
-          return (error as { message: string }).message;
+          return String((error as Record<string, unknown>).message);
         return "削除中にエラーが発生しました";
       },
     });
