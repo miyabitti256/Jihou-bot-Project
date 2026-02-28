@@ -50,18 +50,8 @@ export const users = new Hono<AppEnv>()
           const viewerGuilds = await getUserGuilds(authenticatedUserId);
           const viewerGuildIds = new Set(viewerGuilds.map((g) => g.guildId));
 
-          const filteredMessages = data.ScheduledMessage.filter(
-            (msg: { guildId: string }) => viewerGuildIds.has(msg.guildId),
-          );
-
-          return c.json(
-            {
-              data: {
-                ...data,
-                ScheduledMessage: filteredMessages,
-              },
-            },
-            200,
+          data.ScheduledMessage = data.ScheduledMessage.filter((msg) =>
+            viewerGuildIds.has(msg.guildId),
           );
         }
 
