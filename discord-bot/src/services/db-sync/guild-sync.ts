@@ -1,6 +1,6 @@
-import { logger } from "@lib/logger";
-import { pool, prisma } from "@lib/prisma";
-import { deactivateScheduledMessagesByChannelId } from "@services/guilds/scheduled-message";
+import { logger } from "@bot/lib/logger";
+import { pool, prisma } from "@bot/lib/prisma";
+import { deactivateScheduledMessagesByChannelId } from "@bot/services/guilds/scheduled-message";
 import type { Guild, GuildMember } from "discord.js";
 
 // エラークラス

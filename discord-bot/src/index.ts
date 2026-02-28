@@ -1,12 +1,12 @@
-import "@api";
-import app from "@api";
-import { loadCommands } from "@handler/command";
-import { setupDiscordEventHandlers } from "@handler/discord-events";
-import { client } from "@lib/client";
-import { env } from "@lib/env";
-import { logger } from "@lib/logger";
-import { scheduleStatusUpdates, updateStatus } from "@lib/status-updater";
-import { startScheduledMessageDispatcher } from "@services/guilds/scheduled-message";
+import "@bot/api";
+import app from "@bot/api";
+import { loadCommands } from "@bot/handler/command";
+import { setupDiscordEventHandlers } from "@bot/handler/discord-events";
+import { client } from "@bot/lib/client";
+import { env } from "@bot/lib/env";
+import { logger } from "@bot/lib/logger";
+import { scheduleStatusUpdates, updateStatus } from "@bot/lib/status-updater";
+import { startScheduledMessageDispatcher } from "@bot/services/guilds/scheduled-message";
 import { serve } from "bun";
 import "./types/hono";
 

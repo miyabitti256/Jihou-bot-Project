@@ -1,6 +1,6 @@
+import { env } from "@bot/lib/env";
+import { logger } from "@bot/lib/logger";
 import { REST } from "@discordjs/rest";
-import { env } from "@lib/env";
-import { logger } from "@lib/logger";
 import {
   type RESTGetAPIApplicationCommandsResult,
   Routes,

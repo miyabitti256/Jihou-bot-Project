@@ -1,20 +1,8 @@
 {
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2017",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
+    "target": "ESNext",
+    "lib": ["dom", "dom.iterable", "esnext"],
     "jsx": "react-jsx",
     "incremental": true,
     "plugins": [
@@ -23,24 +11,8 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@api-types": [
-        "../discord-bot/src/api/app-type"
-      ],
-      "@lib/*": [
-        "../discord-bot/src/lib/*"
-      ],
-      "@services/*": [
-        "../discord-bot/src/services/*"
-      ],
-      "@generated/*": [
-        "../discord-bot/src/generated/*"
-      ],
-      "@commands/*": [
-        "../discord-bot/src/commands/*"
-      ]
+      "@/*": ["./src/*"],
+      "@bot/*": ["../discord-bot/src/*"]
     }
   },
   "include": [
@@ -50,7 +22,5 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }

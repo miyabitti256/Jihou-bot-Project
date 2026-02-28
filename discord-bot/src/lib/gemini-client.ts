@@ -1,6 +1,7 @@
-import type { ChatRole } from "@generated/prisma/client/client.ts";
+import type { ChatRole } from "@bot/generated/prisma/client/client.ts";
+import { env } from "@bot/lib/env";
+import { logger } from "@bot/lib/logger";
 import { GoogleGenAI } from "@google/genai";
-import { logger } from "@lib/logger";
 import { formatChatHistoryForGemini } from "./utils";
 
 const CONSTANTS = {
@@ -35,7 +36,7 @@ const CONSTANTS = {
 } as const;
 
 export const gemini = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
+  apiKey: env.GEMINI_API_KEY,
 });
 
 export const SYSTEM_PROMPT = CONSTANTS.SYSTEM_PROMPT;

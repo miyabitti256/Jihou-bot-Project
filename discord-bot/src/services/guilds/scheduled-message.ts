@@ -1,9 +1,8 @@
-import type { ScheduledMessage } from "@generated/prisma/client/client.ts";
-import { client } from "@lib/client";
-import { logger } from "@lib/logger";
-import { prisma } from "@lib/prisma";
+import type { ScheduledMessage } from "@bot/generated/prisma/client/client.ts";
+import { client } from "@bot/lib/client";
+import { logger } from "@bot/lib/logger";
+import { prisma } from "@bot/lib/prisma";
 import cuid from "cuid";
-
 import type { ScheduledTask } from "node-cron";
 import { schedule } from "node-cron";
 

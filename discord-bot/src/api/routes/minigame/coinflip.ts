@@ -1,11 +1,11 @@
-import { zValidator } from "@hono/zod-validator";
-import { logger } from "@lib/logger";
+import { logger } from "@bot/lib/logger";
 import {
   CoinflipError,
   getCoinflipHistory,
   getUserMoneyStatus,
   playCoinflip,
-} from "@services/minigame/coinflip";
+} from "@bot/services/minigame/coinflip";
+import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import type { AppEnv } from "../../env";
 import {

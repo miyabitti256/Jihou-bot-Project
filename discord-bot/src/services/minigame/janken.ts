@@ -1,7 +1,7 @@
-import type { ChoiceKey } from "@commands/janken";
-import { logger } from "@lib/logger";
-import { prisma } from "@lib/prisma";
-import { ensureUserExists as ensureUser } from "@services/users";
+import type { ChoiceKey } from "@bot/commands/janken";
+import { logger } from "@bot/lib/logger";
+import { prisma } from "@bot/lib/prisma";
+import { ensureUserExists as ensureUser } from "@bot/services/users";
 import type { User } from "discord.js";
 
 interface JankenGameResult {

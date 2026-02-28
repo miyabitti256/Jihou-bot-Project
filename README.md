@@ -79,13 +79,13 @@ Bot本体がHono製REST APIを内包するサービスドリブンなアーキ�
 
 ```typescript
 // rpc-client.ts
-import type { AppType } from "@api-types";
+import type { AppType } from "@jihou/shared-types";
 import { hc } from "hono/client";
 import { env } from "./env"; // Zodでバリデーション済みの環境変数
 
 export async function createApiClient() {
   const headers = await getAuthHeaders();
-  return hc<AppType>(env.API_URL, { headers }); // as string 不要
+  return hc<AppType>(env.API_URL, { headers });
 }
 ```
 
@@ -338,18 +338,23 @@ Jihou-bot-Project/
 │   │   └── lib/
 │   │       ├── auth.ts         # 二層認証ミドルウェア
 │   │       ├── client.ts       # Discord.js クライアント（makeCache設定）
+│   │       ├── env.ts          # 環境変数Zodスキーマ
 │   │       ├── rate-limiter.ts # ユーザーID単位レートリミッター
 │   │       ├── prisma.ts       # Prismaクライアントシングルトン
 │   │       └── status-updater.ts # 毎時同期スケジューラ
 │   ├── prisma/schema.prisma
 │   ├── prisma.config.ts
 │   └── Dockerfile
-└── front-app/
-    └── src/
-        ├── app/                # App Router ページ
-        ├── components/         # UIコンポーネント
-        └── lib/
-            ├── rpc-client.ts   # HonoRPCクライアント（hc<AppType>生成）
-            ├── auth.ts         # NextAuth設定
-            └── auth-api.ts     # S2S通信用認証ヘッダーヘルパー（Server専用）
+├── front-app/
+│   └── src/
+│       ├── app/                # App Router ページ
+│       ├── components/         # UIコンポーネント
+│       └── lib/
+│           ├── rpc-client.ts   # HonoRPCクライアント（hc<AppType>生成）
+│           ├── auth.ts         # NextAuth設定
+│           ├── auth-api.ts     # S2S通信用認証ヘッダーヘルパー（Server専用）
+│           └── env.ts          # 環境変数Zodスキーマ
+└── packages/
+    └── shared-types/           # 共有型定義パッケージ（@jihou/shared-types）
+        └── index.ts            # AppType re-export
 ```

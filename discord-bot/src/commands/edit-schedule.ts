@@ -1,9 +1,9 @@
-import { logger } from "@lib/logger";
+import { logger } from "@bot/lib/logger";
 import {
   getScheduledMessageById,
   ScheduledMessageError,
   updateScheduledMessage,
-} from "@services/guilds/scheduled-message";
+} from "@bot/services/guilds/scheduled-message";
 import {
   ChannelType,
   type ChatInputCommandInteraction,

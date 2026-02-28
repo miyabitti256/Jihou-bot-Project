@@ -1,6 +1,6 @@
-import { Prisma } from "@generated/prisma/client/client.ts";
-import { logger } from "@lib/logger";
-import { prisma } from "@lib/prisma";
+import { Prisma } from "@bot/generated/prisma/client/client.ts";
+import { logger } from "@bot/lib/logger";
+import { prisma } from "@bot/lib/prisma";
 
 // エラークラス
 export class UserServiceError extends Error {

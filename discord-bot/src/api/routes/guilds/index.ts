@@ -1,16 +1,17 @@
-import { zValidator } from "@hono/zod-validator";
-import { logger } from "@lib/logger";
+import { env } from "@bot/lib/env";
+import { logger } from "@bot/lib/logger";
 import {
   DiscordApiError,
   fetchGuild,
   fetchGuildChannels,
-} from "@services/discord/discord-api";
+} from "@bot/services/discord/discord-api";
 import {
   GuildError,
   type GuildIncludeOptions,
   getGuildWithData,
   getUserGuilds,
-} from "@services/guilds/guild";
+} from "@bot/services/guilds/guild";
+import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import type { AppEnv } from "../../env";
 import {
@@ -146,8 +147,7 @@ export const guilds = new Hono<AppEnv>()
             error: {
               code: "INTERNAL_SERVER_ERROR",
               message: "Internal server error",
-              details:
-                process.env.NODE_ENV === "development" ? String(error) : null,
+              details: env.NODE_ENV === "development" ? String(error) : null,
             },
           },
           500,
@@ -190,8 +190,7 @@ export const guilds = new Hono<AppEnv>()
             error: {
               code: "INTERNAL_SERVER_ERROR",
               message: "Internal server error",
-              details:
-                process.env.NODE_ENV === "development" ? String(error) : null,
+              details: env.NODE_ENV === "development" ? String(error) : null,
             },
           },
           500,

@@ -1,8 +1,9 @@
-import { PrismaClient } from "@generated/prisma/client/client.ts";
+import { PrismaClient } from "@bot/generated/prisma/client/client.ts";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
+import { env } from "./env";
 
-const connectionString = `${process.env.DATABASE_URL}`;
+const connectionString = env.DATABASE_URL;
 
 // 512MBメモリ環境向けにコネクション数を制限
 // デフォルト10 → 3に削減し、アイドル接続のメモリ消費を抑える

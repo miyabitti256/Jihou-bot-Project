@@ -1,4 +1,4 @@
-import type { AppType } from "@api-types";
+import type { AppType } from "@jihou/shared-types";
 import { hc } from "hono/client";
 import { getAuthHeaders } from "./auth-api";
 import { env } from "./env";

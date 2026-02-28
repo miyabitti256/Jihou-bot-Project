@@ -1,6 +1,6 @@
 import { readdirSync } from "node:fs";
 import path from "node:path";
-import { logger } from "@lib/logger";
+import { logger } from "@bot/lib/logger";
 import {
   type ChatInputCommandInteraction,
   Collection,

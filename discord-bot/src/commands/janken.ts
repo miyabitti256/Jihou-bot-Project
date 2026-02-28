@@ -1,8 +1,8 @@
-import { logger } from "@lib/logger";
+import { logger } from "@bot/lib/logger";
 import {
   checkBothUserBalances,
   saveJankenResult,
-} from "@services/minigame/janken";
+} from "@bot/services/minigame/janken";
 import {
   ActionRowBuilder,
   ButtonBuilder,

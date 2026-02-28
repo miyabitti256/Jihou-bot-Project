@@ -1,8 +1,8 @@
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
+import { env } from "@bot/lib/env";
+import { logger } from "@bot/lib/logger";
 import { REST } from "@discordjs/rest";
-import { env } from "@lib/env";
-import { logger } from "@lib/logger";
 import { type APIApplicationCommand, Routes } from "discord-api-types/v10";
 
 const rest = new REST({ version: "10" }).setToken(env.DISCORD_TOKEN);

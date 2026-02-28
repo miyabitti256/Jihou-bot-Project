@@ -26,7 +26,6 @@ export const logger = pino({
   },
 
   base: {
-    env: process.env.NODE_ENV,
     pid: process.pid,
   },
 });

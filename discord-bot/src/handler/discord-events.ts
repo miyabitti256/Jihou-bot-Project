@@ -1,7 +1,7 @@
-import aiMessageHandler from "@handler/ai-message";
-import { commands } from "@handler/command";
-import { client } from "@lib/client";
-import { logger } from "@lib/logger";
+import aiMessageHandler from "@bot/handler/ai-message";
+import { commands } from "@bot/handler/command";
+import { client } from "@bot/lib/client";
+import { logger } from "@bot/lib/logger";
 import {
   createMemberDataFromGuildMember,
   deleteGuildData,
@@ -10,8 +10,8 @@ import {
   updateGuildData,
   updateMembersData,
   updateRolesData,
-} from "@services/db-sync/guild-sync";
-import { deactivateScheduledMessagesByChannelId } from "@services/guilds/scheduled-message";
+} from "@bot/services/db-sync/guild-sync";
+import { deactivateScheduledMessagesByChannelId } from "@bot/services/guilds/scheduled-message";
 import type {
   DMChannel,
   Guild,

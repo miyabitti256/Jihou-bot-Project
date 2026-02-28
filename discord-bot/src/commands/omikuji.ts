@@ -1,6 +1,6 @@
-import { generateText } from "@lib/gemini-client";
-import { logger } from "@lib/logger";
-import { drawOmikuji, OmikujiError } from "@services/minigame/omikuji";
+import { generateText } from "@bot/lib/gemini-client";
+import { logger } from "@bot/lib/logger";
+import { drawOmikuji, OmikujiError } from "@bot/services/minigame/omikuji";
 import {
   type ChatInputCommandInteraction,
   EmbedBuilder,

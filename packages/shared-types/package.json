@@ -1,0 +1,10 @@
+{
+  "name": "@jihou/shared-types",
+  "private": true,
+  "main": "index.ts",
+  "types": "index.ts",
+
+  "exports": {
+    ".": "./index.ts"
+  }
+}
