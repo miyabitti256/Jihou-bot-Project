@@ -27,7 +27,7 @@ export default async function Dashboard() {
 
   const userResponse = await client.api.users[":userId"].$get({
     param: { userId: session.user.id },
-    query: { includes: "scheduledmessage,omikuji,coinflip,janken" },
+    query: { includes: ["scheduledmessage", "omikuji", "coinflip", "janken"] },
   });
   if (!userResponse.ok) {
     return <div>User data not found</div>;
@@ -103,7 +103,7 @@ export default async function Dashboard() {
   const getGuildData = async (guildId: string) => {
     const res = await client.api.guilds[":guildId"].$get({
       param: { guildId },
-      query: { includes: "channels,roles" },
+      query: { includes: ["channels", "roles"] },
     });
     return await res.json();
   };

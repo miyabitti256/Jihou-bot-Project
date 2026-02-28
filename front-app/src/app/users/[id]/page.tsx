@@ -37,7 +37,7 @@ export default async function UserDetailPage({
 
   const userResponse = await client.api.users[":userId"].$get({
     param: { userId: id },
-    query: { includes: "scheduledmessage,omikuji,coinflip,janken" },
+    query: { includes: ["scheduledmessage", "omikuji", "coinflip", "janken"] },
   });
 
   if (!userResponse.ok) {
@@ -122,7 +122,7 @@ export default async function UserDetailPage({
   const getGuildData = async (guildId: string) => {
     const res = await client.api.guilds[":guildId"].$get({
       param: { guildId },
-      query: { includes: "channels" },
+      query: { includes: ["channels"] },
     });
     return await res.json();
   };

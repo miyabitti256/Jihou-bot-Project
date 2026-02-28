@@ -44,7 +44,7 @@ export default async function SchedulePage({
   if (guildId) {
     const res = await client.api.guilds[":guildId"].$get({
       param: { guildId },
-      query: { includes: "channels" },
+      query: { includes: ["channels"] },
     });
     if (!res.ok) {
       throw new Error("Failed to fetch guild data");

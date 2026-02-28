@@ -31,15 +31,7 @@ export const users = new Hono<AppEnv>()
     zValidator("query", userIncludesQuerySchema),
     async (c) => {
       const { userId } = c.req.valid("param");
-      const { includes: includesRaw } = c.req.valid("query");
-
-      // CSV変換済みの配列をenum型にキャスト
-      const includes = includesRaw as (
-        | "scheduledmessage"
-        | "omikuji"
-        | "coinflip"
-        | "janken"
-      )[];
+      const { includes } = c.req.valid("query");
 
       try {
         const data = await getUserData(userId, includes);

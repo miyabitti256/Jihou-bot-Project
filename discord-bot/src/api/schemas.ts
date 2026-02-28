@@ -34,20 +34,36 @@ export const idParamSchema = z.object({
 
 // === クエリスキーマ（zValidator("query", ...) 用） ===
 
-/** ギルド includes クエリ（CSV形式をパース） */
+// includes enum定数
+const userIncludeEnum = z.enum([
+  "scheduledmessage",
+  "omikuji",
+  "coinflip",
+  "janken",
+]);
+
+const guildIncludeEnum = z.enum(["channels", "members", "roles", "messages"]);
+
+/** ギルド includes クエリ（配列形式対応） */
 export const guildIncludesQuerySchema = z.object({
   includes: z
-    .string()
+    .union([guildIncludeEnum, z.array(guildIncludeEnum)])
     .optional()
-    .transform((str) => (str ? str.split(",") : [])),
+    .transform((val) => {
+      if (!val) return [];
+      return Array.isArray(val) ? val : [val];
+    }),
 });
 
-/** ユーザー includes クエリ */
+/** ユーザー includes クエリ（配列形式対応） */
 export const userIncludesQuerySchema = z.object({
   includes: z
-    .string()
+    .union([userIncludeEnum, z.array(userIncludeEnum)])
     .optional()
-    .transform((str) => (str ? str.split(",") : [])),
+    .transform((val) => {
+      if (!val) return [];
+      return Array.isArray(val) ? val : [val];
+    }),
 });
 
 /** ユーザー一覧クエリ */

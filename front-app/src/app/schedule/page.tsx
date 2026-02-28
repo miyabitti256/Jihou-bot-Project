@@ -49,7 +49,7 @@ export default async function SchedulePage() {
   const guildPromises = memberData.map(async (member) => {
     const res = await client.api.guilds[":guildId"].$get({
       param: { guildId: member.guildId },
-      query: { includes: "roles,channels,messages" },
+      query: { includes: ["roles", "channels", "messages"] },
     });
     return res.json();
   });

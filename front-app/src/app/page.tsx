@@ -13,6 +13,7 @@ export default function Home() {
           height={150}
           className="mb-4"
           priority
+          fetchPriority="high"
         />
         <h1 className="text-4xl font-bold mb-4">Discord 時報Bot</h1>
 
