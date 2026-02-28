@@ -5,4 +5,4 @@
  * discord-bot/src/api/index.ts から export される AppType を re-export し、
  * front-app が @jihou/shared-types パッケージ経由でクリーンに参照できるようにする。
  */
-export type { AppType } from "../../discord-bot/src/api/index";
+export type { AppType } from "../../discord-bot/src/api/index.ts";

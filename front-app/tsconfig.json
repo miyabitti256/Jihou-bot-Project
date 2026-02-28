@@ -1,7 +1,7 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2017",
+    "target": "ESNext",
     "lib": ["dom", "dom.iterable", "esnext"],
     "jsx": "react-jsx",
     "incremental": true,
@@ -12,8 +12,7 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@bot/*": ["../discord-bot/src/*"],
-      "@generated/*": ["../discord-bot/src/generated/*"]
+      "@bot/*": ["../discord-bot/src/*"]
     }
   },
   "include": [

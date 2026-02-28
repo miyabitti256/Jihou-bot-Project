@@ -1,4 +1,4 @@
-import "@/api";
+import "@bot/api";
 import app from "@bot/api";
 import { loadCommands } from "@bot/handler/command";
 import { setupDiscordEventHandlers } from "@bot/handler/discord-events";

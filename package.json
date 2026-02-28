@@ -20,5 +20,9 @@
     "lint:fix": "biome check --fix .",
     "format": "biome format --write .",
     "prepare": "husky"
+  },
+  "overrides": {
+    "hono": "^4.12.1",
+    "zod": "^4.3.6"
   }
 }

@@ -1,6 +1,10 @@
 {
   "name": "discord-bot",
+  "private": true,
   "module": "index.ts",
+  "exports": {
+    "./types": "./src/api/index.ts"
+  },
   "scripts": {
     "dev": "bun run src/index.ts",
     "start": "bun run src/start.ts",
