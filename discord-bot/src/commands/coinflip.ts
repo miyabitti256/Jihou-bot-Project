@@ -197,6 +197,7 @@ export async function execute(
 
           const newBet = Number.parseInt(
             modalSubmit.fields.getTextInputValue("betAmount"),
+            10,
           );
           gameState = setBet(gameState, newBet);
           const newEmbed = createEmbed(gameState);

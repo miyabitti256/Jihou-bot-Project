@@ -1,5 +1,8 @@
 import { logger } from "@lib/logger";
-import * as JankenService from "@services/minigame";
+import {
+  checkBothUserBalances,
+  saveJankenResult,
+} from "@services/minigame/janken";
 import {
   ActionRowBuilder,
   ButtonBuilder,
@@ -25,29 +28,11 @@ const CONSTANTS = {
 
 export type ChoiceKey = keyof typeof CONSTANTS.CHOICES;
 
-type GameState =
-  | "waiting_opponent"
-  | "betting"
-  | "playing"
-  | "finished"
-  | "rematch_confirm";
-
-// interface GameResult {
-//   challenger: User;
-//   opponent: User;
-//   challengerChoice: ChoiceKey;
-//   opponentChoice: ChoiceKey;
-//   winner: User | null;
-//   challengerBet?: number;
-//   opponentBet?: number;
-// }
-
 class JankenGame {
   private interaction: ChatInputCommandInteraction;
   private challenger: User;
   private opponent?: User;
   private message?: Message;
-  private state: GameState = "waiting_opponent";
   private isBetMode: boolean;
   private challengerBet = 0;
   private opponentBet = 0;
@@ -201,10 +186,8 @@ class JankenGame {
   private async handleBetting(): Promise<void> {
     if (!this.opponent) return;
 
-    this.state = "betting";
-
     try {
-      const result = await JankenService.checkBothUserBalances(
+      const result = await checkBothUserBalances(
         this.challenger,
         this.opponent,
       );
@@ -321,8 +304,6 @@ class JankenGame {
   private async playGame(): Promise<void> {
     if (!this.opponent) return;
 
-    this.state = "playing";
-
     const gameEmbed = this.createGameEmbed();
     const choiceRow = this.createChoiceButtons();
 
@@ -399,12 +380,10 @@ class JankenGame {
     if (!this.opponent || !this.challengerChoice || !this.opponentChoice)
       return;
 
-    this.state = "finished";
-
     const winner = this.getWinner(this.challengerChoice, this.opponentChoice);
 
     try {
-      await JankenService.saveJankenResult({
+      await saveJankenResult({
         challengerId: this.challenger.id,
         opponentId: this.opponent.id,
         challengerHand: this.challengerChoice,
@@ -502,7 +481,6 @@ class JankenGame {
   private async handleRematch(): Promise<void> {
     if (!this.opponent || !this.message) return;
 
-    this.state = "rematch_confirm";
     const participantIds = [this.challenger.id, this.opponent.id];
     let rematchRequesterId: string | null = null;
 
