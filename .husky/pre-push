@@ -3,7 +3,7 @@
 echo "🔍 Pre-push: Lint & TypeCheck..."
 
 # Biome lint & format check
-bun run check --fix
+bun run lint:fix
 if [ $? -ne 0 ]; then
   echo "❌ Lint failed. Push aborted."
   exit 1
