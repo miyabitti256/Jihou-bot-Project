@@ -1,8 +1,8 @@
 import type {
   ChatMessage,
   ChatThread,
-} from "@bot/generated/prisma/client/client.ts";
-import { ChatRole } from "@bot/generated/prisma/client/client.ts";
+} from "@bot/generated/prisma/client/client";
+import { ChatRole } from "@bot/generated/prisma/client/client";
 import {
   generateChatText,
   generateChatTextStream,

@@ -1,4 +1,4 @@
-import { PrismaClient } from "@bot/generated/prisma/client/client.ts";
+import { PrismaClient } from "@bot/generated/prisma/client/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { env } from "./env";

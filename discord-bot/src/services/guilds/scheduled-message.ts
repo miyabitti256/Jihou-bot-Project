@@ -1,4 +1,4 @@
-import type { ScheduledMessage } from "@bot/generated/prisma/client/client.ts";
+import type { ScheduledMessage } from "@bot/generated/prisma/client/client";
 import { client } from "@bot/lib/client";
 import { logger } from "@bot/lib/logger";
 import { prisma } from "@bot/lib/prisma";

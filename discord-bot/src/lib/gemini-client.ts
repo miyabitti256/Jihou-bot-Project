@@ -1,4 +1,4 @@
-import type { ChatRole } from "@bot/generated/prisma/client/client.ts";
+import type { ChatRole } from "@bot/generated/prisma/client/client";
 import { env } from "@bot/lib/env";
 import { logger } from "@bot/lib/logger";
 import { GoogleGenAI } from "@google/genai";

@@ -1,4 +1,4 @@
-import { Prisma } from "@bot/generated/prisma/client/client.ts";
+import { Prisma } from "@bot/generated/prisma/client/client";
 import { logger } from "@bot/lib/logger";
 import { prisma } from "@bot/lib/prisma";
 

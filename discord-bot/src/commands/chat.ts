@@ -1,4 +1,4 @@
-import { ChatRole } from "@bot/generated/prisma/client/client.ts";
+import { ChatRole } from "@bot/generated/prisma/client/client";
 import rateLimitManager from "@bot/handler/rate-limit";
 import { logger } from "@bot/lib/logger";
 import {

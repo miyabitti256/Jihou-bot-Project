@@ -1,4 +1,4 @@
-import { ChatRole } from "@bot/generated/prisma/client/client.ts";
+import { ChatRole } from "@bot/generated/prisma/client/client";
 import { logger } from "@bot/lib/logger";
 import { splitMessage, splitStreamingMessage } from "@bot/lib/utils";
 import {
