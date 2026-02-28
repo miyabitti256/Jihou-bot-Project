@@ -1,5 +1,5 @@
-import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { env } from "@bot/lib/env";
+import { logger } from "@bot/lib/logger";
 
 const DISCORD_API_BASE = "https://discord.com/api/v10";
 

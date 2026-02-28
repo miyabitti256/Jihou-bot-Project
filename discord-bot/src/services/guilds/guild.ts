@@ -1,5 +1,5 @@
-import { logger } from "@/lib/logger";
-import { prisma } from "@/lib/prisma";
+import { logger } from "@bot/lib/logger";
+import { prisma } from "@bot/lib/prisma";
 
 export interface GuildIncludeOptions {
   roles?: boolean;

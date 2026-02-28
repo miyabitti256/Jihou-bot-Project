@@ -11,7 +11,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@bot/*": ["../discord-bot/src/*"],
+      "@generated/*": ["../discord-bot/src/generated/*"]
     }
   },
   "include": [

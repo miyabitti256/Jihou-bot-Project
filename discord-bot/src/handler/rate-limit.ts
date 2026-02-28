@@ -1,4 +1,4 @@
-import { logger } from "@/lib/logger";
+import { logger } from "@bot/lib/logger";
 
 // レート制限のデフォルト値
 const DEFAULT_RATE_LIMIT_MS = 3000;

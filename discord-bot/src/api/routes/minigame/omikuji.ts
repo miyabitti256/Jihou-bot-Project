@@ -1,11 +1,11 @@
-import { zValidator } from "@hono/zod-validator";
-import { Hono } from "hono";
-import { logger } from "@/lib/logger";
+import { logger } from "@bot/lib/logger";
 import {
   drawOmikuji,
   getOmikujiHistory,
   OmikujiError,
-} from "@/services/minigame/omikuji";
+} from "@bot/services/minigame/omikuji";
+import { zValidator } from "@hono/zod-validator";
+import { Hono } from "hono";
 import type { AppEnv } from "../../env";
 import { omikujiResultQuerySchema, userIdParamSchema } from "../../schemas";
 

@@ -8,8 +8,8 @@
     "noPropertyAccessFromIndexSignature": false,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@generated/*": ["src/generated/*"]
+      "@bot/*": ["./src/*"],
+      "@generated/*": ["./src/generated/*"]
     }
   }
 }

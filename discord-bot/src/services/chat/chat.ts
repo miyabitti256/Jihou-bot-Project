@@ -1,17 +1,17 @@
 import type {
   ChatMessage,
   ChatThread,
-} from "@/generated/prisma/client/client.ts";
-import { ChatRole } from "@/generated/prisma/client/client.ts";
+} from "@bot/generated/prisma/client/client.ts";
+import { ChatRole } from "@bot/generated/prisma/client/client.ts";
 import {
   generateChatText,
   generateChatTextStream,
   generateTextStream,
   SYSTEM_PROMPT,
-} from "@/lib/gemini-client";
-import { logger } from "@/lib/logger";
-import { prisma } from "@/lib/prisma";
-import { estimateTokenCount } from "@/lib/utils";
+} from "@bot/lib/gemini-client";
+import { logger } from "@bot/lib/logger";
+import { prisma } from "@bot/lib/prisma";
+import { estimateTokenCount } from "@bot/lib/utils";
 
 // エラークラス
 export class ChatServiceError extends Error {

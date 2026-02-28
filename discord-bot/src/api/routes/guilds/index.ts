@@ -1,18 +1,18 @@
-import { zValidator } from "@hono/zod-validator";
-import { Hono } from "hono";
-import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { env } from "@bot/lib/env";
+import { logger } from "@bot/lib/logger";
 import {
   DiscordApiError,
   fetchGuild,
   fetchGuildChannels,
-} from "@/services/discord/discord-api";
+} from "@bot/services/discord/discord-api";
 import {
   GuildError,
   type GuildIncludeOptions,
   getGuildWithData,
   getUserGuilds,
-} from "@/services/guilds/guild";
+} from "@bot/services/guilds/guild";
+import { zValidator } from "@hono/zod-validator";
+import { Hono } from "hono";
 import type { AppEnv } from "../../env";
 import {
   guildIdParamSchema,

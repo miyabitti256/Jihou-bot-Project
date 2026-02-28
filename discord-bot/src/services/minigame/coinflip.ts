@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@bot/lib/prisma";
 
 export class CoinflipError extends Error {
   constructor(message: string) {

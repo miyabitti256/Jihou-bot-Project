@@ -1,7 +1,10 @@
 import { Hono } from "hono";
 import { secureHeaders } from "hono/secure-headers";
-import { apiKeyAuthMiddleware, apiKeyWithUserAuthMiddleware } from "@/lib/auth";
-import { defaultRateLimiter, mutationRateLimiter } from "@/lib/rate-limiter";
+import {
+  apiKeyAuthMiddleware,
+  apiKeyWithUserAuthMiddleware,
+} from "../lib/auth";
+import { defaultRateLimiter, mutationRateLimiter } from "../lib/rate-limiter";
 import type { AppEnv } from "./env";
 import { guilds } from "./routes/guilds";
 import { minigame } from "./routes/minigame";

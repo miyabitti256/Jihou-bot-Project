@@ -1,3 +1,15 @@
+import { ChatRole } from "@bot/generated/prisma/client/client.ts";
+import rateLimitManager from "@bot/handler/rate-limit";
+import { logger } from "@bot/lib/logger";
+import {
+  ChatServiceError,
+  createChatMessage,
+  createChatThread,
+  generateSingleResponseStream,
+  generateThreadResponseStream,
+  getChatThread,
+} from "@bot/services/chat/chat";
+import { ensureUserExists } from "@bot/services/users/user";
 import {
   ChannelType,
   type ChatInputCommandInteraction,
@@ -11,18 +23,6 @@ import {
   ThreadAutoArchiveDuration,
   type ThreadChannel,
 } from "discord.js";
-import { ChatRole } from "@/generated/prisma/client/client.ts";
-import rateLimitManager from "@/handler/rate-limit";
-import { logger } from "@/lib/logger";
-import {
-  ChatServiceError,
-  createChatMessage,
-  createChatThread,
-  generateSingleResponseStream,
-  generateThreadResponseStream,
-  getChatThread,
-} from "@/services/chat/chat";
-import { ensureUserExists } from "@/services/users/user";
 
 export const data = new SlashCommandBuilder()
   .setName("chat")

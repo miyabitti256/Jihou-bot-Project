@@ -1,8 +1,9 @@
-import { zValidator } from "@hono/zod-validator";
-import { Hono } from "hono";
-import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
-import { getUserGuilds, verifyUserGuildAccess } from "@/services/guilds/guild";
+import { env } from "@bot/lib/env";
+import { logger } from "@bot/lib/logger";
+import {
+  getUserGuilds,
+  verifyUserGuildAccess,
+} from "@bot/services/guilds/guild";
 import {
   createScheduledMessage,
   deleteScheduledMessage,
@@ -13,7 +14,9 @@ import {
   ScheduledMessageError,
   type ScheduledMessageUpdateData,
   updateScheduledMessage,
-} from "@/services/guilds/scheduled-message";
+} from "@bot/services/guilds/scheduled-message";
+import { zValidator } from "@hono/zod-validator";
+import { Hono } from "hono";
 import type { AppEnv } from "../../env";
 import {
   idParamSchema,

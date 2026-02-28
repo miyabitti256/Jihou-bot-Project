@@ -1,11 +1,11 @@
 import { readdirSync } from "node:fs";
 import path from "node:path";
+import { logger } from "@bot/lib/logger";
 import {
   type ChatInputCommandInteraction,
   Collection,
   type SlashCommandBuilder,
 } from "discord.js";
-import { logger } from "@/lib/logger";
 
 interface Command {
   data: SlashCommandBuilder;

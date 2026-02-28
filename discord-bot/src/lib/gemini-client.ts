@@ -1,7 +1,7 @@
+import type { ChatRole } from "@bot/generated/prisma/client/client.ts";
+import { env } from "@bot/lib/env";
+import { logger } from "@bot/lib/logger";
 import { GoogleGenAI } from "@google/genai";
-import type { ChatRole } from "@/generated/prisma/client/client.ts";
-import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
 import { formatChatHistoryForGemini } from "./utils";
 
 const CONSTANTS = {

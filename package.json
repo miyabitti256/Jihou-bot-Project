@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": [
     "discord-bot",
-    "front-app"
+    "front-app",
+    "packages/*"
   ],
   "devDependencies": {
     "@biomejs/biome": "^2.4.4",
