@@ -16,7 +16,7 @@ export function DigitalClock() {
   return (
     <div className="text-3xl font-bold flex">
       <p>現在時刻</p>
-      <p>{time.toLocaleTimeString("ja-JP")}</p>
+      <p suppressHydrationWarning>{time.toLocaleTimeString("ja-JP")}</p>
     </div>
   );
 }

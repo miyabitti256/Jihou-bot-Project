@@ -26,7 +26,10 @@ export default async function SessionMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger className="focus:outline-hidden">
         <Avatar>
-          <AvatarImage src={session.user?.image ?? ""} />
+          <AvatarImage
+            src={session.user?.image ?? ""}
+            alt="your discord icon"
+          />
           <AvatarFallback>
             {session.user?.name?.slice(0, 2) ?? ""}
           </AvatarFallback>
