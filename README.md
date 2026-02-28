@@ -81,10 +81,11 @@ Bot本体がHono製REST APIを内包するサービスドリブンなアーキ�
 // rpc-client.ts
 import type { AppType } from "@api-types";
 import { hc } from "hono/client";
+import { env } from "./env"; // Zodでバリデーション済みの環境変数
 
 export async function createApiClient() {
   const headers = await getAuthHeaders();
-  return hc<AppType>(process.env.API_URL as string, { headers });
+  return hc<AppType>(env.API_URL, { headers }); // as string 不要
 }
 ```
 
@@ -221,6 +222,50 @@ makeCache: Options.cacheWithLimits({
 ```
 defaultRateLimiter   → 10秒間に20リクエスト（/users, /minigame）
 mutationRateLimiter  → 10秒間に15リクエスト（/guilds 書き込み系）
+```
+
+### 7. 型アサーション（`as`）の最小化
+
+コードベース全体で `as Type` の使用を最小限に抑え、ランタイム型安全性を確保している。やむを得ず残す箇所には理由コメントを付記する方針を徹底した。
+
+#### 環境変数の Zod バリデーション
+
+`process.env.X as string` を排除し、起動時に Zod スキーマで一括バリデーションする `env.ts` を `front-app`・`discord-bot` 双方に導入。環境変数の設定漏れはアプリ起動時に即座に検出される。
+
+```typescript
+// lib/env.ts
+const envSchema = z.object({
+  DISCORD_TOKEN: z.string().min(1),
+  DATABASE_URL: z.string().url(),
+});
+export const env = envSchema.parse(process.env);
+```
+
+#### ランタイム型ガード関数
+
+Discord.jsのイベントペイロードやユーザー入力に対して、`as Hand` のような強制キャストの代わりに型ガード関数を使用し、無効な入力をランタイムで安全に弾く。
+
+```typescript
+function isHand(value: string): value is Hand {
+  return value in HANDS;
+}
+
+const userHandStr = i.options.getString("出す手", true);
+if (!isHand(userHandStr)) {
+  await i.reply({ content: "無効な手が指定されました", flags: MessageFlags.Ephemeral });
+  return;
+}
+```
+
+#### 修正困難な箇所のコメント方針
+
+ライブラリの型制約等により `as` を除去できない箇所には、日本語で理由を明記したコメントを残す。
+
+```typescript
+// NextAuth の JWT token 型には `id` プロパティが定義されていないため、
+// module augmentation で完全に対応するには NextAuth 内部型の拡張が必要。
+// 現状は `as string` で対応。
+session.user.id = token.id as string;
 ```
 
 ---
