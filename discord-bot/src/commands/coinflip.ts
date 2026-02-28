@@ -1,11 +1,3 @@
-import { logger } from "@lib/logger";
-import {
-  type CoinChoice,
-  CoinflipError,
-  type CoinResult,
-  getUserMoneyStatus,
-  playCoinflip,
-} from "@services/minigame/coinflip";
 import {
   ActionRowBuilder,
   ButtonBuilder,
@@ -18,6 +10,14 @@ import {
   TextInputBuilder,
   TextInputStyle,
 } from "discord.js";
+import { logger } from "@/lib/logger";
+import {
+  type CoinChoice,
+  CoinflipError,
+  type CoinResult,
+  getUserMoneyStatus,
+  playCoinflip,
+} from "@/services/minigame/coinflip";
 
 interface GameState {
   bet: number;

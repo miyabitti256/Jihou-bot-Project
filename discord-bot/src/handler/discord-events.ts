@@ -1,17 +1,3 @@
-import aiMessageHandler from "@handler/ai-message";
-import { commands } from "@handler/command";
-import { client } from "@lib/client";
-import { logger } from "@lib/logger";
-import {
-  createMemberDataFromGuildMember,
-  deleteGuildData,
-  deleteMemberData,
-  updateChannelsData,
-  updateGuildData,
-  updateMembersData,
-  updateRolesData,
-} from "@services/db-sync/guild-sync";
-import { deactivateScheduledMessagesByChannelId } from "@services/guilds/scheduled-message";
 import type {
   DMChannel,
   Guild,
@@ -24,6 +10,20 @@ import type {
   Role,
 } from "discord.js";
 import { MessageFlags } from "discord.js";
+import aiMessageHandler from "@/handler/ai-message";
+import { commands } from "@/handler/command";
+import { client } from "@/lib/client";
+import { logger } from "@/lib/logger";
+import {
+  createMemberDataFromGuildMember,
+  deleteGuildData,
+  deleteMemberData,
+  updateChannelsData,
+  updateGuildData,
+  updateMembersData,
+  updateRolesData,
+} from "@/services/db-sync/guild-sync";
+import { deactivateScheduledMessagesByChannelId } from "@/services/guilds/scheduled-message";
 
 // デフォルトのロール設定
 const DEFAULT_ROLES = [

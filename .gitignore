@@ -1,1 +1,88 @@
+# ============================================
+# Monorepo Root .gitignore
+# ============================================
+
+# Dependencies
 node_modules/
+jspm_packages/
+web_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Caches
+.cache
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage
+coverage/
+*.lcov
+.nyc_output
+
+# TypeScript
+*.tsbuildinfo
+
+# Build outputs
+dist/
+build/
+out/
+
+# IDE
+.idea/
+.vscode-test
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.tgz
+*.pem
+
+# ====================
+# discord-bot
+# ====================
+
+# Next.js (should not apply but included for completeness)
+.next/
+
+# Prisma
+discord-bot/prisma/migrations/*
+discord-bot/src/generated/
+
+# docs
+discord-bot/docs/*
+
+# ====================
+# front-app
+# ====================
+
+# Next.js
+front-app/.next/
+front-app/out/
+
+# Vercel
+front-app/.vercel
+
+# docs
+front-app/docs/

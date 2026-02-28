@@ -1,11 +1,10 @@
-import type { ScheduledMessage } from "@generated/prisma/client/client.ts";
-import { client } from "@lib/client";
-import { logger } from "@lib/logger";
-import { prisma } from "@lib/prisma";
 import cuid from "cuid";
-
 import type { ScheduledTask } from "node-cron";
 import { schedule } from "node-cron";
+import type { ScheduledMessage } from "@/generated/prisma/client/client.ts";
+import { client } from "@/lib/client";
+import { logger } from "@/lib/logger";
+import { prisma } from "@/lib/prisma";
 
 /**
  * 自動無効化対象のDiscord APIエラーコード

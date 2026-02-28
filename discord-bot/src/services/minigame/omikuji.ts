@@ -1,5 +1,5 @@
-import { prisma } from "@lib/prisma";
-import { getTokyoDate, hasDrawnToday } from "@lib/utils";
+import { prisma } from "@/lib/prisma";
+import { getTokyoDate, hasDrawnToday } from "@/lib/utils";
 
 export interface OmikujiTypes {
   NUBEKICHI: string;

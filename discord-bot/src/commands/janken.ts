@@ -1,8 +1,3 @@
-import { logger } from "@lib/logger";
-import {
-  checkBothUserBalances,
-  saveJankenResult,
-} from "@services/minigame/janken";
 import {
   ActionRowBuilder,
   ButtonBuilder,
@@ -15,6 +10,11 @@ import {
   SlashCommandBuilder,
   type User,
 } from "discord.js";
+import { logger } from "@/lib/logger";
+import {
+  checkBothUserBalances,
+  saveJankenResult,
+} from "@/services/minigame/janken";
 
 const CONSTANTS = {
   TIMEOUT_DURATION: 180000,

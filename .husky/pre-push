@@ -1,0 +1,19 @@
+#!/usr/bin/env sh
+
+echo "🔍 Pre-push: Lint & TypeCheck..."
+
+# Biome lint & format check
+bun run check --fix
+if [ $? -ne 0 ]; then
+  echo "❌ Lint failed. Push aborted."
+  exit 1
+fi
+
+# TypeScript type check
+bun run typecheck
+if [ $? -ne 0 ]; then
+  echo "❌ TypeCheck failed. Push aborted."
+  exit 1
+fi
+
+echo "✅ All checks passed!"

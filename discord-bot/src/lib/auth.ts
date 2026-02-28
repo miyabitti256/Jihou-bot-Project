@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import type { Context, Next } from "hono";
+import { env } from "./env";
 import { logger } from "./logger";
 
 /**
@@ -16,7 +17,7 @@ function safeCompare(a: string, b: string): boolean {
  */
 export const apiKeyAuthMiddleware = async (c: Context, next: Next) => {
   const apiKey = c.req.header("X-API-Key");
-  const validApiKey = process.env.API_KEY;
+  const validApiKey = env.API_KEY;
 
   if (!validApiKey) {
     logger.error("API_KEY environment variable is not set");
@@ -58,7 +59,7 @@ export const apiKeyAuthMiddleware = async (c: Context, next: Next) => {
  */
 export const apiKeyWithUserAuthMiddleware = async (c: Context, next: Next) => {
   const apiKey = c.req.header("X-API-Key");
-  const validApiKey = process.env.API_KEY;
+  const validApiKey = env.API_KEY;
 
   if (!validApiKey) {
     logger.error("API_KEY environment variable is not set");

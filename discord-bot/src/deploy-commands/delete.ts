@@ -1,10 +1,10 @@
 import { REST } from "@discordjs/rest";
-import { env } from "@lib/env";
-import { logger } from "@lib/logger";
 import {
   type RESTGetAPIApplicationCommandsResult,
   Routes,
 } from "discord-api-types/v10";
+import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 const rest = new REST({ version: "10" }).setToken(env.DISCORD_TOKEN);
 (async () => {

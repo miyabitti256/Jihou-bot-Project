@@ -1,6 +1,8 @@
 import { zValidator } from "@hono/zod-validator";
-import { logger } from "@lib/logger";
-import { getUserGuilds, verifyUserGuildAccess } from "@services/guilds/guild";
+import { Hono } from "hono";
+import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
+import { getUserGuilds, verifyUserGuildAccess } from "@/services/guilds/guild";
 import {
   createScheduledMessage,
   deleteScheduledMessage,
@@ -11,8 +13,7 @@ import {
   ScheduledMessageError,
   type ScheduledMessageUpdateData,
   updateScheduledMessage,
-} from "@services/guilds/scheduled-message";
-import { Hono } from "hono";
+} from "@/services/guilds/scheduled-message";
 import type { AppEnv } from "../../env";
 import {
   idParamSchema,
@@ -60,8 +61,7 @@ export const message = new Hono<AppEnv>()
           error: {
             code: "INTERNAL_SERVER_ERROR",
             message: "Internal server error",
-            details:
-              process.env.NODE_ENV === "development" ? String(error) : null,
+            details: env.NODE_ENV === "development" ? String(error) : null,
           },
         },
         500,
@@ -134,8 +134,7 @@ export const message = new Hono<AppEnv>()
             error: {
               code: "INTERNAL_SERVER_ERROR",
               message: "Internal server error",
-              details:
-                process.env.NODE_ENV === "development" ? String(error) : null,
+              details: env.NODE_ENV === "development" ? String(error) : null,
             },
           },
           500,
@@ -198,8 +197,7 @@ export const message = new Hono<AppEnv>()
           error: {
             code: "INTERNAL_SERVER_ERROR",
             message: "Internal server error",
-            details:
-              process.env.NODE_ENV === "development" ? String(error) : null,
+            details: env.NODE_ENV === "development" ? String(error) : null,
           },
         },
         500,
@@ -299,8 +297,7 @@ export const message = new Hono<AppEnv>()
           error: {
             code: "INTERNAL_SERVER_ERROR",
             message: "Internal server error",
-            details:
-              process.env.NODE_ENV === "development" ? String(error) : null,
+            details: env.NODE_ENV === "development" ? String(error) : null,
           },
         },
         500,
@@ -413,8 +410,7 @@ export const message = new Hono<AppEnv>()
           error: {
             code: "INTERNAL_SERVER_ERROR",
             message: "Internal server error",
-            details:
-              process.env.NODE_ENV === "development" ? String(error) : null,
+            details: env.NODE_ENV === "development" ? String(error) : null,
           },
         },
         500,
@@ -471,8 +467,7 @@ export const message = new Hono<AppEnv>()
           error: {
             code: "INTERNAL_SERVER_ERROR",
             message: "Internal server error",
-            details:
-              process.env.NODE_ENV === "development" ? String(error) : null,
+            details: env.NODE_ENV === "development" ? String(error) : null,
           },
         },
         500,

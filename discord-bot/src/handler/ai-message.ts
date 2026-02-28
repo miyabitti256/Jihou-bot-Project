@@ -1,15 +1,15 @@
-import { ChatRole } from "@generated/prisma/client/client.ts";
-import { logger } from "@lib/logger";
-import { splitMessage, splitStreamingMessage } from "@lib/utils";
+import type { Message, TextChannel } from "discord.js";
+import { EmbedBuilder, ThreadChannel as ThreadChannelClass } from "discord.js";
+import { ChatRole } from "@/generated/prisma/client/client.ts";
+import { logger } from "@/lib/logger";
+import { splitMessage, splitStreamingMessage } from "@/lib/utils";
 import {
   archiveChatThread,
   ChatServiceError,
   createChatMessage,
   generateThreadResponseStream,
   getChatThread,
-} from "@services/chat/chat";
-import type { Message, TextChannel } from "discord.js";
-import { EmbedBuilder, ThreadChannel as ThreadChannelClass } from "discord.js";
+} from "@/services/chat/chat";
 import rateLimitManager from "./rate-limit";
 
 /**

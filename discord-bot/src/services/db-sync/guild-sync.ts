@@ -1,7 +1,7 @@
-import { logger } from "@lib/logger";
-import { pool, prisma } from "@lib/prisma";
-import { deactivateScheduledMessagesByChannelId } from "@services/guilds/scheduled-message";
 import type { Guild, GuildMember } from "discord.js";
+import { logger } from "@/lib/logger";
+import { pool, prisma } from "@/lib/prisma";
+import { deactivateScheduledMessagesByChannelId } from "@/services/guilds/scheduled-message";
 
 // エラークラス
 export class DbSyncError extends Error {

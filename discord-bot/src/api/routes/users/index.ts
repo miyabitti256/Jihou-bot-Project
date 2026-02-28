@@ -1,19 +1,19 @@
 import { zValidator } from "@hono/zod-validator";
-import { logger } from "@lib/logger";
+import { Hono } from "hono";
+import { logger } from "@/lib/logger";
 import {
   DiscordApiError,
   fetchChannel,
   fetchDiscordUser,
-} from "@services/discord/discord-api";
-import { getUserGuilds, verifyUserGuildAccess } from "@services/guilds/guild";
+} from "@/services/discord/discord-api";
+import { getUserGuilds, verifyUserGuildAccess } from "@/services/guilds/guild";
 import {
   createOrUpdateUser,
   getUserData,
   getUsersFromSameGuilds,
   UserServiceError,
   updateUserMoney,
-} from "@services/users/user";
-import { Hono } from "hono";
+} from "@/services/users/user";
 import type { AppEnv } from "../../env";
 import {
   channelIdParamSchema,

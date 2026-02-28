@@ -1,15 +1,15 @@
-import { logger } from "@lib/logger";
-import {
-  getScheduledMessageById,
-  ScheduledMessageError,
-  updateScheduledMessage,
-} from "@services/guilds/scheduled-message";
 import {
   ChannelType,
   type ChatInputCommandInteraction,
   MessageFlags,
   SlashCommandBuilder,
 } from "discord.js";
+import { logger } from "@/lib/logger";
+import {
+  getScheduledMessageById,
+  ScheduledMessageError,
+  updateScheduledMessage,
+} from "@/services/guilds/scheduled-message";
 
 export const data = new SlashCommandBuilder()
   .setName("editschedule")

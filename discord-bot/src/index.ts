@@ -1,13 +1,13 @@
-import "@api";
-import app from "@api";
-import { loadCommands } from "@handler/command";
-import { setupDiscordEventHandlers } from "@handler/discord-events";
-import { client } from "@lib/client";
-import { env } from "@lib/env";
-import { logger } from "@lib/logger";
-import { scheduleStatusUpdates, updateStatus } from "@lib/status-updater";
-import { startScheduledMessageDispatcher } from "@services/guilds/scheduled-message";
+import "@/api";
 import { serve } from "bun";
+import app from "@/api";
+import { loadCommands } from "@/handler/command";
+import { setupDiscordEventHandlers } from "@/handler/discord-events";
+import { client } from "@/lib/client";
+import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
+import { scheduleStatusUpdates, updateStatus } from "@/lib/status-updater";
+import { startScheduledMessageDispatcher } from "@/services/guilds/scheduled-message";
 import "./types/hono";
 
 const token = env.DISCORD_TOKEN;
