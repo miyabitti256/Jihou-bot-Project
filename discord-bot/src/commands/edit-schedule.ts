@@ -46,7 +46,6 @@ export const data = new SlashCommandBuilder()
   );
 
 export async function execute(interaction: ChatInputCommandInteraction) {
-  // setRequired(true) 指定済みのため、getString の第2引数に true を渡すと string が返る
   const id = interaction.options.getString("id", true);
   const time = interaction.options.getString("time");
   const message = interaction.options.getString("message");

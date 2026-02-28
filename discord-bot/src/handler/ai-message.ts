@@ -98,7 +98,6 @@ export async function handleMessageCreate(message: Message): Promise<void> {
   if (!(message.channel instanceof ThreadChannelClass)) return;
 
   // スレッドの情報を取得
-  // instanceof ThreadChannelClass チェック済みのため、直接使用可能
   const thread = message.channel;
   const channelId = thread.id;
 

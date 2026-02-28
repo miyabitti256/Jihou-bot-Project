@@ -75,7 +75,6 @@ async function handleInteraction(interaction: Interaction) {
   if (!command) return;
 
   try {
-    // isChatInputCommand() ガード後は ChatInputCommandInteraction 型に推論される
     await command.execute(interaction);
   } catch (error) {
     logger.error({ err: error }, "コマンド実行中にエラーが発生しました:");
