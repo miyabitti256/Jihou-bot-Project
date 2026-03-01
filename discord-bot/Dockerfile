@@ -28,6 +28,10 @@ RUN cd packages/database && DATABASE_URL="postgresql://dummy:dummy@localhost:543
 # ソースコードをコピー
 COPY discord-bot ./discord-bot
 
+# ランタイムのカレントディレクトリをdiscord-botに設定
+# （コード内の相対パス ./src/commands 等を正しく解決するため）
+WORKDIR /app/discord-bot
+
 # --smol: Bun(JavaScriptCore)のヒープを小さく保ちGCを頻繁に実行する
 # 512MBメモリ環境でのOOM防止に不可欠
-CMD ["bun", "--smol", "run", "discord-bot/src/start.ts"]
+CMD ["bun", "--smol", "run", "src/start.ts"]
