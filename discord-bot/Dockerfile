@@ -1,24 +1,28 @@
 FROM oven/bun:latest
 WORKDIR /app
 
+# ルートpackage.json（ワークスペース定義）をコピー
+COPY package.json ./
+
 # packages/database のPrisma関連ファイルをコピー
 COPY packages/database/package.json ./packages/database/package.json
 COPY packages/database/prisma ./packages/database/prisma
 COPY packages/database/prisma.config.ts ./packages/database/prisma.config.ts
 COPY packages/database/src ./packages/database/src
 
+# shared-types のpackage.jsonをコピー（ワークスペース解決用）
+COPY packages/shared-types/package.json ./packages/shared-types/package.json
+
+# front-app はワークスペース解決のみ必要（依存は不要）
+RUN mkdir -p front-app && echo '{"name":"front-app","private":true}' > front-app/package.json
+
 # discord-bot のpackage.jsonをコピー
 COPY discord-bot/package.json ./discord-bot/package.json
 
-# ルートpackage.jsonとbun.lockをコピー（ワークスペース解決用）
-COPY package.json ./
-COPY bun.lock ./
-
 # 依存関係をインストール
-RUN cd discord-bot && bun install --production
+RUN bun install --production --ignore-scripts
 
 # Prisma Client生成
-# Prisma v7 config evaluation at build time requires some URL to be present, even for 'generate'.
 RUN cd packages/database && DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" bunx prisma generate
 
 # ソースコードをコピー
