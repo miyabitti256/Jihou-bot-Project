@@ -1,4 +1,3 @@
-import { ChatRole } from "@bot/generated/prisma/client/client";
 import { logger } from "@bot/lib/logger";
 import { splitMessage, splitStreamingMessage } from "@bot/lib/utils";
 import {
@@ -8,6 +7,7 @@ import {
   generateThreadResponseStream,
   getChatThread,
 } from "@bot/services/chat/chat";
+import { ChatRole } from "@jihou/database";
 import type { Message, TextChannel } from "discord.js";
 import { EmbedBuilder, ThreadChannel as ThreadChannelClass } from "discord.js";
 import rateLimitManager from "./rate-limit";

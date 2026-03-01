@@ -3,7 +3,9 @@
   "private": true,
   "main": "index.ts",
   "types": "index.ts",
-
+  "dependencies": {
+    "@jihou/database": "workspace:*"
+  },
   "exports": {
     ".": "./index.ts"
   }

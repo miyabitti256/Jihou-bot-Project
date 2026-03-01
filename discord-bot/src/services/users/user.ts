@@ -1,6 +1,6 @@
-import { Prisma } from "@bot/generated/prisma/client/client";
 import { logger } from "@bot/lib/logger";
 import { prisma } from "@bot/lib/prisma";
+import { Prisma } from "@jihou/database";
 
 // エラークラス
 export class UserServiceError extends Error {

@@ -19,7 +19,8 @@
     "lint": "biome check .",
     "lint:fix": "biome check --fix .",
     "format": "biome format --write .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "deploy:bot": "fly deploy --config discord-bot/fly.toml"
   },
   "overrides": {
     "hono": "^4.12.1",

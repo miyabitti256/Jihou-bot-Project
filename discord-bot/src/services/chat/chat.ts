@@ -1,8 +1,3 @@
-import type {
-  ChatMessage,
-  ChatThread,
-} from "@bot/generated/prisma/client/client";
-import { ChatRole } from "@bot/generated/prisma/client/client";
 import {
   generateChatText,
   generateChatTextStream,
@@ -12,6 +7,8 @@ import {
 import { logger } from "@bot/lib/logger";
 import { prisma } from "@bot/lib/prisma";
 import { estimateTokenCount } from "@bot/lib/utils";
+import type { ChatMessage, ChatThread } from "@jihou/database";
+import { ChatRole } from "@jihou/database";
 
 // エラークラス
 export class ChatServiceError extends Error {

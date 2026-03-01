@@ -12,7 +12,9 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@bot/*": ["../discord-bot/src/*"]
+      "@bot/*": ["../discord-bot/src/*"],
+      "@jihou/database": ["../packages/database/src/index.ts"],
+      "@jihou/database/client": ["../packages/database/src/client.ts"]
     }
   },
   "include": [

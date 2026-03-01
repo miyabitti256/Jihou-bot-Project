@@ -1,7 +1,7 @@
-import type { ScheduledMessage } from "@bot/generated/prisma/client/client";
 import { client } from "@bot/lib/client";
 import { logger } from "@bot/lib/logger";
 import { prisma } from "@bot/lib/prisma";
+import type { ScheduledMessage } from "@jihou/database";
 import cuid from "cuid";
 import type { ScheduledTask } from "node-cron";
 import { schedule } from "node-cron";

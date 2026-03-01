@@ -1,5 +1,5 @@
-import type { ChatRole } from "@bot/generated/prisma/client/client";
 import { logger } from "@bot/lib/logger";
+import type { ChatRole } from "@jihou/database";
 
 export const MAX_TOKENS = 900000;
 

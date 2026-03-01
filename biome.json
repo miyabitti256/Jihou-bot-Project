@@ -17,7 +17,8 @@
       "!build",
       "!.next",
       "!coverage",
-      "!*.lock"
+      "!*.lock",
+      "!packages/database/src/generated"
     ]
   },
   "formatter": {

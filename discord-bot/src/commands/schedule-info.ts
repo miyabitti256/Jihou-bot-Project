@@ -1,6 +1,6 @@
-import type { ScheduledMessage } from "@bot/generated/prisma/client/client";
 import { logger } from "@bot/lib/logger";
 import { getScheduledMessages } from "@bot/services/guilds/scheduled-message";
+import type { ScheduledMessage } from "@jihou/database";
 import {
   type ChatInputCommandInteraction,
   EmbedBuilder,

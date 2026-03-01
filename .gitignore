@@ -68,8 +68,8 @@ Thumbs.db
 # Next.js (should not apply but included for completeness)
 .next/
 
-# Prisma
-discord-bot/prisma/migrations/*
+# Prisma (generated client is rebuilt via `prisma generate`)
+packages/database/src/generated/
 discord-bot/src/generated/
 
 # docs
