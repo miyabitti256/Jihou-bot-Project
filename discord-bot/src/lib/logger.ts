@@ -1,29 +1,24 @@
-import path from "node:path";
+import { env } from "@bot/lib/env";
 import pino from "pino";
+
+const isProduction = env.NODE_ENV === "production";
 
 export const logger = pino({
   level: "info",
 
-  transport: {
-    targets: [
-      {
-        target: "pino-pretty",
-        options: {
-          colorize: true,
-          translateTime: "SYS:standard",
+  // production: Worker Thread なしの JSON 直接出力（メモリ最小化）
+  // development: pino-pretty で人間に読みやすい出力
+  ...(isProduction
+    ? {}
+    : {
+        transport: {
+          target: "pino-pretty",
+          options: {
+            colorize: true,
+            translateTime: "SYS:standard",
+          },
         },
-        level: "info",
-      },
-      {
-        target: "pino/file",
-        options: {
-          destination: path.join(process.cwd(), "logs", "app.log"),
-          mkdir: true,
-        },
-        level: "info",
-      },
-    ],
-  },
+      }),
 
   base: {
     pid: process.pid,

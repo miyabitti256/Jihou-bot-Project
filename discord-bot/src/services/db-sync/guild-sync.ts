@@ -81,34 +81,42 @@ export async function updateGuildData(guildData: GuildData) {
 }
 
 /**
- * チャンネルデータを更新する
+ * チャンネルデータを一括更新する（Raw SQL版）
  *
- * guild.channels.cache からの読み取りデータのみ使用（Discord APIコールなし）。
- * リモートSupabaseへのラウンドトリップを最小化するため、
- * 個別upsertではなく $transaction でバッチ処理する。
+ * Prisma の $transaction + 個別upsert ではチャンネル数×2本のSQLが生成されるため、
+ * PostgreSQLネイティブの INSERT ... ON CONFLICT DO UPDATE で1本に集約する。
  */
 export async function updateChannelsData(
   guildId: string,
   channels: ChannelData[],
 ) {
+  if (channels.length === 0) return;
+
   try {
-    return await prisma.$transaction(
-      channels.map((channel) =>
-        prisma.guildChannels.upsert({
-          where: { id: channel.id },
-          create: {
-            id: channel.id,
-            guildId: guildId,
-            name: channel.name,
-            type: channel.type,
-          },
-          update: {
-            name: channel.name,
-            type: channel.type,
-          },
-        }),
-      ),
-    );
+    const client = await pool.connect();
+    try {
+      const values: unknown[] = [];
+      const placeholders: string[] = [];
+      for (let i = 0; i < channels.length; i++) {
+        const ch = channels[i];
+        const offset = i * 4;
+        placeholders.push(
+          `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4})`,
+        );
+        values.push(ch.id, guildId, ch.name, ch.type);
+      }
+
+      await client.query(
+        `INSERT INTO "guild_channels" ("id", "guildId", "name", "type")
+         VALUES ${placeholders.join(", ")}
+         ON CONFLICT ("id") DO UPDATE SET
+           "name" = EXCLUDED."name",
+           "type" = EXCLUDED."type"`,
+        values,
+      );
+    } finally {
+      client.release();
+    }
   } catch (error) {
     logger.error(`[db-sync] Error updating channel data: ${error}`);
     throw new DbSyncError("UPDATE_FAILED", "Failed to update channel data");
@@ -202,41 +210,54 @@ export async function updateMembersData(
 }
 
 /**
- * ロールデータを更新する
+ * ロールデータを一括更新する（Raw SQL版）
  *
- * guild.roles.cache からの読み取りデータのみ使用（Discord APIコールなし）。
- * リモートSupabaseへのラウンドトリップを最小化するため、
- * 個別upsertではなく $transaction でバッチ処理する。
+ * Prisma の $transaction + 個別upsert ではロール数×2本のSQLが生成されるため、
+ * PostgreSQLネイティブの INSERT ... ON CONFLICT DO UPDATE で1本に集約する。
  */
 export async function updateRolesData(guildId: string, roles: RoleData[]) {
+  if (roles.length === 0) return;
+
   try {
-    return await prisma.$transaction(
-      roles.map((role) =>
-        prisma.guildRoles.upsert({
-          where: { id: role.id },
-          create: {
-            id: role.id,
-            guildId: guildId,
-            name: role.name,
-            color: role.color,
-            position: role.position,
-            permissions: role.permissions,
-            hoist: role.hoist,
-            managed: role.managed,
-            mentionable: role.mentionable,
-          },
-          update: {
-            name: role.name,
-            color: role.color,
-            position: role.position,
-            permissions: role.permissions,
-            hoist: role.hoist,
-            managed: role.managed,
-            mentionable: role.mentionable,
-          },
-        }),
-      ),
-    );
+    const client = await pool.connect();
+    try {
+      const values: unknown[] = [];
+      const placeholders: string[] = [];
+      for (let i = 0; i < roles.length; i++) {
+        const role = roles[i];
+        const offset = i * 9;
+        placeholders.push(
+          `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9})`,
+        );
+        values.push(
+          role.id,
+          guildId,
+          role.name,
+          role.color,
+          role.hoist,
+          role.position,
+          role.permissions,
+          role.managed,
+          role.mentionable,
+        );
+      }
+
+      await client.query(
+        `INSERT INTO "guild_roles" ("id", "guildId", "name", "color", "hoist", "position", "permissions", "managed", "mentionable")
+         VALUES ${placeholders.join(", ")}
+         ON CONFLICT ("id") DO UPDATE SET
+           "name" = EXCLUDED."name",
+           "color" = EXCLUDED."color",
+           "hoist" = EXCLUDED."hoist",
+           "position" = EXCLUDED."position",
+           "permissions" = EXCLUDED."permissions",
+           "managed" = EXCLUDED."managed",
+           "mentionable" = EXCLUDED."mentionable"`,
+        values,
+      );
+    } finally {
+      client.release();
+    }
   } catch (error) {
     logger.error(`[db-sync] Error updating role data: ${error}`);
     throw new DbSyncError("UPDATE_FAILED", "Failed to update role data");

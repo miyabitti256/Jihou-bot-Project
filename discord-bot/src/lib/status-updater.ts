@@ -14,6 +14,18 @@ let statusUpdateJob: ScheduledTask | null = null;
  * @param startTime 起動時刻
  */
 export async function updateStatus(startTime: Date): Promise<void> {
+  // メモリ使用量を記録（OoM原因切り分け用）
+  const mem = process.memoryUsage();
+  logger.info(
+    {
+      heapUsed: `${(mem.heapUsed / 1024 / 1024).toFixed(1)} MiB`,
+      heapTotal: `${(mem.heapTotal / 1024 / 1024).toFixed(1)} MiB`,
+      rss: `${(mem.rss / 1024 / 1024).toFixed(1)} MiB`,
+      external: `${(mem.external / 1024 / 1024).toFixed(1)} MiB`,
+    },
+    "[memory] Hourly memory report",
+  );
+
   // 起動してからの稼働時間を計算
   const now = new Date();
   const h = Math.floor((now.getTime() - startTime.getTime()) / 1000 / 60 / 60);
