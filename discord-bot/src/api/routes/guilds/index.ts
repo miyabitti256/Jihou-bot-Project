@@ -10,6 +10,7 @@ import {
   type GuildIncludeOptions,
   getGuildWithData,
   getUserGuilds,
+  verifyUserGuildAccess,
 } from "@bot/services/guilds/guild";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
@@ -28,6 +29,23 @@ export const guilds = new Hono<AppEnv>()
     zValidator("param", guildIdParamSchema),
     async (c) => {
       const { guildId } = c.req.valid("param");
+      const authenticatedUserId = c.get("authenticatedUserId");
+
+      const hasAccess = await verifyUserGuildAccess(
+        authenticatedUserId,
+        guildId,
+      );
+      if (!hasAccess) {
+        return c.json(
+          {
+            error: {
+              code: "FORBIDDEN",
+              message: "Forbidden - Insufficient permissions for this guild",
+            },
+          },
+          403,
+        );
+      }
 
       try {
         const guildData = await fetchGuild(guildId);
@@ -67,6 +85,23 @@ export const guilds = new Hono<AppEnv>()
     zValidator("param", guildIdParamSchema),
     async (c) => {
       const { guildId } = c.req.valid("param");
+      const authenticatedUserId = c.get("authenticatedUserId");
+
+      const hasAccess = await verifyUserGuildAccess(
+        authenticatedUserId,
+        guildId,
+      );
+      if (!hasAccess) {
+        return c.json(
+          {
+            error: {
+              code: "FORBIDDEN",
+              message: "Forbidden - Insufficient permissions for this guild",
+            },
+          },
+          403,
+        );
+      }
 
       try {
         const channelsData = await fetchGuildChannels(guildId);
@@ -108,6 +143,23 @@ export const guilds = new Hono<AppEnv>()
     async (c) => {
       const { guildId } = c.req.valid("param");
       const { includes } = c.req.valid("query");
+      const authenticatedUserId = c.get("authenticatedUserId");
+
+      const hasAccess = await verifyUserGuildAccess(
+        authenticatedUserId,
+        guildId,
+      );
+      if (!hasAccess) {
+        return c.json(
+          {
+            error: {
+              code: "FORBIDDEN",
+              message: "Forbidden - Insufficient permissions for this guild",
+            },
+          },
+          403,
+        );
+      }
 
       const includeOptions: GuildIncludeOptions = {
         roles: includes.includes("roles"),
@@ -162,7 +214,7 @@ export const guilds = new Hono<AppEnv>()
       const { userId } = c.req.valid("param");
       const authenticatedUserId = c.get("authenticatedUserId");
 
-      if (authenticatedUserId && userId !== authenticatedUserId) {
+      if (userId !== authenticatedUserId) {
         return c.json(
           {
             error: {

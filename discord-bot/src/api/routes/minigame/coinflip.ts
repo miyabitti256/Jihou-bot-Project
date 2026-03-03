@@ -72,6 +72,19 @@ export const coinflip = new Hono<AppEnv>()
   })
   .get("/status/:userId", zValidator("param", userIdParamSchema), async (c) => {
     const { userId } = c.req.valid("param");
+    const authenticatedUserId = c.get("authenticatedUserId");
+
+    if (userId !== authenticatedUserId) {
+      return c.json(
+        {
+          error: {
+            code: "FORBIDDEN",
+            message: "Forbidden - Insufficient permissions",
+          },
+        },
+        403,
+      );
+    }
 
     try {
       const money = await getUserMoneyStatus(userId);
@@ -104,6 +117,19 @@ export const coinflip = new Hono<AppEnv>()
     async (c) => {
       const { userId } = c.req.valid("param");
       const { take } = c.req.valid("query");
+      const authenticatedUserId = c.get("authenticatedUserId");
+
+      if (userId !== authenticatedUserId) {
+        return c.json(
+          {
+            error: {
+              code: "FORBIDDEN",
+              message: "Forbidden - Insufficient permissions",
+            },
+          },
+          403,
+        );
+      }
 
       try {
         const history = await getCoinflipHistory(userId, take);

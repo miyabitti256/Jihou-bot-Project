@@ -1,9 +1,6 @@
 import { Hono } from "hono";
 import { secureHeaders } from "hono/secure-headers";
-import {
-  apiKeyAuthMiddleware,
-  apiKeyWithUserAuthMiddleware,
-} from "../lib/auth";
+import { apiKeyWithUserAuthMiddleware } from "../lib/auth";
 import { defaultRateLimiter, mutationRateLimiter } from "../lib/rate-limiter";
 import type { AppEnv } from "./env";
 import { guilds } from "./routes/guilds";
@@ -39,12 +36,8 @@ app.use(
   }),
 );
 
-// ユーザーデータ関連APIはユーザーID認可チェック付き
-app.use("/users/*", apiKeyWithUserAuthMiddleware);
-app.use("/minigame/*", apiKeyWithUserAuthMiddleware);
-
-// その他のAPIはAPIキー認証のみ
-app.use("/*", apiKeyAuthMiddleware);
+// 全APIルートでAPIキー認証 + ユーザーID認可チェックを必須にする
+app.use("/*", apiKeyWithUserAuthMiddleware);
 
 // レート制限（認証の後に適用）
 app.use("/minigame/*", defaultRateLimiter);

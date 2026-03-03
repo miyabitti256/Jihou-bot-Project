@@ -19,6 +19,19 @@ export const omikuji = new Hono<AppEnv>()
     async (c) => {
       const { userId } = c.req.valid("param");
       const { take } = c.req.valid("query");
+      const authenticatedUserId = c.get("authenticatedUserId");
+
+      if (userId !== authenticatedUserId) {
+        return c.json(
+          {
+            error: {
+              code: "FORBIDDEN",
+              message: "Forbidden - Insufficient permissions",
+            },
+          },
+          403,
+        );
+      }
 
       try {
         const data = await getOmikujiHistory(userId, take);

@@ -152,22 +152,20 @@ export const message = new Hono<AppEnv>()
 
       // メッセージのギルドへのアクセス権を検証
       const authenticatedUserId = c.get("authenticatedUserId");
-      if (authenticatedUserId) {
-        const hasAccess = await verifyUserGuildAccess(
-          authenticatedUserId,
-          data.guildId,
-        );
-        if (!hasAccess) {
-          return c.json(
-            {
-              error: {
-                code: "FORBIDDEN",
-                message: "Forbidden - Insufficient permissions for this guild",
-              },
+      const hasAccess = await verifyUserGuildAccess(
+        authenticatedUserId,
+        data.guildId,
+      );
+      if (!hasAccess) {
+        return c.json(
+          {
+            error: {
+              code: "FORBIDDEN",
+              message: "Forbidden - Insufficient permissions for this guild",
             },
-            403,
-          );
-        }
+          },
+          403,
+        );
       }
 
       return c.json(
