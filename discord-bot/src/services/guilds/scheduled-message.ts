@@ -3,7 +3,7 @@ import { db } from "@bot/lib/db";
 import { logger } from "@bot/lib/logger";
 import type { ScheduledMessage } from "@jihou/database";
 import { scheduledMessages } from "@jihou/database";
-import cuid from "cuid";
+import { createId } from "@paralleldrive/cuid2";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import type { ScheduledTask } from "node-cron";
 import { schedule } from "node-cron";
@@ -356,7 +356,7 @@ export async function createScheduledMessage(data: ScheduledMessageCreateData) {
     const [createdMessage] = await db
       .insert(scheduledMessages)
       .values({
-        id: cuid(),
+        id: createId(),
         channelId: data.channelId,
         message: data.message,
         scheduleTime: data.scheduleTime,
