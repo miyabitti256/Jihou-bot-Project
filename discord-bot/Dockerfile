@@ -4,10 +4,8 @@ WORKDIR /app
 # ルートpackage.json（ワークスペース定義）をコピー
 COPY package.json ./
 
-# packages/database のPrisma関連ファイルをコピー
+# packages/database のソースをコピー
 COPY packages/database/package.json ./packages/database/package.json
-COPY packages/database/prisma ./packages/database/prisma
-COPY packages/database/prisma.config.ts ./packages/database/prisma.config.ts
 COPY packages/database/src ./packages/database/src
 
 # shared-types のpackage.jsonをコピー（ワークスペース解決用）
@@ -20,10 +18,8 @@ RUN mkdir -p front-app && echo '{"name":"front-app","private":true}' > front-app
 COPY discord-bot/package.json ./discord-bot/package.json
 
 # 依存関係をインストール
+# Drizzle ORMはコード生成不要（Prismaと異なりバイナリエンジンなし）
 RUN bun install --production --ignore-scripts
-
-# Prisma Client生成
-RUN cd packages/database && DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" bunx prisma generate
 
 # ソースコードをコピー
 COPY discord-bot ./discord-bot

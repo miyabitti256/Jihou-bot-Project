@@ -53,13 +53,13 @@ export default async function UserDetailPage({
     return notFound();
   }
 
-  const scheduledMessages = userData.data.ScheduledMessage ?? [];
-  const omikuji = userData.data.Omikuji ?? [];
-  const coinflip = userData.data.CoinFlip ?? [];
+  const scheduledMessages = userData.data.scheduledMessages_createdUserId ?? [];
+  const omikuji = userData.data.omikujis ?? [];
+  const coinflip = userData.data.coinFlips ?? [];
 
   const allJankenGames = [
-    ...(userData.data.JankenChallenger || []),
-    ...(userData.data.JankenOpponent || []),
+    ...(userData.data.jankens_challengerId || []),
+    ...(userData.data.jankens_opponentId || []),
   ].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
@@ -259,7 +259,7 @@ export default async function UserDetailPage({
                             <TableCell>
                               #
                               {
-                                guildData.data.channels.find(
+                                guildData.data.guildChannels.find(
                                   (channel) => channel.id === message.channelId,
                                 )?.name
                               }

@@ -1,6 +1,13 @@
+import { db } from "@bot/lib/db";
 import { logger } from "@bot/lib/logger";
-import { prisma } from "@bot/lib/prisma";
-import { Prisma } from "@jihou/database";
+import {
+  coinFlip,
+  guildMembers,
+  janken,
+  omikuji,
+  users,
+} from "@jihou/database";
+import { and, asc, desc, eq, ilike, inArray } from "drizzle-orm";
 
 // エラークラス
 export class UserServiceError extends Error {
@@ -28,13 +35,12 @@ export async function getUserData(
   includes: IncludeType[] = [],
 ) {
   try {
-    // 全てのrelationを静的に定義（RPC型推論のため）
-    const data = await prisma.users.findUnique({
-      where: { id: userId },
-      include: {
-        ScheduledMessage: includes.includes("scheduledmessage")
+    const data = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+      with: {
+        scheduledMessages_createdUserId: includes.includes("scheduledmessage")
           ? {
-              select: {
+              columns: {
                 id: true,
                 guildId: true,
                 channelId: true,
@@ -45,31 +51,31 @@ export async function getUserData(
                 updatedAt: true,
               },
             }
-          : false,
-        Omikuji: includes.includes("omikuji")
+          : undefined,
+        omikujis: includes.includes("omikuji")
           ? {
-              take: 10,
-              orderBy: { createdAt: Prisma.SortOrder.desc },
+              limit: 10,
+              orderBy: desc(omikuji.createdAt),
             }
-          : false,
-        CoinFlip: includes.includes("coinflip")
+          : undefined,
+        coinFlips: includes.includes("coinflip")
           ? {
-              take: 100,
-              orderBy: { createdAt: Prisma.SortOrder.desc },
+              limit: 100,
+              orderBy: desc(coinFlip.createdAt),
             }
-          : false,
-        JankenChallenger: includes.includes("janken")
+          : undefined,
+        jankens_challengerId: includes.includes("janken")
           ? {
-              take: 50,
-              orderBy: { createdAt: Prisma.SortOrder.desc },
+              limit: 50,
+              orderBy: desc(janken.createdAt),
             }
-          : false,
-        JankenOpponent: includes.includes("janken")
+          : undefined,
+        jankens_opponentId: includes.includes("janken")
           ? {
-              take: 50,
-              orderBy: { createdAt: Prisma.SortOrder.desc },
+              limit: 50,
+              orderBy: desc(janken.createdAt),
             }
-          : false,
+          : undefined,
       },
     });
 
@@ -100,21 +106,28 @@ export async function createOrUpdateUser(userData: {
   avatarUrl?: string | null;
 }) {
   try {
-    return await prisma.users.upsert({
-      where: { id: userData.id },
-      update: {
-        username: userData.username,
-        discriminator: userData.discriminator || null,
-        avatarUrl: userData.avatarUrl || null,
-      },
-      create: {
+    const [result] = await db
+      .insert(users)
+      .values({
         id: userData.id,
         username: userData.username,
         discriminator: userData.discriminator || null,
         avatarUrl: userData.avatarUrl || null,
-        money: 1000, // 初期所持金
-      },
-    });
+        money: 1000,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          username: userData.username,
+          discriminator: userData.discriminator || null,
+          avatarUrl: userData.avatarUrl || null,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+
+    return result;
   } catch (error) {
     logger.error(`[users] Error creating/updating user: ${error}`);
     throw new UserServiceError(
@@ -133,19 +146,19 @@ export async function ensureUserExists(
   avatarUrl?: string,
 ): Promise<void> {
   try {
-    const user = await prisma.users.findUnique({
-      where: { id: userId },
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+      columns: { id: true },
     });
 
     if (!user) {
-      await prisma.users.create({
-        data: {
-          id: userId,
-          username,
-          avatarUrl,
-          money: 1000, // デフォルト値
-          discriminator: "0",
-        },
+      await db.insert(users).values({
+        id: userId,
+        username,
+        avatarUrl,
+        money: 1000,
+        discriminator: "0",
+        updatedAt: new Date(),
       });
       logger.info(`[users] Created new user: ${userId} (${username})`);
     }
@@ -167,9 +180,9 @@ export async function updateUserMoney(
   operation: "add" | "set" = "add",
 ) {
   try {
-    const user = await prisma.users.findUnique({
-      where: { id: userId },
-      select: { money: true },
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+      columns: { money: true },
     });
 
     if (!user) {
@@ -181,10 +194,13 @@ export async function updateUserMoney(
         ? Math.max(0, user.money + amount)
         : Math.max(0, amount);
 
-    return await prisma.users.update({
-      where: { id: userId },
-      data: { money: newAmount },
-    });
+    const [result] = await db
+      .update(users)
+      .set({ money: newAmount, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+
+    return result;
   } catch (error) {
     if (error instanceof UserServiceError) {
       throw error;
@@ -212,68 +228,52 @@ export async function getUsersFromSameGuilds(
 ) {
   try {
     // ユーザーが所属するサーバーのIDリストを取得
-    const userGuilds = await prisma.guildMembers.findMany({
-      where: { userId },
-      select: { guildId: true },
-    });
+    const userGuilds = await db
+      .select({ guildId: guildMembers.guildId })
+      .from(guildMembers)
+      .where(eq(guildMembers.userId, userId));
 
     if (userGuilds.length === 0) {
       return { users: [], total: 0, page, limit };
     }
 
-    const guildIds = userGuilds.map(
-      (guild: { guildId: string }) => guild.guildId,
-    );
+    const guildIds = userGuilds.map((guild) => guild.guildId);
 
-    // 検索条件の構築
-    const whereCondition: Prisma.GuildMembersWhereInput = {
-      guildId: { in: guildIds },
-    };
+    // ユニークなユーザーIDの取得
+    const baseCondition = inArray(guildMembers.guildId, guildIds);
 
-    // 検索キーワードが指定されている場合
+    let uniqueMembers: { userId: string }[];
     if (search && search.trim() !== "") {
-      whereCondition.user = {
-        username: {
-          contains: search,
-          mode: "insensitive",
-        },
-      };
+      // 検索キーワード付き: guildMembers と users を JOIN
+      uniqueMembers = await db
+        .selectDistinct({ userId: guildMembers.userId })
+        .from(guildMembers)
+        .innerJoin(users, eq(guildMembers.userId, users.id))
+        .where(and(baseCondition, ilike(users.username, `%${search}%`)));
+    } else {
+      uniqueMembers = await db
+        .selectDistinct({ userId: guildMembers.userId })
+        .from(guildMembers)
+        .where(baseCondition);
     }
 
-    // ユーザーIDの一覧を取得（重複を除去するため）
-    const uniqueMembers = await prisma.guildMembers.findMany({
-      where: whereCondition,
-      select: { userId: true },
-      distinct: ["userId"],
-    });
-
-    // 重複を除去したユーザーIDの配列
-    const uniqueUserIds = uniqueMembers.map(
-      (member: { userId: string }) => member.userId,
-    );
-
-    // 総数を計算
+    const uniqueUserIds = uniqueMembers.map((member) => member.userId);
     const total = uniqueUserIds.length;
 
-    // ページネーションの計算
+    // ページネーション
     const skip = (page - 1) * limit;
-
-    // ユーザーデータの取得（ページネーション対応）
     const pagedUserIds = uniqueUserIds.slice(skip, skip + limit);
 
     // ユーザー詳細データの取得
-    const users = await prisma.users.findMany({
-      where: {
-        id: {
-          in: pagedUserIds,
-        },
-      },
-      orderBy: {
-        username: "asc",
-      },
-    });
+    const usersData =
+      pagedUserIds.length > 0
+        ? await db.query.users.findMany({
+            where: inArray(users.id, pagedUserIds),
+            orderBy: asc(users.username),
+          })
+        : [];
 
-    return { users, total, page, limit };
+    return { users: usersData, total, page, limit };
   } catch (error) {
     logger.error(`[users] Error getting users from same guilds: ${error}`);
     throw new UserServiceError(

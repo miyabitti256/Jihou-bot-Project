@@ -46,16 +46,17 @@ export const users = new Hono<AppEnv>()
         if (
           authenticatedUserId &&
           authenticatedUserId !== userId &&
-          data.ScheduledMessage &&
-          Array.isArray(data.ScheduledMessage) &&
-          data.ScheduledMessage.length > 0
+          "scheduledMessages_createdUserId" in data &&
+          Array.isArray(data.scheduledMessages_createdUserId) &&
+          data.scheduledMessages_createdUserId.length > 0
         ) {
           const viewerGuilds = await getUserGuilds(authenticatedUserId);
           const viewerGuildIds = new Set(viewerGuilds.map((g) => g.guildId));
 
-          data.ScheduledMessage = data.ScheduledMessage.filter((msg) =>
-            viewerGuildIds.has(msg.guildId),
-          );
+          (data as Record<string, unknown>).scheduledMessages_createdUserId =
+            data.scheduledMessages_createdUserId.filter(
+              (msg: { guildId: string }) => viewerGuildIds.has(msg.guildId),
+            );
         }
 
         return c.json(

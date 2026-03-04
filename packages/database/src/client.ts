@@ -1,12 +1,13 @@
 /**
  * データベースクライアント作成ヘルパー
  *
- * PrismaClient + pg Pool のセットアップを一箇所にまとめる。
+ * Drizzle ORM + pg Pool のセットアップを一箇所にまとめる。
  * discord-bot から呼び出される。
  */
-import { PrismaPg } from "@prisma/adapter-pg";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import { PrismaClient } from "./generated/client/client";
+import * as relations from "./relations";
+import * as schema from "./schema";
 
 export function createDatabaseClient(connectionString: string) {
   // 512MBメモリ環境向けにコネクション数を制限
@@ -16,8 +17,7 @@ export function createDatabaseClient(connectionString: string) {
     max: 3,
     idleTimeoutMillis: 10000,
   });
-  const adapter = new PrismaPg(pool);
-  const prisma = new PrismaClient({ adapter });
+  const db = drizzle(pool, { schema: { ...schema, ...relations } });
 
-  return { prisma, pool };
+  return { db, pool };
 }

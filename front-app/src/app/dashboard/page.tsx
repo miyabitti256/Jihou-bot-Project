@@ -34,13 +34,13 @@ export default async function Dashboard() {
   }
   const userData = await userResponse.json();
 
-  const scheduledMessages = userData.data.ScheduledMessage ?? [];
-  const omikuji = userData.data.Omikuji ?? [];
-  const coinflip = userData.data.CoinFlip ?? [];
+  const scheduledMessages = userData.data.scheduledMessages_createdUserId ?? [];
+  const omikuji = userData.data.omikujis ?? [];
+  const coinflip = userData.data.coinFlips ?? [];
 
   const allJankenGames = [
-    ...(userData?.data?.JankenChallenger ?? []),
-    ...(userData?.data?.JankenOpponent ?? []),
+    ...(userData?.data?.jankens_challengerId ?? []),
+    ...(userData?.data?.jankens_opponentId ?? []),
   ].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
@@ -218,7 +218,7 @@ export default async function Dashboard() {
                             <TableCell>
                               #
                               {
-                                guildData.data.channels.find(
+                                guildData.data.guildChannels.find(
                                   (channel) => channel.id === message.channelId,
                                 )?.name
                               }

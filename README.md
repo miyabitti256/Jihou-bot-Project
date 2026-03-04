@@ -25,7 +25,7 @@ graph TD
 
     %% database
     subgraph DbPkg["@jihou/database"]
-        Prisma["Prisma v7 + pg adapter<br>スキーマ・生成クライアント・型"]
+        Drizzle["Drizzle ORM + pg Pool<br>スキーマ・型・DBクライアント"]
     end
     DB[("Supabase")]
     
@@ -44,7 +44,7 @@ graph TD
     User -- "ブラウザ" --> FrontApp
 
     classDef transparent fill:transparent,stroke:none;
-    DBNote["※ DBアクセスはdiscord-botのみ<br>（front-appにPrismaの直接依存は存在しない）"]:::transparent
+    DBNote["※ DBアクセスはdiscord-botのみ<br>（front-appにDBの直接依存は存在しない）"]:::transparent
     DB -.-> DBNote
 ```
 
@@ -88,10 +88,10 @@ Server Component / Server Action から RPC クライアントを使うと、パ
 const client = await createApiClient();
 const res = await client.api.users[":userId"].$get({
   param: { userId: id },                    // ← パスパラメータも型チェック
-  query: { includes: "scheduledmessage" },   // ← クエリも型チェック
+  query: { includes: ["scheduledmessage"] }, // ← クエリも型チェック
 });
 if (!res.ok) throw new Error("...");
-const data = await res.json();  // ← 推論型: { data: { id, username, ScheduledMessage[], ... } }
+const data = await res.json();  // ← 推論型: { data: { id, username, scheduledMessages_createdUserId[], ... } }
 //                                   手動キャスト不要！
 ```
 
@@ -128,7 +128,7 @@ discord-bot のAPI（Hono）は2種類の認証ミドルウェアで保護する
 POST /api/users/123456789/money
   X-API-Key: xxxxxxxx   ← front-app サーバー環境変数（ブラウザに非公開）
   X-User-Id: 123456789  ← NextAuth セッション由来のDiscord ID
-  → 203 OK
+  → 200 OK
 
 # 横断アクセス試行（他ユーザーのデータを操作しようとした場合）
 POST /api/users/987654321/money   ← 他ユーザーのID
@@ -138,19 +138,24 @@ POST /api/users/987654321/money   ← 他ユーザーのID
 
 ### 3. 共有DBパッケージとサービス層の分離
 
-Prismaスキーマ・生成クライアント・DB接続ヘルパーは `packages/database`（`@jihou/database`）に集約し、`discord-bot` と `front-app`（型のみ）の両方から参照する。Prismaクライアントへの実際のアクセスはすべて `discord-bot/services/` 配下に閉じており、`api/routes/` はサービス関数を呼ぶだけで直接クエリを書かない。
+Drizzleスキーマ・型推論・DB接続ヘルパーは `packages/database`（`@jihou/database`）に集約し、`discord-bot` から参照する。DBへの実際のアクセスはすべて `discord-bot/services/` 配下に閉じており、`api/routes/` はサービス関数を呼ぶだけで直接クエリを書かない。
 
 ```
-packages/database/     ← Prismaスキーマ・生成型・DB接続ファクトリ
-  └─ src/index.ts      ← PrismaClient, 型, Enum を一括export
-  └─ src/client.ts     ← createDatabaseClient() ファクトリ関数
+packages/database/         ← Drizzleスキーマ・型推論・DBクライアントファクトリ
+  ├─ src
+  │   ├─ schema.ts         ← drizzle-kit pull で生成・テーブル定義
+  │   ├─ relations.ts      ← Relational Query API 用リレーション定義
+  │   ├─ index.ts    ｆ      ← テーブル・推論型・Enum を一括 export
+  │   └─ client.ts         ← createDatabaseClient() ファクトリ関数
+  └─ drizzle.config.ts     ← drizzle-kit 設定
 
 discord-bot/
-  └─ src/lib/prisma.ts ← createDatabaseClient(env.DATABASE_URL) で接続
-  └─ src/services/     ← この層のみがprismaインスタンスを使用
+  └─ src
+      ├─lib/db.ts         ← createDatabaseClient(env.DATABASE_URL) で接続
+      └─ services/         ← この層のみが db インスタンスを使用
 ```
 
-**フロントエンドはDBに一切直接アクセスしない**。`front-app` は `@jihou/shared-types` 経由で `AppType`（HonoRPC型）のみを参照し、Prisma生成型は `@jihou/database` パッケージから解決される。データの読み書きはすべて discord-bot API への S2S リクエスト経由とすることで、ビジネスロジック・DBスキーマの詳細をBotサーバー内に完全に閉じ込めている。
+**フロントエンドはDBに一切直接アクセスしない**。`front-app` は `@jihou/shared-types` 経由で `AppType`（HonoRPC型）のみを参照する。データの読み書きはすべて discord-bot API への S2S リクエスト経由とすることで、ビジネスロジック・DBスキーマの詳細をBotサーバー内に完全に閉じ込めている。
 
 ### 4. Zod + zValidator による型安全バリデーション
 
@@ -175,12 +180,22 @@ app.post("/play",
 
 ### 5. メモリ最適化（Fly.io 512MB対応）
 
-512MB RAM / 1 shared CPUのデプロイ環境に合わせ、複数のレイヤーでメモリフットプリントを最小化している。  
-これらの最適化により、毎時のデータ同期処理中のメモリ使用量を **340MB → 282MB**（約17%削減）に抑えた。
+512MB RAM / 1 shared CPUのデプロイ環境に合わせ、複数のレイヤーでメモリフットプリントを最小化している。
 
-#### Raw SQL によるバルク同期
+#### Drizzle ORM によるバルク同期
 
-Prismaの`upsert()`は内部で`SELECT + INSERT/UPDATE`の2本のSQLに分解されるため、1000人のメンバー同期で最大4,000本のSQLが生成されメモリを圧迫していた。PostgreSQLネイティブの`INSERT ... ON CONFLICT DO UPDATE`をpg Poolから直接実行し、**2本のSQL**（users + guild_members）で同等の処理を実現している。
+Prismaの`upsert()`は内部で`SELECT + INSERT/UPDATE`の2本のSQLに分解されるため、1000人のメンバー同期で最大4,000本のSQLが生成されメモリを圧迫していた。Drizzle ORM の `onConflictDoUpdate()` は PostgreSQLネイティブの `INSERT ... ON CONFLICT DO UPDATE` を**単一SQL**として生成するため、同等の処理を2本のSQL（users + guild_members）で実現できる。Prismaのバイナリエンジンも不要になり、起動時のメモリベースラインも削減された。
+
+```typescript
+// guild-sync.ts — メンバーの一括 upsert（単一SQL）
+await tx
+  .insert(users)
+  .values(members.map((m) => ({ id: m.user.id, username: m.user.username, ... })))
+  .onConflictDoUpdate({
+    target: users.id,
+    set: { username: sql`excluded."username"`, ... },
+  });
+```
 
 #### コネクションプールの制限
 
@@ -192,14 +207,13 @@ export function createDatabaseClient(connectionString: string) {
     max: 3,                  // デフォルト10 → 3に削減
     idleTimeoutMillis: 10000 // アイドル接続を早期解放
   });
-  const adapter = new PrismaPg(pool);
-  return { prisma: new PrismaClient({ adapter }), pool };
+  return { db: drizzle(pool, { schema }) };
 }
 ```
 
 #### Bun `--smol` フラグ
 
-Dockerfileで`bun --smol run start`を指定し、JavaScriptCore（Bunの内部エンジン）のヒープサイズを低メモリ向けに設定。GCがより頻繁に実行され、メモリのピーク使用量を抑制する。
+Dockerfileで`bun --smol run src/start.ts`を指定し、JavaScriptCore（Bunの内部エンジン）のヒープサイズを低メモリ向けに設定。GCがより頻繁に実行され、メモリのピーク使用量を抑制する。
 
 #### Discord.js キャッシュ制限
 
@@ -280,7 +294,7 @@ session.user.id = token.id as string;
 | **Hono v4** | REST APIフレームワーク + RPCサーバー（AppType export） |
 | **hono/client** | RPCクライアント型生成（front-appと型共有） |
 | **@hono/zod-validator** | Zodスキーマ統合バリデーション |
-| **Prisma v7 + pg** | ORM（`@jihou/database` 共有パッケージ経由、`@prisma/adapter-pg` でpgネイティブ接続） |
+| **Drizzle ORM + pg** | ORM（`@jihou/database` 共有パッケージ経由、バイナリエンジン不要で軽量） |
 | **Zod** | スキーマバリデーション |
 | **node-cron** | 毎時ギルド同期・時報スケジューラ |
 | **Google Gemini** (`@google/genai`) | AIチャット・おみくじ解説生成 |
@@ -337,9 +351,9 @@ Jihou-bot-Project/
 │   │   └── lib/
 │   │       ├── auth.ts         # 二層認証ミドルウェア
 │   │       ├── client.ts       # Discord.js クライアント（makeCache設定）
+│   │       ├── db.ts           # @jihou/database 経由の Drizzle クライアント
 │   │       ├── env.ts          # 環境変数Zodスキーマ
 │   │       ├── rate-limiter.ts # ユーザーID単位レートリミッター
-│   │       ├── prisma.ts       # @jihou/database経由のPrismaクライアント
 │   │       └── status-updater.ts # 毎時同期スケジューラ
 │   └── Dockerfile
 ├── front-app/
@@ -353,14 +367,15 @@ Jihou-bot-Project/
 │           └── env.ts          # 環境変数Zodスキーマ
 └── packages/
     ├── database/               # 共有DBパッケージ（@jihou/database）
-    │   ├── prisma/
-    │   │   ├── schema.prisma   # Prismaスキーマ定義
-    │   │   └── migrations/    # マイグレーションファイル
-    │   ├── prisma.config.ts    # Prisma設定
-    │   └── src/
-    │       ├── index.ts        # PrismaClient・モデル型・Enum一括export
-    │       ├── client.ts       # createDatabaseClient() ファクトリ
-    │       └── generated/     # Prisma生成クライアント（gitignore対象）
+    │   ├── drizzle/            # drizzle-kit 管理ディレクトリ
+    │   │   ├── meta/           # drizzle-kit スナップショット（自動生成）
+    │   │   └── *.sql           # SQLマイグレーションファイル（自動生成）
+    │   ├── src/
+    │   │   ├── schema.ts       # Drizzleテーブル定義（drizzle-kit pull で生成・調整済み）
+    │   │   ├── relations.ts    # Relational Query API 用リレーション定義
+    │   │   ├── index.ts        # テーブル・推論型・Enum 一括 export
+    │   │   └── client.ts       # createDatabaseClient() ファクトリ
+    │   └── drizzle.config.ts   # drizzle-kit 設定
     └── shared-types/           # 共有型定義パッケージ（@jihou/shared-types）
         └── index.ts            # AppType re-export
 ```

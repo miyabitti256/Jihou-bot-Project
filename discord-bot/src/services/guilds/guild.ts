@@ -1,5 +1,12 @@
+import { db } from "@bot/lib/db";
 import { logger } from "@bot/lib/logger";
-import { prisma } from "@bot/lib/prisma";
+import {
+  guildChannels,
+  guildMembers,
+  guildRoles,
+  guilds,
+} from "@jihou/database";
+import { and, eq } from "drizzle-orm";
 
 export interface GuildIncludeOptions {
   roles?: boolean;
@@ -26,16 +33,14 @@ export async function getGuildWithData(
   includeOptions: GuildIncludeOptions = {},
 ) {
   try {
-    const includeMap = {
-      roles: includeOptions.roles ?? false,
-      channels: includeOptions.channels ?? false,
-      members: includeOptions.members ?? false,
-      ScheduledMessage: includeOptions.messages ?? false,
-    };
-
-    const data = await prisma.guild.findUnique({
-      where: { id: guildId },
-      include: includeMap,
+    const data = await db.query.guilds.findFirst({
+      where: eq(guilds.id, guildId),
+      with: {
+        guildRoles: includeOptions.roles ? true : undefined,
+        guildChannels: includeOptions.channels ? true : undefined,
+        guildMembers: includeOptions.members ? true : undefined,
+        scheduledMessages: includeOptions.messages ? true : undefined,
+      },
     });
 
     if (!data) {
@@ -58,9 +63,9 @@ export async function getGuildWithData(
  */
 export async function getUserGuilds(userId: string) {
   try {
-    const data = await prisma.guildMembers.findMany({
-      where: { userId },
-      include: {
+    const data = await db.query.guildMembers.findMany({
+      where: eq(guildMembers.userId, userId),
+      with: {
         guild: true,
       },
     });
@@ -78,9 +83,9 @@ export async function getUserGuilds(userId: string) {
  */
 export async function getGuildMembers(guildId: string) {
   try {
-    return await prisma.guildMembers.findMany({
-      where: { guildId },
-      include: {
+    return await db.query.guildMembers.findMany({
+      where: eq(guildMembers.guildId, guildId),
+      with: {
         user: true,
       },
     });
@@ -101,15 +106,14 @@ export async function verifyUserGuildAccess(
   guildId: string,
 ): Promise<boolean> {
   try {
-    const member = await prisma.guildMembers.findUnique({
-      where: {
-        guildId_userId: {
-          guildId,
-          userId,
-        },
-      },
+    const member = await db.query.guildMembers.findFirst({
+      where: and(
+        eq(guildMembers.guildId, guildId),
+        eq(guildMembers.userId, userId),
+      ),
+      columns: { guildId: true },
     });
-    return member !== null;
+    return member !== undefined;
   } catch (error) {
     logger.error(`[guild] Failed to verify user guild access: ${error}`);
     return false;
@@ -122,8 +126,8 @@ export async function verifyUserGuildAccess(
  */
 export async function getGuildChannels(guildId: string) {
   try {
-    return await prisma.guildChannels.findMany({
-      where: { guildId },
+    return await db.query.guildChannels.findMany({
+      where: eq(guildChannels.guildId, guildId),
     });
   } catch (error) {
     logger.error(`[guild] Failed to get guild channels: ${error}`);
@@ -137,8 +141,8 @@ export async function getGuildChannels(guildId: string) {
  */
 export async function getGuildRoles(guildId: string) {
   try {
-    return await prisma.guildRoles.findMany({
-      where: { guildId },
+    return await db.query.guildRoles.findMany({
+      where: eq(guildRoles.guildId, guildId),
     });
   } catch (error) {
     logger.error(`[guild] Failed to get guild roles: ${error}`);

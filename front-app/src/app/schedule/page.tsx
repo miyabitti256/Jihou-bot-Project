@@ -96,8 +96,8 @@ export default async function SchedulePage() {
             </CardHeader>
 
             <CardContent>
-              {guildInfo.data.ScheduledMessage &&
-              guildInfo.data.ScheduledMessage.length > 0 ? (
+              {guildInfo.data.scheduledMessages &&
+              guildInfo.data.scheduledMessages.length > 0 ? (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -118,125 +118,127 @@ export default async function SchedulePage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {guildInfo.data.ScheduledMessage.sort((a, b) =>
-                        a.scheduleTime.localeCompare(b.scheduleTime),
-                      ).map((message) => (
-                        <TableRow key={message.id}>
-                          <TableCell className="max-w-[150px] whitespace-nowrap">
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <button
-                                  type="button"
-                                  className="text-left w-full"
-                                >
-                                  <div className="truncate max-w-[150px] md:max-w-xs block">
-                                    {message.message}
-                                  </div>
-                                </button>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-[90vw] sm:max-w-[600px]">
-                                <DialogHeader>
-                                  <DialogTitle className="text-xl font-bold">
-                                    スケジュール詳細
-                                  </DialogTitle>
-                                </DialogHeader>
-                                <div className="mt-6 space-y-6">
-                                  <div className="">
-                                    <h4 className="text-sm font-semibold mb-2">
-                                      メッセージ内容
-                                    </h4>
-                                    <p className="wrap-break-word whitespace-pre-wrap text-base">
+                      {guildInfo.data.scheduledMessages
+                        .sort((a, b) =>
+                          a.scheduleTime.localeCompare(b.scheduleTime),
+                        )
+                        .map((message) => (
+                          <TableRow key={message.id}>
+                            <TableCell className="max-w-[150px] whitespace-nowrap">
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="text-left w-full"
+                                  >
+                                    <div className="truncate max-w-[150px] md:max-w-xs block">
                                       {message.message}
-                                    </p>
-                                  </div>
+                                    </div>
+                                  </button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-[90vw] sm:max-w-[600px]">
+                                  <DialogHeader>
+                                    <DialogTitle className="text-xl font-bold">
+                                      スケジュール詳細
+                                    </DialogTitle>
+                                  </DialogHeader>
+                                  <div className="mt-6 space-y-6">
+                                    <div className="">
+                                      <h4 className="text-sm font-semibold mb-2">
+                                        メッセージ内容
+                                      </h4>
+                                      <p className="wrap-break-word whitespace-pre-wrap text-base">
+                                        {message.message}
+                                      </p>
+                                    </div>
 
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                      <h4 className="text-sm font-semibold text-muted-foreground">
-                                        送信チャンネル
-                                      </h4>
-                                      <p className="text-base">
-                                        #
-                                        {
-                                          guildInfo.data.channels.find(
-                                            (c) => c.id === message.channelId,
-                                          )?.name
-                                        }
-                                      </p>
-                                    </div>
-                                    <div className="space-y-1">
-                                      <h4 className="text-sm font-semibold text-muted-foreground">
-                                        実行時間
-                                      </h4>
-                                      <p className="text-base">
-                                        {message.scheduleTime}
-                                      </p>
-                                    </div>
-                                    <div className="space-y-1">
-                                      <h4 className="text-sm font-semibold text-muted-foreground">
-                                        ステータス
-                                      </h4>
-                                      <p
-                                        className={`text-base ${message.isActive ? "text-green-600" : "text-red-600"}`}
-                                      >
-                                        {message.isActive
-                                          ? "🟢 有効"
-                                          : "🔴 無効"}
-                                      </p>
-                                    </div>
-                                    <div className="mt-4 flex justify-end gap-4">
-                                      <Link href={`schedule/${message.id}`}>
-                                        <Button variant="outline" size={"sm"}>
-                                          編集
-                                        </Button>
-                                      </Link>
-                                      <DeleteButton
-                                        messageId={message.id}
-                                        guildId={message.guildId}
-                                      />
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div className="space-y-1">
+                                        <h4 className="text-sm font-semibold text-muted-foreground">
+                                          送信チャンネル
+                                        </h4>
+                                        <p className="text-base">
+                                          #
+                                          {
+                                            guildInfo.data.guildChannels.find(
+                                              (c) => c.id === message.channelId,
+                                            )?.name
+                                          }
+                                        </p>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <h4 className="text-sm font-semibold text-muted-foreground">
+                                          実行時間
+                                        </h4>
+                                        <p className="text-base">
+                                          {message.scheduleTime}
+                                        </p>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <h4 className="text-sm font-semibold text-muted-foreground">
+                                          ステータス
+                                        </h4>
+                                        <p
+                                          className={`text-base ${message.isActive ? "text-green-600" : "text-red-600"}`}
+                                        >
+                                          {message.isActive
+                                            ? "🟢 有効"
+                                            : "🔴 無効"}
+                                        </p>
+                                      </div>
+                                      <div className="mt-4 flex justify-end gap-4">
+                                        <Link href={`schedule/${message.id}`}>
+                                          <Button variant="outline" size={"sm"}>
+                                            編集
+                                          </Button>
+                                        </Link>
+                                        <DeleteButton
+                                          messageId={message.id}
+                                          guildId={message.guildId}
+                                        />
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              </DialogContent>
-                            </Dialog>
-                          </TableCell>
+                                </DialogContent>
+                              </Dialog>
+                            </TableCell>
 
-                          <TableCell className="whitespace-nowrap">
-                            #
-                            {guildInfo.data.channels.find(
-                              (c) => c.id === message.channelId,
-                            )?.name || "Unknown"}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            {message.scheduleTime}
-                          </TableCell>
-                          <TableCell>
-                            <span
-                              className={
-                                message.isActive
-                                  ? "text-green-600"
-                                  : "text-red-600"
-                              }
-                            >
-                              {message.isActive ? "🟢" : "🔴"}
-                              {message.isActive ? "有効" : "無効"}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Link href={`schedule/${message.id}`}>
-                                <Button variant="outline" size="sm">
-                                  編集
-                                </Button>
-                              </Link>
-                              <DeleteButton
-                                messageId={message.id}
-                                guildId={message.guildId}
-                              />
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                            <TableCell className="whitespace-nowrap">
+                              #
+                              {guildInfo.data.guildChannels.find(
+                                (c) => c.id === message.channelId,
+                              )?.name || "Unknown"}
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap">
+                              {message.scheduleTime}
+                            </TableCell>
+                            <TableCell>
+                              <span
+                                className={
+                                  message.isActive
+                                    ? "text-green-600"
+                                    : "text-red-600"
+                                }
+                              >
+                                {message.isActive ? "🟢" : "🔴"}
+                                {message.isActive ? "有効" : "無効"}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Link href={`schedule/${message.id}`}>
+                                  <Button variant="outline" size="sm">
+                                    編集
+                                  </Button>
+                                </Link>
+                                <DeleteButton
+                                  messageId={message.id}
+                                  guildId={message.guildId}
+                                />
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
                     </TableBody>
                   </Table>
                 </div>

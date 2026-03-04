@@ -1,4 +1,7 @@
-import { prisma } from "@bot/lib/prisma";
+import { db } from "@bot/lib/db";
+import { coinFlip, users } from "@jihou/database";
+import { createId } from "@paralleldrive/cuid2";
+import { desc, eq } from "drizzle-orm";
 
 export class CoinflipError extends Error {
   constructor(message: string) {
@@ -31,9 +34,9 @@ export async function playCoinflip(
   choice: CoinChoice,
 ): Promise<CoinResult> {
   // ユーザー確認
-  const user = await prisma.users.findUnique({
-    where: { id: userId },
-    select: { money: true },
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { money: true },
   });
 
   if (!user) {
@@ -60,22 +63,26 @@ export async function playCoinflip(
   const result: CoinChoice = Math.random() >= 0.5 ? "heads" : "tails";
   const win = choice === result;
   const resultMoney = win ? bet : -bet;
+  const newMoney = user.money + resultMoney;
 
   // DB更新（トランザクションでアトミックに実行）
-  const [updatedUser] = await prisma.$transaction([
-    prisma.users.update({
-      where: { id: userId },
-      data: { money: user.money + resultMoney },
-    }),
-    prisma.coinFlip.create({
-      data: {
-        userId,
-        bet,
-        win,
-        updatedMoney: user.money + resultMoney,
-      },
-    }),
-  ]);
+  const updatedUser = await db.transaction(async (tx) => {
+    const [updated] = await tx
+      .update(users)
+      .set({ money: newMoney, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning({ money: users.money });
+
+    await tx.insert(coinFlip).values({
+      id: createId(),
+      userId,
+      bet,
+      win,
+      updatedMoney: newMoney,
+    });
+
+    return updated;
+  });
 
   // 結果を返す
   return {
@@ -93,9 +100,9 @@ export async function playCoinflip(
  * @returns ユーザーの所持金
  */
 export async function getUserMoneyStatus(userId: string): Promise<number> {
-  const user = await prisma.users.findUnique({
-    where: { id: userId },
-    select: { money: true },
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { money: true },
   });
 
   return user?.money || 0;
@@ -107,9 +114,9 @@ export async function getUserMoneyStatus(userId: string): Promise<number> {
  * @param take 取得する結果の数
  */
 export async function getCoinflipHistory(userId: string, take = 100) {
-  return await prisma.coinFlip.findMany({
-    where: { userId },
-    take: Math.min(take, 100),
-    orderBy: { createdAt: "desc" },
+  return await db.query.coinFlip.findMany({
+    where: eq(coinFlip.userId, userId),
+    limit: Math.min(take, 100),
+    orderBy: desc(coinFlip.createdAt),
   });
 }

@@ -1,3 +1,4 @@
+import { db } from "@bot/lib/db";
 import {
   generateChatText,
   generateChatTextStream,
@@ -5,10 +6,11 @@ import {
   SYSTEM_PROMPT,
 } from "@bot/lib/gemini-client";
 import { logger } from "@bot/lib/logger";
-import { prisma } from "@bot/lib/prisma";
 import { estimateTokenCount } from "@bot/lib/utils";
 import type { ChatMessage, ChatThread } from "@jihou/database";
-import { ChatRole } from "@jihou/database";
+import { ChatRole, chatMessages, chatThreads } from "@jihou/database";
+import { createId } from "@paralleldrive/cuid2";
+import { asc, eq } from "drizzle-orm";
 
 // エラークラス
 export class ChatServiceError extends Error {
@@ -60,15 +62,19 @@ export async function createChatThread(
       `[chat] Creating thread in database: channelId=${channelId}, guildId=${finalGuildId}, creatorId=${creatorId}`,
     );
 
-    return await prisma.chatThread.create({
-      data: {
+    const [thread] = await db
+      .insert(chatThreads)
+      .values({
         id: channelId,
         guildId: finalGuildId,
         channelId,
         creatorId,
         title,
-      },
-    });
+        updatedAt: new Date(),
+      })
+      .returning();
+
+    return thread;
   } catch (error) {
     if (error instanceof ChatServiceError) {
       throw error;
@@ -88,15 +94,11 @@ export async function getChatThread(
   threadId: string,
 ): Promise<ChatThread & { messages: ChatMessage[] }> {
   try {
-    const thread = await prisma.chatThread.findUnique({
-      where: {
-        id: threadId,
-      },
-      include: {
+    const thread = await db.query.chatThreads.findFirst({
+      where: eq(chatThreads.id, threadId),
+      with: {
         messages: {
-          orderBy: {
-            createdAt: "asc",
-          },
+          orderBy: asc(chatMessages.createdAt),
         },
       },
     });
@@ -126,10 +128,8 @@ export async function getChatThread(
  */
 export async function archiveChatThread(threadId: string): Promise<void> {
   try {
-    const thread = await prisma.chatThread.findUnique({
-      where: {
-        id: threadId,
-      },
+    const thread = await db.query.chatThreads.findFirst({
+      where: eq(chatThreads.id, threadId),
     });
 
     if (!thread) {
@@ -146,14 +146,10 @@ export async function archiveChatThread(threadId: string): Promise<void> {
       );
     }
 
-    await prisma.chatThread.update({
-      where: {
-        id: threadId,
-      },
-      data: {
-        isActive: false,
-      },
-    });
+    await db
+      .update(chatThreads)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(chatThreads.id, threadId));
   } catch (error) {
     if (error instanceof ChatServiceError) {
       throw error;
@@ -176,14 +172,18 @@ export async function createChatMessage(
 ): Promise<ChatMessage> {
   try {
     const tokenCount = estimateTokenCount(content);
-    return await prisma.chatMessage.create({
-      data: {
+    const [message] = await db
+      .insert(chatMessages)
+      .values({
+        id: createId(),
         threadId,
         content,
         role,
         tokenCount,
-      },
-    });
+      })
+      .returning();
+
+    return message;
   } catch (error) {
     logger.error(`[chat] Error creating message: ${error}`);
     throw new ChatServiceError(
@@ -271,7 +271,7 @@ export async function generateThreadResponse(
       ];
     } else {
       messages = thread.messages.map((msg: ChatMessage) => ({
-        role: msg.role,
+        role: msg.role as ChatRole,
         content: msg.content,
       }));
 
@@ -346,7 +346,7 @@ export async function generateThreadResponseStream(
       ];
     } else {
       messages = thread.messages.map((msg: ChatMessage) => ({
-        role: msg.role,
+        role: msg.role as ChatRole,
         content: msg.content,
       }));
 

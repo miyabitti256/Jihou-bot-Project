@@ -1,5 +1,8 @@
-import { prisma } from "@bot/lib/prisma";
+import { db } from "@bot/lib/db";
 import { getTokyoDate, hasDrawnToday } from "@bot/lib/utils";
+import { omikuji, users } from "@jihou/database";
+import { createId } from "@paralleldrive/cuid2";
+import { desc, eq } from "drizzle-orm";
 
 export interface OmikujiTypes {
   NUBEKICHI: string;
@@ -65,8 +68,8 @@ const OMIKUJI_RESULTS: OmikujiResultOption[] = [
  */
 export async function drawOmikuji(userId: string): Promise<OmikujiResult> {
   // ユーザー存在チェック
-  const user = await prisma.users.findUnique({
-    where: { id: userId },
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
   });
 
   if (!user) {
@@ -98,10 +101,10 @@ export async function drawOmikuji(userId: string): Promise<OmikujiResult> {
  * @param take 取得する結果の数
  */
 export async function getOmikujiHistory(userId: string, take = 10) {
-  return await prisma.omikuji.findMany({
-    where: { userId },
-    take: Math.min(take, 100),
-    orderBy: { createdAt: "desc" },
+  return await db.query.omikuji.findMany({
+    where: eq(omikuji.userId, userId),
+    limit: Math.min(take, 100),
+    orderBy: desc(omikuji.createdAt),
   });
 }
 
@@ -138,13 +141,15 @@ async function updateUserAndCreateResult(
   date: Date,
   result: OmikujiType,
 ) {
-  return prisma.$transaction([
-    prisma.users.update({
-      where: { id: userId },
-      data: { money, lastDraw: date },
-    }),
-    prisma.omikuji.create({
-      data: { userId, result },
-    }),
-  ]);
+  return db.transaction(async (tx) => {
+    await tx
+      .update(users)
+      .set({ money, lastDraw: date, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+    await tx.insert(omikuji).values({
+      id: createId(),
+      userId,
+      result,
+    });
+  });
 }

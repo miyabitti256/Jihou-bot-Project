@@ -51,7 +51,9 @@ export default async function SchedulePage({
     }
     const json = await res.json();
     guildData = json.data;
-    channelData = json.data.channels.filter((channel) => channel.type === "0");
+    channelData = json.data.guildChannels.filter(
+      (channel) => channel.type === "0",
+    );
   }
 
   return (

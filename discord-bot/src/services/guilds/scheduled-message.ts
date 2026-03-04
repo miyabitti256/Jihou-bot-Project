@@ -1,8 +1,10 @@
 import { client } from "@bot/lib/client";
+import { db } from "@bot/lib/db";
 import { logger } from "@bot/lib/logger";
-import { prisma } from "@bot/lib/prisma";
 import type { ScheduledMessage } from "@jihou/database";
+import { scheduledMessages } from "@jihou/database";
 import cuid from "cuid";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import type { ScheduledTask } from "node-cron";
 import { schedule } from "node-cron";
 
@@ -63,10 +65,10 @@ async function deactivateMessage(
   reason: string,
 ): Promise<void> {
   try {
-    await prisma.scheduledMessage.update({
-      where: { id: messageId },
-      data: { isActive: false, updatedAt: new Date() },
-    });
+    await db
+      .update(scheduledMessages)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(scheduledMessages.id, messageId));
     logger.warn(
       `[scheduled-message] Deactivated message ID: ${messageId}, reason: ${reason}`,
     );
@@ -133,11 +135,6 @@ async function sendScheduledMessage(
 
 /**
  * JST基準の "HH:MM" 形式の時刻文字列を生成する
- *
- * DBに格納される scheduleTime は "HH:MM"（先頭ゼロあり）形式のため、
- * 時間にも padStart(2, "0") を適用して一致させる。
- * （Discordコマンド: /^([01]\d|2[0-3]):([0-5]\d)$/ → "04:00" 等）
- * （フロントエンド: <input type="time"> → "04:00" 等）
  */
 function toJstTimeString(date: Date): string {
   const jst = new Date(
@@ -148,17 +145,6 @@ function toJstTimeString(date: Date): string {
 
 /**
  * 毎分実行されるディスパッチャ関数
- *
- * 【missed tick 救済】
- * node-cronのtickは、同一プロセス内のブロッキングI/Oや長時間の非同期処理チェーン
- * （例: guild-sync のDB同期）によって遅延・スキップされることがある。
- * node-cron v4 はmissed tickを警告ログに出すだけで再実行しないため、
- * 前回実行時刻を記録し、前回～現在の間にスケジュールされた全メッセージを
- * IN句で一括取得することで、取りこぼしを防止する。
- *
- * 【Discord レートリミット】
- * discord.js はレートリミット(チャンネルあたり5件/5秒)を内部で自動管理するため、
- * 手動での遅延は不要。429レスポンス時は内部キューが自動的にリトライする。
  */
 async function dispatchMessages(): Promise<void> {
   const now = new Date();
@@ -185,7 +171,6 @@ async function dispatchMessages(): Promise<void> {
       cursor.setMinutes(cursor.getMinutes() + 1);
     }
 
-    // 救済対象の分が2つ以上ある場合（= missed tickが発生した場合）はログに記録
     if (targetTimes.size > 1) {
       logger.warn(
         `[scheduled-message] Recovering missed ticks: dispatching for ${[...targetTimes].join(", ")}`,
@@ -196,11 +181,11 @@ async function dispatchMessages(): Promise<void> {
   lastDispatchTime = now;
 
   try {
-    const messages = await prisma.scheduledMessage.findMany({
-      where: {
-        isActive: true,
-        scheduleTime: { in: [...targetTimes] },
-      },
+    const messages = await db.query.scheduledMessages.findMany({
+      where: and(
+        eq(scheduledMessages.isActive, true),
+        inArray(scheduledMessages.scheduleTime, [...targetTimes]),
+      ),
     });
 
     if (messages.length === 0) return;
@@ -265,13 +250,9 @@ export function stopScheduledMessageDispatcher(): void {
  */
 export async function getAllActiveScheduledMessages() {
   try {
-    return await prisma.scheduledMessage.findMany({
-      where: {
-        isActive: true,
-      },
-      orderBy: {
-        scheduleTime: "asc",
-      },
+    return await db.query.scheduledMessages.findMany({
+      where: eq(scheduledMessages.isActive, true),
+      orderBy: asc(scheduledMessages.scheduleTime),
     });
   } catch (error) {
     logger.error(
@@ -286,10 +267,8 @@ export async function getAllActiveScheduledMessages() {
  */
 export async function getAllScheduledMessages() {
   try {
-    return await prisma.scheduledMessage.findMany({
-      orderBy: {
-        scheduleTime: "asc",
-      },
+    return await db.query.scheduledMessages.findMany({
+      orderBy: asc(scheduledMessages.scheduleTime),
     });
   } catch (error) {
     logger.error(
@@ -309,13 +288,14 @@ export async function getScheduledMessages(
   type: "guild" | "user" = "guild",
 ) {
   try {
-    return await prisma.scheduledMessage.findMany({
-      where: {
-        [type === "user" ? "createdUserId" : "guildId"]: id,
-      },
-      orderBy: {
-        scheduleTime: "asc",
-      },
+    const whereCondition =
+      type === "user"
+        ? eq(scheduledMessages.createdUserId, id)
+        : eq(scheduledMessages.guildId, id);
+
+    return await db.query.scheduledMessages.findMany({
+      where: whereCondition,
+      orderBy: asc(scheduledMessages.scheduleTime),
     });
   } catch (error) {
     logger.error(
@@ -331,8 +311,8 @@ export async function getScheduledMessages(
  */
 export async function getScheduledMessageById(id: string) {
   try {
-    const message = await prisma.scheduledMessage.findUnique({
-      where: { id },
+    const message = await db.query.scheduledMessages.findFirst({
+      where: eq(scheduledMessages.id, id),
     });
 
     if (!message) {
@@ -372,18 +352,22 @@ export async function createScheduledMessage(data: ScheduledMessageCreateData) {
       throw new ScheduledMessageError("CHANNEL_NOT_FOUND");
     }
 
-    const newMessage: ScheduledMessage = {
-      id: cuid(),
-      ...data,
-      lastUpdatedUserId: data.createdUserId,
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    const createdMessage = await prisma.scheduledMessage.create({
-      data: newMessage,
-    });
+    const now = new Date();
+    const [createdMessage] = await db
+      .insert(scheduledMessages)
+      .values({
+        id: cuid(),
+        channelId: data.channelId,
+        message: data.message,
+        scheduleTime: data.scheduleTime,
+        guildId: data.guildId,
+        createdUserId: data.createdUserId,
+        lastUpdatedUserId: data.createdUserId,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
 
     return createdMessage;
   } catch (error) {
@@ -404,8 +388,8 @@ export async function createScheduledMessage(data: ScheduledMessageCreateData) {
 export async function updateScheduledMessage(data: ScheduledMessageUpdateData) {
   try {
     // 対象のメッセージが存在するかチェック
-    const existingMessage = await prisma.scheduledMessage.findUnique({
-      where: { id: data.id },
+    const existingMessage = await db.query.scheduledMessages.findFirst({
+      where: eq(scheduledMessages.id, data.id),
     });
 
     if (!existingMessage) {
@@ -433,17 +417,22 @@ export async function updateScheduledMessage(data: ScheduledMessageUpdateData) {
       }
     }
 
-    // 更新データから不要なプロパティを除外
-    const { id, guildId, ...updateData } = data;
+    // 更新データの構築
+    const updateSet: Record<string, unknown> = {
+      updatedAt: new Date(),
+      lastUpdatedUserId: data.lastUpdatedUserId,
+    };
+    if (data.channelId !== undefined) updateSet.channelId = data.channelId;
+    if (data.message !== undefined) updateSet.message = data.message;
+    if (data.scheduleTime !== undefined)
+      updateSet.scheduleTime = data.scheduleTime;
+    if (data.isActive !== undefined) updateSet.isActive = data.isActive;
 
-    // 更新日時を設定
-    const updatedMessage = await prisma.scheduledMessage.update({
-      where: { id },
-      data: {
-        ...updateData,
-        updatedAt: new Date(),
-      },
-    });
+    const [updatedMessage] = await db
+      .update(scheduledMessages)
+      .set(updateSet)
+      .where(eq(scheduledMessages.id, data.id))
+      .returning();
 
     return updatedMessage;
   } catch (error) {
@@ -464,8 +453,8 @@ export async function updateScheduledMessage(data: ScheduledMessageUpdateData) {
 export async function deleteScheduledMessage(id: string) {
   try {
     // 対象のメッセージが存在するかチェック
-    const existingMessage = await prisma.scheduledMessage.findUnique({
-      where: { id },
+    const existingMessage = await db.query.scheduledMessages.findFirst({
+      where: eq(scheduledMessages.id, id),
     });
 
     if (!existingMessage) {
@@ -473,9 +462,10 @@ export async function deleteScheduledMessage(id: string) {
     }
 
     // メッセージを削除
-    const deletedMessage = await prisma.scheduledMessage.delete({
-      where: { id },
-    });
+    const [deletedMessage] = await db
+      .delete(scheduledMessages)
+      .where(eq(scheduledMessages.id, id))
+      .returning();
 
     return deletedMessage;
   } catch (error) {
@@ -498,14 +488,20 @@ export async function deactivateScheduledMessagesByChannelId(
   channelId: string,
 ): Promise<void> {
   try {
-    const result = await prisma.scheduledMessage.updateMany({
-      where: { channelId, isActive: true },
-      data: { isActive: false, updatedAt: new Date() },
-    });
+    const result = await db
+      .update(scheduledMessages)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(
+        and(
+          eq(scheduledMessages.channelId, channelId),
+          eq(scheduledMessages.isActive, true),
+        ),
+      )
+      .returning({ id: scheduledMessages.id });
 
-    if (result.count > 0) {
+    if (result.length > 0) {
       logger.info(
-        `[scheduled-message] Deactivated ${result.count} messages for channel: ${channelId}`,
+        `[scheduled-message] Deactivated ${result.length} messages for channel: ${channelId}`,
       );
     }
   } catch (error) {

@@ -1,7 +1,16 @@
+import { db } from "@bot/lib/db";
 import { logger } from "@bot/lib/logger";
-import { pool, prisma } from "@bot/lib/prisma";
 import { deactivateScheduledMessagesByChannelId } from "@bot/services/guilds/scheduled-message";
+import {
+  guildChannels,
+  guildMembers,
+  guildRoles,
+  guilds,
+  scheduledMessages,
+  users,
+} from "@jihou/database";
 import type { Guild, GuildMember } from "discord.js";
+import { and, eq, notInArray, sql } from "drizzle-orm";
 
 // エラークラス
 export class DbSyncError extends Error {
@@ -60,20 +69,26 @@ export interface DefaultRole {
  */
 export async function updateGuildData(guildData: GuildData) {
   try {
-    return await prisma.guild.upsert({
-      where: { id: guildData.id },
-      create: {
+    const [result] = await db
+      .insert(guilds)
+      .values({
         id: guildData.id,
         name: guildData.name,
         memberCount: guildData.memberCount,
         iconUrl: guildData.iconUrl || "",
-      },
-      update: {
-        name: guildData.name,
-        memberCount: guildData.memberCount,
-        iconUrl: guildData.iconUrl || "",
-      },
-    });
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: guilds.id,
+        set: {
+          name: guildData.name,
+          memberCount: guildData.memberCount,
+          iconUrl: guildData.iconUrl || "",
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return result;
   } catch (error) {
     logger.error(`[db-sync] Error updating guild data: ${error}`);
     throw new DbSyncError("UPDATE_FAILED", "Failed to update guild data");
@@ -81,10 +96,10 @@ export async function updateGuildData(guildData: GuildData) {
 }
 
 /**
- * チャンネルデータを一括更新する（Raw SQL版）
+ * チャンネルデータを一括更新する（Drizzle onConflictDoUpdate版）
  *
- * Prisma の $transaction + 個別upsert ではチャンネル数×2本のSQLが生成されるため、
- * PostgreSQLネイティブの INSERT ... ON CONFLICT DO UPDATE で1本に集約する。
+ * Drizzle の INSERT ... ON CONFLICT DO UPDATE で1本のSQLに集約する。
+ * Prisma時代のRaw SQL (pg Pool直接) を完全置換。
  */
 export async function updateChannelsData(
   guildId: string,
@@ -93,30 +108,23 @@ export async function updateChannelsData(
   if (channels.length === 0) return;
 
   try {
-    const client = await pool.connect();
-    try {
-      const values: unknown[] = [];
-      const placeholders: string[] = [];
-      for (let i = 0; i < channels.length; i++) {
-        const ch = channels[i];
-        const offset = i * 4;
-        placeholders.push(
-          `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4})`,
-        );
-        values.push(ch.id, guildId, ch.name, ch.type);
-      }
-
-      await client.query(
-        `INSERT INTO "guild_channels" ("id", "guildId", "name", "type")
-         VALUES ${placeholders.join(", ")}
-         ON CONFLICT ("id") DO UPDATE SET
-           "name" = EXCLUDED."name",
-           "type" = EXCLUDED."type"`,
-        values,
-      );
-    } finally {
-      client.release();
-    }
+    await db
+      .insert(guildChannels)
+      .values(
+        channels.map((ch) => ({
+          id: ch.id,
+          guildId,
+          name: ch.name,
+          type: ch.type,
+        })),
+      )
+      .onConflictDoUpdate({
+        target: guildChannels.id,
+        set: {
+          name: sql`excluded."name"`,
+          type: sql`excluded."type"`,
+        },
+      });
   } catch (error) {
     logger.error(`[db-sync] Error updating channel data: ${error}`);
     throw new DbSyncError("UPDATE_FAILED", "Failed to update channel data");
@@ -124,15 +132,12 @@ export async function updateChannelsData(
 }
 
 /**
- * メンバーデータを一括更新する（Raw SQL版）
+ * メンバーデータを一括更新する（Drizzle onConflictDoUpdate版）
  *
- * Prismaの upsert は内部で SELECT + INSERT/UPDATE の2本のSQLに分解されるため、
- * 1000人のメンバーに対して最大4,000本のSQLが生成され、512MBメモリ環境では
- * Prismaエンジンのメモリ消費でOOMが発生していた。
- *
- * PostgreSQLネイティブの INSERT ... ON CONFLICT DO UPDATE を使用することで、
- * 同じ処理がたった2本のSQL（users + guild_members）で完了する。
- * Prismaを経由せずpg Poolを直接使用するため、クエリエンジンのオーバーヘッドもゼロ。
+ * Prisma時代は upsert が内部で SELECT + INSERT/UPDATE の2本のSQLに分解され、
+ * 1000人のメンバーに対して最大4,000本のSQLが生成されメモリを圧迫していた。
+ * Raw SQL (pg Pool直接) で回避していたが、Drizzle の INSERT ... ON CONFLICT DO UPDATE
+ * で同等の単一SQL生成が可能になったため、ORM経由に統一。
  */
 export async function updateMembersData(
   guildId: string,
@@ -141,68 +146,49 @@ export async function updateMembersData(
   if (members.length === 0) return;
 
   try {
-    const client = await pool.connect();
-    try {
-      await client.query("BEGIN");
-
+    await db.transaction(async (tx) => {
       // --- users テーブルの一括 upsert ---
-      // パラメータ: id, username, discriminator, avatarUrl の4カラム
-      const userValues: unknown[] = [];
-      const userPlaceholders: string[] = [];
-      for (let i = 0; i < members.length; i++) {
-        const u = members[i].user;
-        const offset = i * 4;
-        userPlaceholders.push(
-          `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, 1000, NOW(), NOW())`,
-        );
-        userValues.push(u.id, u.username, u.discriminator, u.avatarUrl);
-      }
-
-      await client.query(
-        `INSERT INTO "users" ("id", "username", "discriminator", "avatarUrl", "money", "createdAt", "updatedAt")
-         VALUES ${userPlaceholders.join(", ")}
-         ON CONFLICT ("id") DO UPDATE SET
-           "username" = EXCLUDED."username",
-           "discriminator" = EXCLUDED."discriminator",
-           "avatarUrl" = EXCLUDED."avatarUrl",
-           "updatedAt" = NOW()`,
-        userValues,
-      );
+      await tx
+        .insert(users)
+        .values(
+          members.map((m) => ({
+            id: m.user.id,
+            username: m.user.username,
+            discriminator: m.user.discriminator,
+            avatarUrl: m.user.avatarUrl,
+            money: 1000,
+            updatedAt: new Date(),
+          })),
+        )
+        .onConflictDoUpdate({
+          target: users.id,
+          set: {
+            username: sql`excluded."username"`,
+            discriminator: sql`excluded."discriminator"`,
+            avatarUrl: sql`excluded."avatarUrl"`,
+            updatedAt: new Date(),
+          },
+        });
 
       // --- guild_members テーブルの一括 upsert ---
-      // パラメータ: guildId, userId, nickname, joinedAt の4カラム
-      const memberValues: unknown[] = [];
-      const memberPlaceholders: string[] = [];
-      for (let i = 0; i < members.length; i++) {
-        const m = members[i];
-        const offset = i * 4;
-        memberPlaceholders.push(
-          `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4})`,
-        );
-        memberValues.push(
-          guildId,
-          m.user.id,
-          m.member.nickname,
-          m.member.joinedAt,
-        );
-      }
-
-      await client.query(
-        `INSERT INTO "guild_members" ("guildId", "userId", "nickname", "joinedAt")
-         VALUES ${memberPlaceholders.join(", ")}
-         ON CONFLICT ("guildId", "userId") DO UPDATE SET
-           "nickname" = EXCLUDED."nickname",
-           "joinedAt" = EXCLUDED."joinedAt"`,
-        memberValues,
-      );
-
-      await client.query("COMMIT");
-    } catch (error) {
-      await client.query("ROLLBACK");
-      throw error;
-    } finally {
-      client.release();
-    }
+      await tx
+        .insert(guildMembers)
+        .values(
+          members.map((m) => ({
+            guildId,
+            userId: m.user.id,
+            nickname: m.member.nickname,
+            joinedAt: m.member.joinedAt,
+          })),
+        )
+        .onConflictDoUpdate({
+          target: [guildMembers.guildId, guildMembers.userId],
+          set: {
+            nickname: sql`excluded."nickname"`,
+            joinedAt: sql`excluded."joinedAt"`,
+          },
+        });
+    });
   } catch (error) {
     logger.error(`[db-sync] Error updating member data: ${error}`);
     throw new DbSyncError("UPDATE_FAILED", "Failed to update member data");
@@ -210,54 +196,41 @@ export async function updateMembersData(
 }
 
 /**
- * ロールデータを一括更新する（Raw SQL版）
+ * ロールデータを一括更新する（Drizzle onConflictDoUpdate版）
  *
- * Prisma の $transaction + 個別upsert ではロール数×2本のSQLが生成されるため、
- * PostgreSQLネイティブの INSERT ... ON CONFLICT DO UPDATE で1本に集約する。
+ * Prisma時代のRaw SQL (pg Pool直接) を完全置換。
  */
 export async function updateRolesData(guildId: string, roles: RoleData[]) {
   if (roles.length === 0) return;
 
   try {
-    const client = await pool.connect();
-    try {
-      const values: unknown[] = [];
-      const placeholders: string[] = [];
-      for (let i = 0; i < roles.length; i++) {
-        const role = roles[i];
-        const offset = i * 9;
-        placeholders.push(
-          `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9})`,
-        );
-        values.push(
-          role.id,
+    await db
+      .insert(guildRoles)
+      .values(
+        roles.map((role) => ({
+          id: role.id,
           guildId,
-          role.name,
-          role.color,
-          role.hoist,
-          role.position,
-          role.permissions,
-          role.managed,
-          role.mentionable,
-        );
-      }
-
-      await client.query(
-        `INSERT INTO "guild_roles" ("id", "guildId", "name", "color", "hoist", "position", "permissions", "managed", "mentionable")
-         VALUES ${placeholders.join(", ")}
-         ON CONFLICT ("id") DO UPDATE SET
-           "name" = EXCLUDED."name",
-           "color" = EXCLUDED."color",
-           "hoist" = EXCLUDED."hoist",
-           "position" = EXCLUDED."position",
-           "permissions" = EXCLUDED."permissions",
-           "managed" = EXCLUDED."managed",
-           "mentionable" = EXCLUDED."mentionable"`,
-        values,
-      );
-    } finally {
-      client.release();
-    }
+          name: role.name,
+          color: role.color,
+          hoist: role.hoist,
+          position: role.position,
+          permissions: role.permissions,
+          managed: role.managed,
+          mentionable: role.mentionable,
+        })),
+      )
+      .onConflictDoUpdate({
+        target: guildRoles.id,
+        set: {
+          name: sql`excluded."name"`,
+          color: sql`excluded."color"`,
+          hoist: sql`excluded."hoist"`,
+          position: sql`excluded."position"`,
+          permissions: sql`excluded."permissions"`,
+          managed: sql`excluded."managed"`,
+          mentionable: sql`excluded."mentionable"`,
+        },
+      });
   } catch (error) {
     logger.error(`[db-sync] Error updating role data: ${error}`);
     throw new DbSyncError("UPDATE_FAILED", "Failed to update role data");
@@ -270,39 +243,39 @@ export async function updateRolesData(guildId: string, roles: RoleData[]) {
 export async function deleteGuildData(guildId: string) {
   try {
     // スケジュールメッセージを事前に無効化してログ出力
-    const scheduledMessages = await prisma.scheduledMessage.findMany({
-      where: { guildId, isActive: true },
-      select: { id: true, channelId: true },
+    const activeMessages = await db.query.scheduledMessages.findMany({
+      where: and(
+        eq(scheduledMessages.guildId, guildId),
+        eq(scheduledMessages.isActive, true),
+      ),
+      columns: { id: true, channelId: true },
     });
 
-    if (scheduledMessages.length > 0) {
-      await prisma.scheduledMessage.updateMany({
-        where: { guildId, isActive: true },
-        data: { isActive: false, updatedAt: new Date() },
-      });
+    if (activeMessages.length > 0) {
+      await db
+        .update(scheduledMessages)
+        .set({ isActive: false, updatedAt: new Date() })
+        .where(
+          and(
+            eq(scheduledMessages.guildId, guildId),
+            eq(scheduledMessages.isActive, true),
+          ),
+        );
       logger.warn(
-        `[db-sync] Deactivated ${scheduledMessages.length} scheduled messages for guild: ${guildId} (guild deletion)`,
+        `[db-sync] Deactivated ${activeMessages.length} scheduled messages for guild: ${guildId} (guild deletion)`,
       );
     }
 
     // 関連データを削除するため、トランザクションを使用
-    return await prisma.$transaction([
-      prisma.scheduledMessage.deleteMany({
-        where: { guildId },
-      }),
-      prisma.guildChannels.deleteMany({
-        where: { guildId },
-      }),
-      prisma.guildRoles.deleteMany({
-        where: { guildId },
-      }),
-      prisma.guildMembers.deleteMany({
-        where: { guildId },
-      }),
-      prisma.guild.delete({
-        where: { id: guildId },
-      }),
-    ]);
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(scheduledMessages)
+        .where(eq(scheduledMessages.guildId, guildId));
+      await tx.delete(guildChannels).where(eq(guildChannels.guildId, guildId));
+      await tx.delete(guildRoles).where(eq(guildRoles.guildId, guildId));
+      await tx.delete(guildMembers).where(eq(guildMembers.guildId, guildId));
+      await tx.delete(guilds).where(eq(guilds.id, guildId));
+    });
   } catch (error) {
     logger.error(`[db-sync] Error deleting guild data: ${error}`);
     throw new DbSyncError("DELETE_FAILED", "Failed to delete guild data");
@@ -314,9 +287,11 @@ export async function deleteGuildData(guildId: string) {
  */
 export async function deleteMemberData(guildId: string, userId: string) {
   try {
-    return await prisma.guildMembers.deleteMany({
-      where: { guildId, userId },
-    });
+    await db
+      .delete(guildMembers)
+      .where(
+        and(eq(guildMembers.guildId, guildId), eq(guildMembers.userId, userId)),
+      );
   } catch (error) {
     logger.error(`[db-sync] Error deleting member data: ${error}`);
     throw new DbSyncError("DELETE_FAILED", "Failed to delete member data");
@@ -426,7 +401,7 @@ async function syncMembersInBatches(guild: Guild): Promise<Set<string>> {
   const activeMemberIds = new Set<string>();
 
   // Discord APIからの取得単位を200に縮小
-  // Raw SQLのパラメータ数上限（65535）を考慮し、1回あたりのメモリ消費を抑える
+  // Drizzleのパラメータ数上限を考慮し、1回あたりのメモリ消費を抑える
   const FETCH_LIMIT = 200;
 
   while (true) {
@@ -497,12 +472,12 @@ export async function syncGuildAllData(guild: Guild): Promise<void> {
     try {
       // ゴーストチャンネルに紐づくスケジュールメッセージを事前に無効化
       // Cascade削除で暗黙的に消えるのを防ぎ、ログを残す
-      const ghostChannels = await prisma.guildChannels.findMany({
-        where: {
-          guildId: guild.id,
-          id: { notIn: activeChannelIds },
-        },
-        select: { id: true },
+      const ghostChannels = await db.query.guildChannels.findMany({
+        where: and(
+          eq(guildChannels.guildId, guild.id),
+          notInArray(guildChannels.id, activeChannelIds),
+        ),
+        columns: { id: true },
       });
 
       if (ghostChannels.length > 0) {
@@ -511,36 +486,44 @@ export async function syncGuildAllData(guild: Guild): Promise<void> {
         }
       }
 
-      await prisma.$transaction([
+      await db.transaction(async (tx) => {
         // ゴーストチャンネルに紐づくスケジュールメッセージを削除
-        prisma.scheduledMessage.deleteMany({
-          where: {
-            guildId: guild.id,
-            channelId: { notIn: activeChannelIds },
-          },
-        }),
+        await tx
+          .delete(scheduledMessages)
+          .where(
+            and(
+              eq(scheduledMessages.guildId, guild.id),
+              notInArray(scheduledMessages.channelId, activeChannelIds),
+            ),
+          );
         // チャンネルのクリーンアップ
-        prisma.guildChannels.deleteMany({
-          where: {
-            guildId: guild.id,
-            id: { notIn: activeChannelIds },
-          },
-        }),
+        await tx
+          .delete(guildChannels)
+          .where(
+            and(
+              eq(guildChannels.guildId, guild.id),
+              notInArray(guildChannels.id, activeChannelIds),
+            ),
+          );
         // ロールのクリーンアップ
-        prisma.guildRoles.deleteMany({
-          where: {
-            guildId: guild.id,
-            id: { notIn: activeRoleIds },
-          },
-        }),
+        await tx
+          .delete(guildRoles)
+          .where(
+            and(
+              eq(guildRoles.guildId, guild.id),
+              notInArray(guildRoles.id, activeRoleIds),
+            ),
+          );
         // メンバーのクリーンアップ
-        prisma.guildMembers.deleteMany({
-          where: {
-            guildId: guild.id,
-            userId: { notIn: Array.from(activeMemberIds) },
-          },
-        }),
-      ]);
+        await tx
+          .delete(guildMembers)
+          .where(
+            and(
+              eq(guildMembers.guildId, guild.id),
+              notInArray(guildMembers.userId, Array.from(activeMemberIds)),
+            ),
+          );
+      });
       logger.info(
         `[db-sync] Cleaned up ghost records for guild "${guild.name}"`,
       );
@@ -567,7 +550,9 @@ export async function cleanupGhostGuilds(
   activeGuildIds: Set<string>,
 ): Promise<void> {
   try {
-    const dbGuilds = await prisma.guild.findMany({ select: { id: true } });
+    const dbGuilds = await db.query.guilds.findMany({
+      columns: { id: true },
+    });
 
     for (const dbGuild of dbGuilds) {
       if (!activeGuildIds.has(dbGuild.id)) {

@@ -1,8 +1,11 @@
 import type { ChoiceKey } from "@bot/commands/janken";
+import { db } from "@bot/lib/db";
 import { logger } from "@bot/lib/logger";
-import { prisma } from "@bot/lib/prisma";
 import { ensureUserExists as ensureUser } from "@bot/services/users/user";
+import { janken, users } from "@jihou/database";
+import { createId } from "@paralleldrive/cuid2";
 import type { User } from "discord.js";
+import { eq, sql } from "drizzle-orm";
 
 interface JankenGameResult {
   challengerId: string;
@@ -20,9 +23,9 @@ interface JankenGameResult {
  */
 export async function getUserBalance(userId: string): Promise<number> {
   try {
-    const user = await prisma.users.findUnique({
-      where: { id: userId },
-      select: { money: true },
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+      columns: { money: true },
     });
 
     return user?.money ?? 0;
@@ -43,9 +46,9 @@ export async function ensureUserExists(
     await ensureUser(userId, username);
 
     // 残高を取得
-    const user = await prisma.users.findUnique({
-      where: { id: userId },
-      select: { money: true },
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+      columns: { money: true },
     });
 
     return user?.money ?? 1000;
@@ -62,8 +65,9 @@ export async function saveJankenResult(
   result: JankenGameResult,
 ): Promise<boolean> {
   try {
-    await prisma.janken.create({
-      data: result,
+    await db.insert(janken).values({
+      id: createId(),
+      ...result,
     });
     return true;
   } catch (error) {
@@ -91,28 +95,40 @@ export async function handleBetResult(
     // トランザクションでアトミックに賭け金を処理
     if (winnerId === challengerId) {
       // チャレンジャーの勝ち
-      await prisma.$transaction([
-        prisma.users.update({
-          where: { id: challengerId },
-          data: { money: { increment: opponentBet } },
-        }),
-        prisma.users.update({
-          where: { id: opponentId },
-          data: { money: { increment: -opponentBet } },
-        }),
-      ]);
+      await db.transaction(async (tx) => {
+        await tx
+          .update(users)
+          .set({
+            money: sql`${users.money} + ${opponentBet}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, challengerId));
+        await tx
+          .update(users)
+          .set({
+            money: sql`${users.money} - ${opponentBet}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, opponentId));
+      });
     } else {
       // 対戦相手の勝ち
-      await prisma.$transaction([
-        prisma.users.update({
-          where: { id: opponentId },
-          data: { money: { increment: challengerBet } },
-        }),
-        prisma.users.update({
-          where: { id: challengerId },
-          data: { money: { increment: -challengerBet } },
-        }),
-      ]);
+      await db.transaction(async (tx) => {
+        await tx
+          .update(users)
+          .set({
+            money: sql`${users.money} + ${challengerBet}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, opponentId));
+        await tx
+          .update(users)
+          .set({
+            money: sql`${users.money} - ${challengerBet}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, challengerId));
+      });
     }
     return true;
   } catch (error) {
