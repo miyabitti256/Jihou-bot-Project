@@ -112,14 +112,13 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
 
 ### 2. APIキー + ユーザーID 二層認証
 
-discord-bot のAPI（Hono）は2種類の認証ミドルウェアで保護する。
+discord-bot のAPI（Hono）は、全エンドポイントに対して `apiKeyWithUserAuthMiddleware` を適用し二層の認証で保護している。
 
 | ミドルウェア | 適用ルート | 検証内容 |
 |---|---|---|
-| `apiKeyAuthMiddleware` | `/guilds/*` | `X-API-Key` のみ |
-| `apiKeyWithUserAuthMiddleware` | `/users/*` `/minigame/*` | APIキー + `X-User-Id` の一致検証 |
+| `apiKeyWithUserAuthMiddleware` | `/*` (全APIルート) | APIキー + `X-User-Id` の一致検証 |
 
-`apiKeyWithUserAuthMiddleware` はURLパラメータ・リクエストボディ・クエリパラメータに含まれる `userId` と `X-User-Id` ヘッダーを照合し、**他ユーザーのデータへの横断アクセスをAPIレベルで防ぐ**。
+同ミドルウェアはURLパラメータ・リクエストボディ・クエリパラメータに含まれる `userId` と `X-User-Id` ヘッダーを照合し、**他ユーザーのデータへの横断アクセスをAPIレベルで防ぐ**。
 
 `X-User-Id` はフロントエンドの `auth-api.ts` が NextAuth セッションから自動付与する。リクエストボディや URL パラメータも同じくフロントエンドが送信するが、Bot API 側でこれらを照合することで、万が一変造されたリクエストが届いても **認証済みユーザー以外のデータを操作できない**構造になっている。
 
