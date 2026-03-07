@@ -105,7 +105,7 @@ export const coinflipHistorySchema = z.object({
 export const userUpdateSchema = z.object({
   username: z.string().min(1),
   discriminator: z.string().nullable().optional(),
-  avatarUrl: z.string().url().nullable().optional(),
+  avatarUrl: z.url().nullable().optional(),
 });
 
 export const userMoneyUpdateSchema = z.object({
