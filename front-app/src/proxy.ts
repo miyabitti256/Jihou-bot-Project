@@ -12,6 +12,6 @@ export const proxy = auth((req) => {
 export const config = {
   // api, 内部ファイル, 画像, トップページ, 静的ページ(about, contact, legal, login), 連携先エラーページ等を除外する
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|about|contact|legal|login|unauthorized|$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|about|contact|legal|login|unauthorized|$).*)",
   ],
 };
