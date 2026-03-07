@@ -11,7 +11,14 @@ declare module "next-auth" {
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  providers: [Discord],
+  providers: [
+    Discord({
+      authorization: { params: { scope: "identify" } },
+    }),
+  ],
+  pages: {
+    signIn: "/login",
+  },
   session: {
     strategy: "jwt",
     maxAge: 7 * 24 * 60 * 60,

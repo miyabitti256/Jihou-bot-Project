@@ -34,7 +34,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { createSchedule, updateSchedule } from "./actions";
+import { createSchedule, updateSchedule } from "../actions";
 
 const formSchema = z.object({
   message: z

@@ -14,7 +14,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { messageDelete } from "./actions";
+import { messageDelete } from "../actions";
 
 export default function DeleteButton({
   messageId,

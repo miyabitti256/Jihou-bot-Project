@@ -1,7 +1,6 @@
-import NoAuthRedirect from "@/components/noAuthRedirect";
 import { auth } from "@/lib/auth";
 import { createApiClient } from "@/lib/rpc-client";
-import { ScheduleForm } from "./components/schedule-form";
+import { ScheduleForm } from "./_components/schedule-form";
 
 export default async function SchedulePage({
   params,
@@ -11,8 +10,8 @@ export default async function SchedulePage({
   searchParams: Promise<{ guildId: string }>;
 }) {
   const session = await auth();
-  if (!session) {
-    return <NoAuthRedirect redirectPath="/" />;
+  if (!session?.user?.id) {
+    return null; // proxy.ts will catch this
   }
 
   const { id } = await params;

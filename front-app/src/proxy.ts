@@ -1,1 +1,17 @@
-export { auth as proxy } from "@/lib/auth";
+import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+
+export const proxy = auth((req) => {
+  const isLoggedIn = !!req.auth;
+
+  if (!isLoggedIn) {
+    return NextResponse.redirect(new URL("/unauthorized", req.url));
+  }
+});
+
+export const config = {
+  // api, 内部ファイル, 画像, トップページ, 静的ページ(about, contact, legal, login), 連携先エラーページ等を除外する
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|about|contact|legal|login|unauthorized|$).*)",
+  ],
+};

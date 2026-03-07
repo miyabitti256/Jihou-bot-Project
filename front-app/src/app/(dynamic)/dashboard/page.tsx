@@ -1,11 +1,9 @@
 import { formatDistance } from "date-fns";
 import { ja } from "date-fns/locale";
-import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
-import { FaDiscord, FaUser } from "react-icons/fa";
-import NoAuthRedirect from "@/components/noAuthRedirect";
+import { FaDiscord } from "react-icons/fa";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -17,49 +15,31 @@ import {
 import { auth } from "@/lib/auth";
 import { createApiClient } from "@/lib/rpc-client";
 
-export default async function UserDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function Dashboard() {
   const session = await auth();
-  const { id } = await params;
 
-  if (!session) {
-    return <NoAuthRedirect redirectPath="/" />;
-  }
-
-  if (session.user.id === id) {
-    redirect("/dashboard");
+  if (!session?.user?.id) {
+    return null; // proxy.ts will catch this
   }
 
   const client = await createApiClient();
 
   const userResponse = await client.api.users[":userId"].$get({
-    param: { userId: id },
+    param: { userId: session.user.id },
     query: { includes: ["scheduledmessage", "omikuji", "coinflip", "janken"] },
   });
-
   if (!userResponse.ok) {
-    if (userResponse.status === 404) {
-      return notFound();
-    }
-    throw new Error("ユーザーデータの取得に失敗しました");
+    return <div>User data not found</div>;
   }
-
   const userData = await userResponse.json();
-
-  if (!userData.data) {
-    return notFound();
-  }
 
   const scheduledMessages = userData.data.scheduledMessages_createdUserId ?? [];
   const omikuji = userData.data.omikujis ?? [];
   const coinflip = userData.data.coinFlips ?? [];
 
   const allJankenGames = [
-    ...(userData.data.jankens_challengerId || []),
-    ...(userData.data.jankens_opponentId || []),
+    ...(userData?.data?.jankens_challengerId ?? []),
+    ...(userData?.data?.jankens_opponentId ?? []),
   ].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
@@ -82,7 +62,7 @@ export default async function UserDetailPage({
     if (gamesExcludingDraws.length === 0) return "0.0";
 
     const wins = gamesExcludingDraws.filter(
-      (game) => game.winnerUserId === id,
+      (game) => game.winnerUserId === session.user.id,
     ).length;
     return ((wins / gamesExcludingDraws.length) * 100).toFixed(1);
   })();
@@ -99,14 +79,14 @@ export default async function UserDetailPage({
 
   const calculateBalance = (games: typeof allJankenGames) => {
     return games.reduce((acc, game) => {
-      const isChallenger = game.challengerId === id;
+      const isChallenger = game.challengerId === session.user.id;
       const myBet = isChallenger
         ? (game.challengerBet ?? 0)
         : (game.opponentBet ?? 0);
-      if (game.winnerUserId === id) {
+      if (game.winnerUserId === session.user.id) {
         return acc + myBet;
       }
-      if (game.winnerUserId && game.winnerUserId !== id) {
+      if (game.winnerUserId && game.winnerUserId !== session.user.id) {
         return acc - myBet;
       }
       return acc;
@@ -123,13 +103,13 @@ export default async function UserDetailPage({
   const getGuildData = async (guildId: string) => {
     const res = await client.api.guilds[":guildId"].$get({
       param: { guildId },
-      query: { includes: ["channels"] },
+      query: { includes: ["channels", "roles"] },
     });
     if (!res.ok) return null;
     return await res.json();
   };
 
-  const getUserData = async (userId: string) => {
+  const getUserDataById = async (userId: string) => {
     const res = await client.api.users[":userId"].$get({
       param: { userId },
       query: {},
@@ -140,35 +120,15 @@ export default async function UserDetailPage({
 
   return (
     <div className="p-4 md:p-8 space-y-4 md:space-y-6">
-      <div className="flex items-center space-x-4">
-        <Avatar className="h-16 w-16 md:h-24 md:w-24">
-          <AvatarImage src={userData.data.avatarUrl || ""} />
-          <AvatarFallback>
-            <FaUser className="h-8 w-8" />
-          </AvatarFallback>
-        </Avatar>
-        <div>
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl md:text-3xl font-bold">
-              {userData.data.username}のプロフィール
-            </h1>
-          </div>
-          <div className="mt-2">
-            <Link
-              href="/users"
-              className="text-sm text-blue-500 hover:text-blue-700"
-            >
-              ← ユーザー一覧に戻る
-            </Link>
-          </div>
-        </div>
-      </div>
+      <h1 className="text-xl md:text-3xl font-bold">
+        {userData.data.username}のダッシュボード
+      </h1>
 
       <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
         <Card className="col-span-1 md:col-span-2">
           <CardHeader className="p-4 md:p-6">
             <CardTitle className="text-xl md:text-2xl">
-              設定した時報一覧
+              あなたが設定した時報一覧
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 md:p-6">
@@ -220,10 +180,8 @@ export default async function UserDetailPage({
                               <TableCell className="text-muted-foreground">
                                 取得失敗
                               </TableCell>
-                              <TableCell>
-                                <div className="max-w-[200px] truncate">
-                                  {message.message}
-                                </div>
+                              <TableCell className="max-w-[300px] truncate">
+                                {message.message}
                               </TableCell>
                               <TableCell>{message.scheduleTime}</TableCell>
                               <TableCell>
@@ -264,10 +222,8 @@ export default async function UserDetailPage({
                                 )?.name
                               }
                             </TableCell>
-                            <TableCell>
-                              <div className="max-w-[200px] truncate">
-                                {message.message}
-                              </div>
+                            <TableCell className="max-w-[300px] truncate">
+                              {message.message}
                             </TableCell>
                             <TableCell>{message.scheduleTime}</TableCell>
                             <TableCell>
@@ -300,17 +256,26 @@ export default async function UserDetailPage({
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 md:p-6 space-y-4">
-            <div className="space-y-4">
+            <div className="flex items-start sm:items-center justify-between gap-4">
               <div>
                 <p className="text-sm text-muted-foreground">現在の所持金</p>
                 <p className="text-2xl md:text-3xl font-bold">
                   {userData.data.money.toLocaleString()}円
                 </p>
               </div>
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={session.user.image ?? ""} />
+                <AvatarFallback>
+                  <Skeleton className="h-10 w-10" />
+                </AvatarFallback>
+              </Avatar>
+            </div>
+
+            <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t">
                 <div className="text-center sm:text-left">
                   <p className="text-sm text-muted-foreground">
-                    コイントス勝率
+                    コインフリップ勝率(直近100回)
                   </p>
                   <p className="text-lg md:text-xl font-semibold">{winRate}%</p>
                 </div>
@@ -326,9 +291,12 @@ export default async function UserDetailPage({
                   </p>
                 </div>
                 <div className="text-center sm:text-left">
-                  <p className="text-sm text-muted-foreground">総プレイ回数</p>
+                  <p className="text-sm text-muted-foreground">総ベット額</p>
                   <p className="text-lg md:text-xl font-semibold">
-                    {coinflip.length}回
+                    {coinflip
+                      .reduce((acc, log) => acc + log.bet, 0)
+                      .toLocaleString()}
+                    円
                   </p>
                 </div>
               </div>
@@ -360,29 +328,29 @@ export default async function UserDetailPage({
                   </p>
                 </div>
               </div>
+            </div>
 
-              <div className="space-y-2 pt-4 border-t">
+            <div className="space-y-2 pt-4 border-t">
+              <p className="text-sm text-muted-foreground">
+                これらのデータは直近100件のものです
+              </p>
+            </div>
+
+            <div className="space-y-2 pt-4 border-t">
+              <div className="flex justify-between">
                 <p className="text-sm text-muted-foreground">
-                  これらのデータは直近の記録です
+                  最終おみくじ実行
                 </p>
-              </div>
-
-              <div className="space-y-2 pt-4 border-t">
-                <div className="flex justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    最終おみくじ実行
-                  </p>
-                  <p className="text-sm font-medium">
-                    {formatDistance(
-                      new Date(userData.data.lastDraw || new Date()),
-                      new Date(),
-                      {
-                        addSuffix: true,
-                        locale: ja,
-                      },
-                    )}
-                  </p>
-                </div>
+                <p className="text-sm font-medium">
+                  {formatDistance(
+                    new Date(userData.data.lastDraw || new Date()),
+                    new Date(),
+                    {
+                      addSuffix: true,
+                      locale: ja,
+                    },
+                  )}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -416,18 +384,18 @@ export default async function UserDetailPage({
                         </TableCell>
                       </TableRow>
                     ) : (
-                      omikuji.map((draw) => (
-                        <TableRow key={draw.id}>
+                      omikuji.map((result) => (
+                        <TableRow key={result.id}>
                           <TableCell className="font-medium">
-                            {draw.result}
+                            {result.result}
                           </TableCell>
                           <TableCell>
                             {formatDistance(
-                              new Date(draw.createdAt),
+                              new Date(result.createdAt),
                               new Date(),
                               {
-                                locale: ja,
                                 addSuffix: true,
+                                locale: ja,
                               },
                             )}
                           </TableCell>
@@ -455,36 +423,42 @@ export default async function UserDetailPage({
                     <TableRow>
                       <TableHead className="min-w-[100px]">賭け金</TableHead>
                       <TableHead className="min-w-[100px]">結果</TableHead>
+                      <TableHead className="min-w-[150px]">
+                        ゲーム後の所持金
+                      </TableHead>
                       <TableHead className="min-w-[100px]">日時</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {recentCoinFlips.length === 0 ? (
+                    {recentCoinFlips?.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={3} className="text-center">
+                        <TableCell colSpan={4} className="text-center">
                           まだコインフリップをプレイしたことがありません
                         </TableCell>
                       </TableRow>
                     ) : (
-                      recentCoinFlips.map((flip) => (
-                        <TableRow key={flip.id}>
-                          <TableCell>{flip.bet.toLocaleString()}円</TableCell>
+                      recentCoinFlips?.map((log) => (
+                        <TableRow key={log.id}>
+                          <TableCell>{log.bet.toLocaleString()}円</TableCell>
                           <TableCell>
                             <span
-                              className={`font-medium ${
-                                flip.win ? "text-green-600" : "text-red-600"
-                              }`}
+                              className={
+                                log.win ? "text-green-600" : "text-red-600"
+                              }
                             >
-                              {flip.win ? "勝ち" : "負け"}
+                              {log.win ? "勝ち" : "負け"}
                             </span>
                           </TableCell>
                           <TableCell>
+                            {log.updatedMoney.toLocaleString()}円
+                          </TableCell>
+                          <TableCell>
                             {formatDistance(
-                              new Date(flip.createdAt),
+                              new Date(log.createdAt),
                               new Date(),
                               {
-                                locale: ja,
                                 addSuffix: true,
+                                locale: ja,
                               },
                             )}
                           </TableCell>
@@ -527,28 +501,29 @@ export default async function UserDetailPage({
                       </TableRow>
                     ) : (
                       recentJankenGames.map(async (game) => {
-                        const isChallenger = game.challengerId === id;
-                        const opponentId = isChallenger
-                          ? game.opponentId
-                          : game.challengerId;
-                        const myHand = isChallenger
+                        const isChallenger =
+                          game.challengerId === session.user.id;
+                        const myChoice = isChallenger
                           ? game.challengerHand
                           : game.opponentHand;
-                        const opponentHand = isChallenger
+                        const opponentChoice = isChallenger
                           ? game.opponentHand
                           : game.challengerHand;
                         const myBet = isChallenger
-                          ? (game.challengerBet ?? 0)
-                          : (game.opponentBet ?? 0);
-                        const opponent = await getUserData(opponentId);
-                        if (!opponent) {
+                          ? game.challengerBet
+                          : game.opponentBet;
+                        const opponent = isChallenger
+                          ? game.opponentId
+                          : game.challengerId;
+                        const opponentData = await getUserDataById(opponent);
+                        if (!opponentData) {
                           return (
                             <TableRow key={game.id}>
                               <TableCell>
                                 <div className="flex items-center gap-2">
                                   <Avatar>
                                     <AvatarFallback>
-                                      <FaUser className="h-5 w-5" />
+                                      <Skeleton className="h-10 w-10" />
                                     </AvatarFallback>
                                   </Avatar>
                                   <span className="text-muted-foreground">
@@ -556,14 +531,14 @@ export default async function UserDetailPage({
                                   </span>
                                 </div>
                               </TableCell>
-                              <TableCell>{getHandEmoji(myHand)}</TableCell>
+                              <TableCell>{getHandEmoji(myChoice)}</TableCell>
                               <TableCell>
-                                {getHandEmoji(opponentHand)}
+                                {getHandEmoji(opponentChoice)}
                               </TableCell>
                               <TableCell>
-                                {myBet === 0
+                                {myBet === null || myBet === 0
                                   ? "なし"
-                                  : `${myBet.toLocaleString()}円`}
+                                  : `${myBet?.toLocaleString()}円`}
                               </TableCell>
                               <TableCell>
                                 <span className="text-muted-foreground">
@@ -575,16 +550,15 @@ export default async function UserDetailPage({
                                   new Date(game.createdAt),
                                   new Date(),
                                   {
-                                    locale: ja,
                                     addSuffix: true,
+                                    locale: ja,
                                   },
                                 )}
                               </TableCell>
                             </TableRow>
                           );
                         }
-                        const won = game.winnerUserId === id;
-                        const draw = game.winnerUserId === null;
+                        const isWinner = game.winnerUserId === session.user.id;
 
                         return (
                           <TableRow key={game.id}>
@@ -592,33 +566,39 @@ export default async function UserDetailPage({
                               <div className="flex items-center gap-2">
                                 <Avatar>
                                   <AvatarImage
-                                    src={opponent.data.avatarUrl ?? ""}
+                                    src={opponentData.data.avatarUrl ?? ""}
                                   />
                                   <AvatarFallback>
-                                    <FaUser className="h-5 w-5" />
+                                    <Skeleton className="h-10 w-10" />
                                   </AvatarFallback>
                                 </Avatar>
-                                {opponent.data.username}
+                                {opponentData.data.username}
                               </div>
                             </TableCell>
-                            <TableCell>{getHandEmoji(myHand)}</TableCell>
-                            <TableCell>{getHandEmoji(opponentHand)}</TableCell>
+                            <TableCell>{getHandEmoji(myChoice)}</TableCell>
                             <TableCell>
-                              {myBet === 0
+                              {getHandEmoji(opponentChoice)}
+                            </TableCell>
+                            <TableCell>
+                              {myBet === null || myBet === 0
                                 ? "なし"
-                                : `${myBet.toLocaleString()}円`}
+                                : `${myBet?.toLocaleString()}円`}
                             </TableCell>
                             <TableCell>
                               <span
                                 className={
-                                  draw
-                                    ? "text-yellow-600"
-                                    : won
+                                  game.winnerUserId
+                                    ? isWinner
                                       ? "text-green-600"
                                       : "text-red-600"
+                                    : "text-yellow-600"
                                 }
                               >
-                                {draw ? "引き分け" : won ? "勝ち" : "負け"}
+                                {game.winnerUserId
+                                  ? isWinner
+                                    ? "勝ち"
+                                    : "負け"
+                                  : "引き分け"}
                               </span>
                             </TableCell>
                             <TableCell>
@@ -626,8 +606,8 @@ export default async function UserDetailPage({
                                 new Date(game.createdAt),
                                 new Date(),
                                 {
-                                  locale: ja,
                                   addSuffix: true,
+                                  locale: ja,
                                 },
                               )}
                             </TableCell>

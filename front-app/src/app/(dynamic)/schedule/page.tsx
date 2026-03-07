@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { FaPlus } from "react-icons/fa";
-import NoAuthRedirect from "@/components/noAuthRedirect";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,12 +26,12 @@ import {
 } from "@/components/ui/table";
 import { auth } from "@/lib/auth";
 import { createApiClient } from "@/lib/rpc-client";
-import DeleteButton from "./components/delete-button";
+import DeleteButton from "./_components/delete-button";
 
 export default async function SchedulePage() {
   const session = await auth();
-  if (!session) {
-    return <NoAuthRedirect redirectPath="/" />;
+  if (!session?.user?.id) {
+    return null; // proxy.ts will catch this
   }
 
   const client = await createApiClient();

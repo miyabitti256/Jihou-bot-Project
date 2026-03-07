@@ -1,8 +1,6 @@
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { M_PLUS_Rounded_1c } from "next/font/google";
-import Footer from "@/components/layout/footer";
-import Header from "@/components/layout/header";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/provider/theme-provider";
 import "./globals.css";
@@ -28,9 +26,7 @@ export default function RootLayout({
       <body className={`${m_plus_rounded_1c.className} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Toaster position="top-center" />
-          <Header />
-          <main className="container mx-auto px-4">{children}</main>
-          <Footer />
+          {children}
         </ThemeProvider>
         <Analytics />
       </body>

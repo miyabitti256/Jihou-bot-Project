@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { createApiClient } from "@/lib/rpc-client";
 import { getTokyoDate, hasDrawnToday } from "@/lib/utils";
-import DrawOmikuji from "./components/draw-omikuji";
+import DrawOmikuji from "./_components/draw-omikuji";
 
 export default async function OmikujiPage() {
   const session = await auth();

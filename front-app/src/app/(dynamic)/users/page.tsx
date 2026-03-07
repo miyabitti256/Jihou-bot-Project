@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FaUser } from "react-icons/fa";
-import NoAuthRedirect from "@/components/noAuthRedirect";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { auth } from "@/lib/auth";
 import { createApiClient } from "@/lib/rpc-client";
-import UsersPagination from "./components/users-pagination";
-import UsersSearchForm from "./components/users-search-form";
+import UsersPagination from "./_components/users-pagination";
+import UsersSearchForm from "./_components/users-search-form";
 
 export default async function UsersPage({
   searchParams,
@@ -16,8 +15,8 @@ export default async function UsersPage({
 }) {
   const session = await auth();
 
-  if (!session) {
-    return <NoAuthRedirect redirectPath="/" />;
+  if (!session?.user) {
+    return null; // Proxy will catch this
   }
 
   const { page, search } = await searchParams;

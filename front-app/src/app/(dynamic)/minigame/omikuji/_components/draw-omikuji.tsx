@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { drawOmikuji } from "./actions";
+import { drawOmikuji } from "../actions";
 
 type OmikujiResult = Extract<
   Awaited<ReturnType<typeof drawOmikuji>>,

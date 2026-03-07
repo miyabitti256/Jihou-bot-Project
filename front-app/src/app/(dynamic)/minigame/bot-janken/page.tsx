@@ -1,4 +1,4 @@
-import BotJanken from "./components/bot-janken";
+import BotJanken from "./_components/bot-janken";
 
 export default async function BotJankenPage() {
   return (

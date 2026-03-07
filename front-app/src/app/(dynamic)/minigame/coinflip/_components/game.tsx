@@ -5,7 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { flipCoin } from "./actions";
+import { flipCoin } from "../actions";
 
 const AMOUNT_STEPS = [100, 500, 1000, 5000];
 

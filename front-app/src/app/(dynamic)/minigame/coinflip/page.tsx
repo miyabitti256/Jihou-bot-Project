@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import CoinflipGame from "./components/game";
+import CoinflipGame from "./_components/game";
 
 export default async function CoinflipPage() {
   const session = await auth();
