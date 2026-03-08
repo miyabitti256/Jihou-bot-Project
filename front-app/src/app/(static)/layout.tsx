@@ -1,15 +1,13 @@
 import Footer from "@/components/layout/footer";
-import Header from "@/components/layout/header";
 
-export default function staticLayout({
+export default function StaticLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
     <>
-      <Header />
-      {children}
+      <main className="flex-1">{children}</main>
       <Footer />
     </>
   );

@@ -1,12 +1,18 @@
+import { LogIn } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { auth } from "@/lib/auth";
 import { signInAction } from "./actions";
 import LogoutButton from "./logout-button";
@@ -16,33 +22,61 @@ export default async function SessionMenu() {
 
   if (!session) {
     return (
-      <form action={signInAction}>
-        <Button variant="outline">ログイン</Button>
-      </form>
+      <TooltipProvider>
+        <Tooltip delayDuration={50}>
+          <TooltipTrigger asChild>
+            <form action={signInAction} className="w-full flex justify-center">
+              <button
+                type="submit"
+                className="relative flex items-center justify-center w-full group focus:outline-hidden"
+              >
+                <div className="relative flex items-center justify-center w-12 h-12 transition-all duration-200 mx-auto overflow-hidden rounded-[24px] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 group-hover:rounded-[16px] group-hover:bg-indigo-500 group-hover:text-white shadow-sm dark:shadow-none">
+                  <LogIn className="w-6 h-6" />
+                </div>
+              </button>
+            </form>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="font-semibold z-50">
+            ログイン
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger className="focus:outline-hidden">
-        <Avatar>
-          <AvatarImage
-            src={session.user?.image ?? ""}
-            alt="your discord icon"
-          />
-          <AvatarFallback>
-            {session.user?.name?.slice(0, 2) ?? ""}
-          </AvatarFallback>
-        </Avatar>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem>
-          <Link href="/dashboard" className="w-full">
-            ダッシュボード
-          </Link>
-        </DropdownMenuItem>
-        <LogoutButton />
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <TooltipProvider>
+      <DropdownMenu>
+        <Tooltip delayDuration={50}>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger className="relative flex items-center justify-center w-full group focus:outline-hidden">
+              <div className="relative flex items-center justify-center w-12 h-12 transition-all duration-200 mx-auto overflow-hidden rounded-[24px] group-hover:rounded-[16px]">
+                <Avatar className="w-full h-full rounded-none">
+                  <AvatarImage
+                    src={session.user?.image ?? ""}
+                    alt="your discord icon"
+                    className="object-cover"
+                  />
+                  <AvatarFallback className="rounded-none bg-gray-800 text-gray-300 font-bold group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                    {session.user?.name?.slice(0, 2) ?? ""}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="font-semibold z-50">
+            ユーザーメニュー
+          </TooltipContent>
+        </Tooltip>
+        <DropdownMenuContent align="end" side="right" sideOffset={14}>
+          <DropdownMenuItem>
+            <Link href="/dashboard" className="w-full">
+              ダッシュボード
+            </Link>
+          </DropdownMenuItem>
+          <LogoutButton />
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </TooltipProvider>
   );
 }

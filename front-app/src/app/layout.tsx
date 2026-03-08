@@ -1,7 +1,9 @@
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { M_PLUS_Rounded_1c } from "next/font/google";
+import GlobalSidebar from "@/components/layout/global-sidebar";
 import { Toaster } from "@/components/ui/sonner";
+import { env } from "@/lib/env";
 import { ThemeProvider } from "@/provider/theme-provider";
 import "./globals.css";
 
@@ -26,9 +28,14 @@ export default function RootLayout({
       <body className={`${m_plus_rounded_1c.className} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Toaster position="top-center" />
-          {children}
+          <div className="flex h-screen overflow-hidden bg-background">
+            <GlobalSidebar />
+            <div className="flex-1 flex flex-col overflow-y-auto">
+              {children}
+            </div>
+          </div>
         </ThemeProvider>
-        <Analytics />
+        {env.NODE_ENV === "production" && <Analytics />}
       </body>
     </html>
   );

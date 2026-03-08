@@ -1,6 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "cdn.discordapp.com",
+      },
+    ],
+  },
   async headers() {
     return [
       {
@@ -15,7 +23,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'", // Tailwind CSS requires unsafe-inline
               "img-src 'self' data: https:",
               "font-src 'self' data:",
-              "connect-src 'self' https://discord.com https://discordapp.com https://*.vercel.app https://*.fly.dev",
+              "connect-src 'self' https://discord.com https://discordapp.com https://cdn.discordapp.com https://*.vercel.app https://*.fly.dev",
               "frame-ancestors 'none'",
             ].join("; "),
           },
