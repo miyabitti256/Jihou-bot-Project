@@ -1,5 +1,5 @@
-import { ChannelSidebar } from "@/components/layout/channel-sidebar";
 import { headers } from "next/headers";
+import { ChannelSidebar } from "@/components/layout/channel-sidebar";
 
 export default async function ChannelSidebarDefault() {
   const headersList = await headers();
