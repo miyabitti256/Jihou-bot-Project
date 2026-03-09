@@ -1,11 +1,11 @@
-import SessionMenu from "@/components/layout/header/session-menu";
-import ToggleTheme from "@/components/layout/header/toggle-theme";
 import {
   type ServerIconItem,
   ServerSidebar,
 } from "@/components/layout/server-sidebar";
 import { getGuildMembers } from "@/lib/api/guilds";
 import { auth } from "@/lib/auth";
+import SessionMenu from "./session-menu";
+import ToggleTheme from "./toggle-theme";
 
 export default async function GlobalSidebar() {
   const session = await auth();
