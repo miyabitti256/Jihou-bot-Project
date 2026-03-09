@@ -59,6 +59,7 @@ export function HeroSection({ clock }: HeroSectionProps) {
                   src="/images/clock-2.png"
                   alt="時報Bot"
                   fill
+                  sizes="160px"
                   className="object-contain hover:scale-105 transition-transform duration-300"
                   priority
                   fetchPriority="high"

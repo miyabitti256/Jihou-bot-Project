@@ -1,17 +1,9 @@
 import { formatDistance } from "date-fns";
 import { ja } from "date-fns/locale";
+import Link from "next/link";
 import { FaDiscord } from "react-icons/fa";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { getGuild } from "@/lib/api/guilds";
 import { getUser } from "@/lib/api/users";
 import { auth } from "@/lib/auth";
@@ -94,179 +86,140 @@ export default async function Dashboard() {
   };
 
   const BalanceDisplay = ({ amount }: { amount: number }) => (
-    <span className={amount >= 0 ? "text-green-600" : "text-red-600"}>
+    <span
+      className={
+        amount >= 0
+          ? "text-green-600 dark:text-[#23A559]"
+          : "text-red-600 dark:text-[#DA373C]"
+      }
+    >
       {amount >= 0 ? "+" : ""}
       {amount.toLocaleString()}円
     </span>
   );
 
   return (
-    <div className="p-4 md:p-8 space-y-4 md:space-y-6">
-      <h1 className="text-xl md:text-3xl font-bold">
-        {userData.data.username}のダッシュボード
-      </h1>
+    <div className="p-4 md:p-8 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+          {userData.data.username}のダッシュボード
+        </h1>
+      </div>
 
-      <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
-        <Card className="col-span-1 md:col-span-2">
-          <CardHeader className="p-4 md:p-6">
-            <CardTitle className="text-xl md:text-2xl">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+        {/* Scheduled Messages */}
+        <div className="col-span-1 lg:col-span-2 bg-white dark:bg-[#2B2D31] rounded-2xl shadow-sm border border-gray-200 dark:border-white/5 overflow-hidden flex flex-col">
+          <div className="bg-[#F2F3F5] dark:bg-[#1E1F22] px-6 py-4 border-b border-gray-200 dark:border-black/20 shrink-0">
+            <h2 className="font-bold text-lg text-gray-900 dark:text-gray-100">
               あなたが設定した時報一覧
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6">
-            <div className="max-h-[300px] md:max-h-[400px] overflow-auto">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[200px] md:w-auto">
-                        サーバー
-                      </TableHead>
-                      <TableHead className="min-w-[120px]">
-                        チャンネル
-                      </TableHead>
-                      <TableHead className="min-w-[120px]">
-                        メッセージ
-                      </TableHead>
-                      <TableHead className="min-w-[100px]">実行時間</TableHead>
-                      <TableHead className="min-w-[120px]">
-                        ステータス
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {scheduledMessages.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center">
-                          時報は設定されていません
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      scheduledMessages.map(async (message) => {
-                        const guildData = await getGuild(message.guildId, [
-                          "channels",
-                          "roles",
-                        ]);
-                        if (!guildData) {
-                          return (
-                            <TableRow key={message.id}>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <Avatar>
-                                    <AvatarFallback>
-                                      <FaDiscord />
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <span className="text-muted-foreground">
-                                    不明なサーバー
-                                  </span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">
-                                取得失敗
-                              </TableCell>
-                              <TableCell className="max-w-[300px] truncate">
-                                {message.message}
-                              </TableCell>
-                              <TableCell>{message.scheduleTime}</TableCell>
-                              <TableCell>
-                                <span
-                                  className={
-                                    message.isActive
-                                      ? "text-green-600"
-                                      : "text-red-600"
-                                  }
-                                >
-                                  {message.isActive ? "🟢" : "🔴"}
-                                  {message.isActive ? "有効" : "無効"}
-                                </span>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        }
-                        return (
-                          <TableRow key={message.id}>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Avatar>
-                                  <AvatarImage
-                                    src={guildData.data.iconUrl ?? ""}
-                                  />
-                                  <AvatarFallback>
-                                    <FaDiscord />
-                                  </AvatarFallback>
-                                </Avatar>
-                                {guildData.data.name}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              #
-                              {
-                                guildData.data.guildChannels.find(
-                                  (channel) => channel.id === message.channelId,
-                                )?.name
-                              }
-                            </TableCell>
-                            <TableCell className="max-w-[300px] truncate">
-                              {message.message}
-                            </TableCell>
-                            <TableCell>{message.scheduleTime}</TableCell>
-                            <TableCell>
-                              <span
-                                className={
-                                  message.isActive
-                                    ? "text-green-600"
-                                    : "text-red-600"
-                                }
-                              >
-                                {message.isActive ? "🟢" : "🔴"}
-                                {message.isActive ? "有効" : "無効"}
-                              </span>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    )}
-                  </TableBody>
-                </Table>
+            </h2>
+          </div>
+          <div className="p-0 overflow-y-auto max-h-[400px]">
+            {scheduledMessages.length === 0 ? (
+              <div className="p-8 text-center text-gray-500 dark:text-[#949BA4]">
+                時報は設定されていません
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            ) : (
+              <div className="flex flex-col">
+                {scheduledMessages.map(async (message) => {
+                  const guildData = await getGuild(message.guildId, [
+                    "channels",
+                    "roles",
+                  ]);
+                  const isSuccess = !!guildData;
+                  const guildName = guildData?.data?.name || "不明なサーバー";
+                  const channelName =
+                    guildData?.data?.guildChannels.find(
+                      (c) => c.id === message.channelId,
+                    )?.name || "不明";
 
-        <Card className="col-span-1">
-          <CardHeader className="p-4 md:p-6">
-            <CardTitle className="text-xl md:text-2xl">
+                  return (
+                    <Link
+                      href={`/channels/${message.guildId}/${message.channelId}`}
+                      key={message.id}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-[#313338] transition-colors gap-4 cursor-pointer"
+                    >
+                      <div className="flex items-center gap-4 min-w-0 flex-1">
+                        <Avatar className="h-10 w-10 shrink-0">
+                          {isSuccess && guildData.data.iconUrl ? (
+                            <AvatarImage src={guildData.data.iconUrl} />
+                          ) : null}
+                          <AvatarFallback className="bg-[#5865F2] text-white">
+                            <FaDiscord />
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 truncate">
+                            <span className="font-semibold text-gray-900 dark:text-white truncate">
+                              {guildName}
+                            </span>
+                            <span className="text-xs text-gray-500 dark:text-[#949BA4] shrink-0">
+                              #{channelName}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-[#DBDEE1] truncate mt-0.5">
+                            {message.message}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center sm:flex-col sm:items-end justify-between sm:justify-center gap-2 sm:gap-1 shrink-0 ml-14 sm:ml-0">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-300">
+                          {message.scheduleTime}
+                        </div>
+                        <div
+                          className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${message.isActive ? "bg-green-100 text-green-700 dark:bg-[#23A559]/20 dark:text-[#23A559]" : "bg-red-100 text-red-700 dark:bg-[#DA373C]/20 dark:text-[#DA373C]"}`}
+                        >
+                          {message.isActive ? "有効" : "無効"}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Player Info */}
+        <div className="col-span-1 bg-white dark:bg-[#2B2D31] rounded-2xl shadow-sm border border-gray-200 dark:border-white/5 overflow-hidden flex flex-col">
+          <div className="bg-[#F2F3F5] dark:bg-[#1E1F22] px-6 py-4 border-b border-gray-200 dark:border-black/20 shrink-0">
+            <h2 className="font-bold text-lg text-gray-900 dark:text-gray-100">
               プレイヤー情報
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6 space-y-4">
-            <div className="flex items-start sm:items-center justify-between gap-4">
+            </h2>
+          </div>
+          <div className="p-6 flex flex-col gap-6">
+            <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm text-muted-foreground">現在の所持金</p>
-                <p className="text-2xl md:text-3xl font-bold">
+                <p className="text-xs font-semibold text-gray-500 dark:text-[#949BA4] uppercase mb-1">
+                  現在の所持金
+                </p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">
                   {userData.data.money.toLocaleString()}円
                 </p>
               </div>
-              <Avatar className="h-12 w-12">
+              <Avatar className="h-16 w-16 border-4 border-white dark:border-[#1E1F22] rounded-xl shadow-sm shrink-0">
                 <AvatarImage src={session.user.image ?? ""} />
-                <AvatarFallback>
-                  <Skeleton className="h-10 w-10" />
+                <AvatarFallback className="rounded-xl">
+                  <Skeleton className="h-full w-full" />
                 </AvatarFallback>
               </Avatar>
             </div>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t">
-                <div className="text-center sm:text-left">
-                  <p className="text-sm text-muted-foreground">
-                    コインフリップ勝率(直近100回)
+              <div className="grid grid-cols-3 gap-3 p-4 bg-gray-50 dark:bg-[#1E1F22] rounded-xl border border-gray-100 dark:border-white/5">
+                <div>
+                  <p className="text-[10px] sm:text-xs text-gray-500 dark:text-[#949BA4] mb-1">
+                    コインフリップ勝率
                   </p>
-                  <p className="text-lg md:text-xl font-semibold">{winRate}%</p>
+                  <p className="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100">
+                    {winRate}%
+                  </p>
                 </div>
-                <div className="text-center sm:text-left">
-                  <p className="text-sm text-muted-foreground">収支</p>
-                  <p className="text-lg md:text-xl font-semibold">
+                <div>
+                  <p className="text-[10px] sm:text-xs text-gray-500 dark:text-[#949BA4] mb-1">
+                    収支額
+                  </p>
+                  <p className="text-sm sm:text-base font-bold">
                     <BalanceDisplay
                       amount={coinflip.reduce(
                         (acc, log) => acc + (log.win ? log.bet : -log.bet),
@@ -275,9 +228,11 @@ export default async function Dashboard() {
                     />
                   </p>
                 </div>
-                <div className="text-center sm:text-left">
-                  <p className="text-sm text-muted-foreground">総ベット額</p>
-                  <p className="text-lg md:text-xl font-semibold">
+                <div>
+                  <p className="text-[10px] sm:text-xs text-gray-500 dark:text-[#949BA4] mb-1">
+                    総ベット額
+                  </p>
+                  <p className="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100">
                     {coinflip
                       .reduce((acc, log) => acc + log.bet, 0)
                       .toLocaleString()}
@@ -286,24 +241,28 @@ export default async function Dashboard() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t">
-                <div className="text-center sm:text-left">
-                  <p className="text-sm text-muted-foreground">
-                    じゃんけん勝率（引分除）
+              <div className="grid grid-cols-3 gap-3 p-4 bg-gray-50 dark:bg-[#1E1F22] rounded-xl border border-gray-100 dark:border-white/5">
+                <div>
+                  <p className="text-[10px] sm:text-xs text-gray-500 dark:text-[#949BA4] mb-1">
+                    じゃんけん勝率
                   </p>
-                  <p className="text-lg md:text-xl font-semibold">
+                  <p className="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100">
                     {jankenWinRate}%
                   </p>
                 </div>
-                <div className="text-center sm:text-left">
-                  <p className="text-sm text-muted-foreground">収支</p>
-                  <p className="text-lg md:text-xl font-semibold">
+                <div>
+                  <p className="text-[10px] sm:text-xs text-gray-500 dark:text-[#949BA4] mb-1">
+                    収支額
+                  </p>
+                  <p className="text-sm sm:text-base font-bold">
                     <BalanceDisplay amount={calculateBalance(allJankenGames)} />
                   </p>
                 </div>
-                <div className="text-center sm:text-left">
-                  <p className="text-sm text-muted-foreground">引き分け回数</p>
-                  <p className="text-lg md:text-xl font-semibold">
+                <div>
+                  <p className="text-[10px] sm:text-xs text-gray-500 dark:text-[#949BA4] mb-1">
+                    引き分け
+                  </p>
+                  <p className="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100">
                     {
                       allJankenGames.filter(
                         (game) => game.winnerUserId === null,
@@ -315,297 +274,217 @@ export default async function Dashboard() {
               </div>
             </div>
 
-            <div className="space-y-2 pt-4 border-t">
-              <p className="text-sm text-muted-foreground">
-                これらのデータは直近100件のものです
-              </p>
-            </div>
-
-            <div className="space-y-2 pt-4 border-t">
-              <div className="flex justify-between">
-                <p className="text-sm text-muted-foreground">
-                  最終おみくじ実行
-                </p>
-                <p className="text-sm font-medium">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-[#949BA4] pt-2 border-t border-gray-100 dark:border-white/5">
+              <span>※勝率データは直近100件に基づきます</span>
+              <div className="flex flex-col items-end">
+                <span>最終おみくじ</span>
+                <span className="font-semibold text-gray-700 dark:text-gray-300">
                   {formatDistance(
                     new Date(userData.data.lastDraw || new Date()),
                     new Date(),
-                    {
-                      addSuffix: true,
-                      locale: ja,
-                    },
+                    { addSuffix: true, locale: ja },
                   )}
-                </p>
+                </span>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="col-span-1">
-          <CardHeader className="p-4 md:p-6">
-            <CardTitle className="text-xl md:text-2xl">
+        {/* Omikuji History */}
+        <div className="col-span-1 bg-white dark:bg-[#2B2D31] rounded-2xl shadow-sm border border-gray-200 dark:border-white/5 overflow-hidden flex flex-col">
+          <div className="bg-[#F2F3F5] dark:bg-[#1E1F22] px-6 py-4 border-b border-gray-200 dark:border-black/20 shrink-0">
+            <h2 className="font-bold text-lg text-gray-900 dark:text-gray-100">
               最近のおみくじ結果
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6">
-            <div className="max-h-[300px] md:max-h-[350px] overflow-auto">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="sticky top-0 bg-background">
-                        結果
-                      </TableHead>
-                      <TableHead className="sticky top-0 bg-background">
-                        日時
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {omikuji.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={2} className="text-center">
-                          まだおみくじを引いたことがありません
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      omikuji.map((result) => (
-                        <TableRow key={result.id}>
-                          <TableCell className="font-medium">
-                            {result.result}
-                          </TableCell>
-                          <TableCell>
-                            {formatDistance(
-                              new Date(result.createdAt),
-                              new Date(),
-                              {
-                                addSuffix: true,
-                                locale: ja,
-                              },
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+            </h2>
+          </div>
+          <div className="p-0 overflow-y-auto max-h-[350px]">
+            {omikuji.length === 0 ? (
+              <div className="p-8 text-center text-gray-500 dark:text-[#949BA4]">
+                まだおみくじを引いたことがありません
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            ) : (
+              <div className="flex flex-col">
+                {omikuji.map((result) => (
+                  <div
+                    key={result.id}
+                    className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-[#313338] transition-colors"
+                  >
+                    <span className="font-bold text-base text-gray-900 dark:text-white">
+                      {result.result}
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-[#949BA4]">
+                      {formatDistance(new Date(result.createdAt), new Date(), {
+                        addSuffix: true,
+                        locale: ja,
+                      })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
-        <Card className="col-span-1 md:col-span-2">
-          <CardHeader className="p-4 md:p-6">
-            <CardTitle className="text-xl md:text-2xl">
+        {/* Coin Flip History */}
+        <div className="col-span-1 lg:col-span-2 bg-white dark:bg-[#2B2D31] rounded-2xl shadow-sm border border-gray-200 dark:border-white/5 overflow-hidden flex flex-col">
+          <div className="bg-[#F2F3F5] dark:bg-[#1E1F22] px-6 py-4 border-b border-gray-200 dark:border-black/20 shrink-0">
+            <h2 className="font-bold text-lg text-gray-900 dark:text-gray-100">
               最近のコインフリップ履歴
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6">
-            <div className="max-h-[300px] md:max-h-[400px] overflow-auto">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="min-w-[100px]">賭け金</TableHead>
-                      <TableHead className="min-w-[100px]">結果</TableHead>
-                      <TableHead className="min-w-[150px]">
-                        ゲーム後の所持金
-                      </TableHead>
-                      <TableHead className="min-w-[100px]">日時</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {recentCoinFlips?.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center">
-                          まだコインフリップをプレイしたことがありません
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      recentCoinFlips?.map((log) => (
-                        <TableRow key={log.id}>
-                          <TableCell>{log.bet.toLocaleString()}円</TableCell>
-                          <TableCell>
-                            <span
-                              className={
-                                log.win ? "text-green-600" : "text-red-600"
-                              }
-                            >
-                              {log.win ? "勝ち" : "負け"}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            {log.updatedMoney.toLocaleString()}円
-                          </TableCell>
-                          <TableCell>
-                            {formatDistance(
-                              new Date(log.createdAt),
-                              new Date(),
-                              {
-                                addSuffix: true,
-                                locale: ja,
-                              },
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+            </h2>
+          </div>
+          <div className="p-0 overflow-y-auto max-h-[400px]">
+            {recentCoinFlips?.length === 0 ? (
+              <div className="p-8 text-center text-gray-500 dark:text-[#949BA4]">
+                まだコインフリップをプレイしたことがありません
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            ) : (
+              <div className="flex flex-col">
+                {recentCoinFlips.map((log) => (
+                  <div
+                    key={log.id}
+                    className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-[#313338] transition-colors gap-4"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shadow-inner ${log.win ? "bg-green-100 text-green-600 dark:bg-[#23A559]/20 dark:text-[#23A559]" : "bg-red-100 text-red-600 dark:bg-[#DA373C]/20 dark:text-[#DA373C]"}`}
+                      >
+                        {log.win ? "W" : "L"}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-bold text-gray-900 dark:text-white">
+                          {log.bet.toLocaleString()}円
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-[#949BA4]">
+                          残高: {log.updatedMoney.toLocaleString()}円
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-[#949BA4] shrink-0">
+                      {formatDistance(new Date(log.createdAt), new Date(), {
+                        addSuffix: true,
+                        locale: ja,
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
-        <Card className="col-span-1 md:col-span-2">
-          <CardHeader className="p-4 md:p-6">
-            <CardTitle className="text-xl md:text-2xl">
+        {/* Janken History */}
+        <div className="col-span-1 lg:col-span-2 bg-white dark:bg-[#2B2D31] rounded-2xl shadow-sm border border-gray-200 dark:border-white/5 overflow-hidden flex flex-col">
+          <div className="bg-[#F2F3F5] dark:bg-[#1E1F22] px-6 py-4 border-b border-gray-200 dark:border-black/20 shrink-0">
+            <h2 className="font-bold text-lg text-gray-900 dark:text-gray-100">
               最近のじゃんけん対戦履歴
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6">
-            <div className="max-h-[300px] md:max-h-[400px] overflow-auto">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="min-w-[100px]">対戦相手</TableHead>
-                      <TableHead className="min-w-[100px]">自分の手</TableHead>
-                      <TableHead className="min-w-[100px]">相手の手</TableHead>
-                      <TableHead className="min-w-[100px]">賭け金</TableHead>
-                      <TableHead className="min-w-[100px]">結果</TableHead>
-                      <TableHead className="min-w-[100px]">日時</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {recentJankenGames.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center">
-                          まだじゃんけん対戦をプレイしたことがありません
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      recentJankenGames.map(async (game) => {
-                        const isChallenger =
-                          game.challengerId === session.user.id;
-                        const myChoice = isChallenger
-                          ? game.challengerHand
-                          : game.opponentHand;
-                        const opponentChoice = isChallenger
-                          ? game.opponentHand
-                          : game.challengerHand;
-                        const myBet = isChallenger
-                          ? game.challengerBet
-                          : game.opponentBet;
-                        const opponent = isChallenger
-                          ? game.opponentId
-                          : game.challengerId;
-                        const opponentData = await getUser(opponent);
-                        if (!opponentData) {
-                          return (
-                            <TableRow key={game.id}>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <Avatar>
-                                    <AvatarFallback>
-                                      <Skeleton className="h-10 w-10" />
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <span className="text-muted-foreground">
-                                    不明なユーザー
-                                  </span>
-                                </div>
-                              </TableCell>
-                              <TableCell>{getHandEmoji(myChoice)}</TableCell>
-                              <TableCell>
-                                {getHandEmoji(opponentChoice)}
-                              </TableCell>
-                              <TableCell>
-                                {myBet === null || myBet === 0
-                                  ? "なし"
-                                  : `${myBet?.toLocaleString()}円`}
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-muted-foreground">
-                                  不明
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                {formatDistance(
-                                  new Date(game.createdAt),
-                                  new Date(),
-                                  {
-                                    addSuffix: true,
-                                    locale: ja,
-                                  },
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        }
-                        const isWinner = game.winnerUserId === session.user.id;
-
-                        return (
-                          <TableRow key={game.id}>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Avatar>
-                                  <AvatarImage
-                                    src={opponentData.data.avatarUrl ?? ""}
-                                  />
-                                  <AvatarFallback>
-                                    <Skeleton className="h-10 w-10" />
-                                  </AvatarFallback>
-                                </Avatar>
-                                {opponentData.data.username}
-                              </div>
-                            </TableCell>
-                            <TableCell>{getHandEmoji(myChoice)}</TableCell>
-                            <TableCell>
-                              {getHandEmoji(opponentChoice)}
-                            </TableCell>
-                            <TableCell>
-                              {myBet === null || myBet === 0
-                                ? "なし"
-                                : `${myBet?.toLocaleString()}円`}
-                            </TableCell>
-                            <TableCell>
-                              <span
-                                className={
-                                  game.winnerUserId
-                                    ? isWinner
-                                      ? "text-green-600"
-                                      : "text-red-600"
-                                    : "text-yellow-600"
-                                }
-                              >
-                                {game.winnerUserId
-                                  ? isWinner
-                                    ? "勝ち"
-                                    : "負け"
-                                  : "引き分け"}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              {formatDistance(
-                                new Date(game.createdAt),
-                                new Date(),
-                                {
-                                  addSuffix: true,
-                                  locale: ja,
-                                },
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    )}
-                  </TableBody>
-                </Table>
+            </h2>
+          </div>
+          <div className="p-0 overflow-y-auto max-h-[400px]">
+            {recentJankenGames.length === 0 ? (
+              <div className="p-8 text-center text-gray-500 dark:text-[#949BA4]">
+                まだじゃんけん対戦をプレイしたことがありません
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            ) : (
+              <div className="flex flex-col">
+                {recentJankenGames.map(async (game) => {
+                  const isChallenger = game.challengerId === session.user.id;
+                  const myChoice = isChallenger
+                    ? game.challengerHand
+                    : game.opponentHand;
+                  const opponentChoice = isChallenger
+                    ? game.opponentHand
+                    : game.challengerHand;
+                  const myBet = isChallenger
+                    ? game.challengerBet
+                    : game.opponentBet;
+                  const opponentId = isChallenger
+                    ? game.opponentId
+                    : game.challengerId;
+                  const opponentData = await getUser(opponentId);
+
+                  if (!opponentData) {
+                    return (
+                      <div
+                        key={game.id}
+                        className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-white/5"
+                      >
+                        <span className="text-gray-500">
+                          不明なユーザーとの対戦
+                        </span>
+                      </div>
+                    );
+                  }
+
+                  const isWinner = game.winnerUserId === session.user.id;
+                  const isDraw = game.winnerUserId === null;
+
+                  return (
+                    <div
+                      key={game.id}
+                      className="flex flex-wrap sm:flex-nowrap items-center justify-between p-4 border-b border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-[#313338] transition-colors gap-x-4 gap-y-2"
+                    >
+                      <div className="flex items-center gap-3 w-full sm:w-[220px] shrink-0">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage
+                            src={opponentData.data.avatarUrl ?? ""}
+                          />
+                          <AvatarFallback>
+                            <Skeleton className="h-full w-full" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <span
+                          className="font-semibold text-gray-900 dark:text-white truncate"
+                          title={opponentData.data.username}
+                        >
+                          {opponentData.data.username}
+                        </span>
+                      </div>
+
+                      <div className="flex-1 flex items-center justify-center sm:justify-start gap-4 text-base sm:text-lg min-w-[120px]">
+                        <span title="自分の手">
+                          {getHandEmoji(myChoice).split(" ")[1] ??
+                            getHandEmoji(myChoice)}
+                        </span>
+                        <span className="text-[10px] font-black text-gray-400 dark:text-[#5C5E66] italic">
+                          VS
+                        </span>
+                        <span title="相手の手">
+                          {getHandEmoji(opponentChoice).split(" ")[1] ??
+                            getHandEmoji(opponentChoice)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto shrink-0 mt-2 sm:mt-0">
+                        <div className="text-left sm:text-right w-24">
+                          <div className="font-bold text-gray-900 dark:text-white text-sm">
+                            {myBet === null || myBet === 0
+                              ? "無料"
+                              : `${myBet?.toLocaleString()}円`}
+                          </div>
+                          <div
+                            className={`text-[10px] font-black tracking-wider ${isDraw ? "text-yellow-600 dark:text-[#FEE75C]" : isWinner ? "text-green-600 dark:text-[#23A559]" : "text-red-600 dark:text-[#DA373C]"}`}
+                          >
+                            {isDraw ? "DRAW" : isWinner ? "WIN" : "LOSE"}
+                          </div>
+                        </div>
+                        <div className="text-[10px] sm:text-xs text-gray-500 dark:text-[#949BA4] w-20 text-right">
+                          {formatDistance(
+                            new Date(game.createdAt),
+                            new Date(),
+                            {
+                              addSuffix: true,
+                              locale: ja,
+                            },
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@
 import { Clock, Copy, Edit2, Power, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useOptimistic, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -45,9 +45,7 @@ export function JihouMessage({
   const [isEditing, setIsEditing] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [optimisticActive, setOptimisticActive] = useOptimistic(
-    message.isActive,
-  );
+  const [localActive, setLocalActive] = useState(message.isActive);
 
   const handleDelete = () => {
     startTransition(async () => {
@@ -61,26 +59,24 @@ export function JihouMessage({
     });
   };
 
-  const handleToggleActive = () => {
-    const newActive = !optimisticActive;
-    startTransition(async () => {
-      setOptimisticActive(newActive);
-      try {
-        await toggleJihouActive({
-          id: message.id,
-          guildId: message.guildId,
-          userId,
-          channelId,
-          isActive: newActive,
-        });
-        toast.success(
-          newActive ? "時報を有効にしました" : "時報を無効にしました",
-        );
-        router.refresh();
-      } catch {
-        toast.error("更新中にエラーが発生しました");
-      }
-    });
+  const handleToggleActive = async () => {
+    const newActive = !localActive;
+    setLocalActive(newActive);
+    try {
+      await toggleJihouActive({
+        id: message.id,
+        guildId: message.guildId,
+        userId,
+        channelId,
+        isActive: newActive,
+      });
+      toast.success(
+        newActive ? "時報を有効にしました" : "時報を無効にしました",
+      );
+    } catch {
+      setLocalActive(!newActive);
+      toast.error("更新中にエラーが発生しました");
+    }
   };
 
   const handleCopyId = () => {
@@ -106,7 +102,7 @@ export function JihouMessage({
       className={cn(
         "group relative flex gap-4 px-4 py-2 transition-colors",
         "hover:bg-gray-100/50 dark:hover:bg-[#2e3035]",
-        !optimisticActive && "opacity-60",
+        !localActive && "opacity-60",
         isPending && "pointer-events-none",
       )}
       onMouseEnter={() => setIsHovered(true)}
@@ -144,14 +140,14 @@ export function JihouMessage({
             disabled={isPending}
             className={cn(
               "text-xs px-2 py-0.5 rounded-full font-medium flex items-center gap-1 transition-colors cursor-pointer",
-              optimisticActive
+              localActive
                 ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50"
                 : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50",
               isPending && "opacity-50",
             )}
           >
             <Power className="w-3 h-3" />
-            {optimisticActive ? "有効" : "無効"}
+            {localActive ? "有効" : "無効"}
           </button>
         </div>
 

@@ -14,7 +14,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { auth } from "@/lib/auth";
-import { signInAction } from "./actions";
 import LogoutButton from "./logout-button";
 
 export default async function SessionMenu() {
@@ -25,16 +24,11 @@ export default async function SessionMenu() {
       <TooltipProvider>
         <Tooltip delayDuration={50}>
           <TooltipTrigger asChild>
-            <form action={signInAction} className="w-full flex justify-center">
-              <button
-                type="submit"
-                className="relative flex items-center justify-center w-full group focus:outline-hidden"
-              >
-                <div className="relative flex items-center justify-center w-12 h-12 transition-all duration-200 mx-auto overflow-hidden rounded-[24px] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 group-hover:rounded-[16px] group-hover:bg-indigo-500 group-hover:text-white shadow-sm dark:shadow-none">
-                  <LogIn className="w-6 h-6 text-green-300" />
-                </div>
-              </button>
-            </form>
+            <Link href={"/login"}>
+              <div className="relative flex items-center justify-center w-12 h-12 transition-all duration-200 mx-auto overflow-hidden rounded-[24px] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 group-hover:rounded-[16px] group-hover:bg-indigo-500 group-hover:text-white shadow-sm dark:shadow-none">
+                <LogIn className="w-6 h-6 text-green-300" />
+              </div>
+            </Link>
           </TooltipTrigger>
           <TooltipContent side="right" className="font-semibold z-50">
             ログイン
