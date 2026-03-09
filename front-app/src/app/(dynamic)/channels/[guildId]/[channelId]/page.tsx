@@ -57,7 +57,7 @@ export default async function ChannelPage({ params }: ChannelPageProps) {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-3rem)] md:h-full bg-white dark:bg-[#313338]">
+    <div className="flex flex-col h-[calc(100dvh-3rem)] md:h-dvh bg-white dark:bg-[#313338]">
       <ChannelNameUpdater name={channelName} />
       {/* チャンネルヘッダー (PCのみ表示、モバイルはNavigationShellで処理) */}
       <header className="hidden md:flex h-12 items-center px-4 border-b border-gray-200 dark:border-gray-800 shadow-sm shrink-0">
