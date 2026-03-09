@@ -1,5 +1,4 @@
 import {
-  Clock,
   FileText,
   Gamepad2,
   Home,
@@ -11,6 +10,7 @@ import {
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { UserList } from "./user-list";
 
 export async function HomeSidebar() {
   const session = await auth();
@@ -31,14 +31,12 @@ export async function HomeSidebar() {
 
   const loggedInItems = isLoggedIn
     ? [
-        { id: "schedule", name: "時報設定", href: "/schedule", icon: Clock },
         {
           id: "minigame",
           name: "ミニゲーム",
           href: "/minigame",
           icon: Gamepad2,
         },
-        { id: "users", name: "ユーザー", href: "/users", icon: Users },
       ]
     : [];
 
@@ -50,21 +48,45 @@ export async function HomeSidebar() {
           ホーム
         </h2>
       </div>
-      <nav className="flex-1 overflow-y-auto w-full p-2 space-y-[2px]">
-        {homeItems.map((item) => (
-          <Link
-            key={item.id}
-            href={item.href}
-            className={cn(
-              "flex items-center gap-3 px-3 py-2 rounded-md group transition-colors",
-              "text-gray-600 hover:text-gray-900 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:text-gray-100 dark:hover:bg-white/10",
-            )}
-          >
-            <item.icon className="w-5 h-5 opacity-70 group-hover:opacity-100" />
-            <span className="font-semibold text-[15px]">{item.name}</span>
-          </Link>
-        ))}
-      </nav>
+      <div className="flex flex-col flex-1 overflow-hidden">
+        {/* メニューセクション */}
+        <nav className="w-full p-2 space-y-[2px] shrink-0">
+          {homeItems.map((item) => (
+            <Link
+              key={item.id}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2 rounded-md group transition-colors",
+                "text-gray-600 hover:text-gray-900 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:text-gray-100 dark:hover:bg-white/10",
+              )}
+            >
+              <item.icon className="w-5 h-5 opacity-70 group-hover:opacity-100" />
+              <span className="font-semibold text-[15px]">{item.name}</span>
+            </Link>
+          ))}
+        </nav>
+
+        {/* ログイン時のみ: ユーザー一覧セクション */}
+        {isLoggedIn && (
+          <>
+            {/* 水平線セパレーター */}
+            <div className="mx-3 border-t border-gray-200 dark:border-gray-700" />
+
+            {/* ユーザー一覧ヘッダー */}
+            <div className="flex items-center gap-2 px-4 pt-4 pb-1 shrink-0">
+              <Users className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+              <h3 className="my-1 text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                ユーザー一覧
+              </h3>
+            </div>
+
+            {/* スクロール可能なユーザーリスト */}
+            <div className="flex-1 overflow-y-auto px-2 pb-2">
+              <UserList />
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

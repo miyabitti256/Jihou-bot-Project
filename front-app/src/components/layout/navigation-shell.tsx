@@ -86,6 +86,7 @@ export function NavigationShell({
           <SheetContent
             side="left"
             className="p-0 flex border-none bg-transparent shadow-none w-full max-w-full sm:max-w-full [&>button]:right-6 [&>button]:top-4 [&>button]:text-gray-500 [&>button]:z-60"
+            onOpenAutoFocus={(e) => e.preventDefault()}
           >
             <SheetTitle className="sr-only">ナビゲーションメニュー</SheetTitle>
             <SheetDescription className="sr-only">
@@ -106,7 +107,7 @@ export function NavigationShell({
             </div>
           </SheetContent>
 
-          <div className="flex-1 flex flex-col overflow-y-auto w-full">
+          <div className="flex-1 flex flex-col overflow-hidden w-full">
             {/* Mobile Header (Now inside NavigationShell to share Sheet context) */}
             <header className="flex h-12 items-center px-4 border-b border-gray-200 dark:border-gray-800 shadow-sm shrink-0">
               <div className="flex items-center mr-2">
@@ -141,7 +142,7 @@ export function NavigationShell({
               )}
             </header>
 
-            <div className="flex-1 overflow-y-auto">{children}</div>
+            <div className="flex-1 overflow-y-auto min-h-0">{children}</div>
           </div>
         </div>
       </Sheet>
@@ -159,7 +160,9 @@ export function NavigationShell({
           {sidebar}
         </div>
       )}
-      <div className="flex-1 flex flex-col overflow-y-auto">{children}</div>
+      <div className="flex-1 flex flex-col overflow-y-auto min-h-0">
+        {children}
+      </div>
     </div>
   );
 }

@@ -1,77 +1,81 @@
+import Image from "next/image";
 import { FaDiscord } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { signIn } from "@/lib/auth";
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4">
-      <Card className="mx-auto max-w-sm w-full text-center">
-        <CardHeader>
-          <div className="flex justify-center mb-4">
-            <FaDiscord className="h-12 w-12 text-[#5865F2]" />
+    <div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center p-4 overflow-hidden">
+      {/* Background styling similar to Discord's login page artwork/pattern */}
+      <div className="absolute inset-0 bg-[#313338] -z-20 hidden dark:block" />
+      <div className="absolute inset-0 bg-white -z-20 dark:hidden" />
+      <div className="absolute inset-0 bg-[url('/images/discord-pattern.png')] opacity-5 -z-10" />
+
+      <div className="mx-auto w-full max-w-md bg-white dark:bg-[#313338] rounded-lg shadow-2xl p-8 border border-gray-200 dark:border-white/5 text-center">
+        <div className="flex flex-col items-center justify-center mb-8">
+          <div className="w-20 h-20 relative mb-4">
+            <Image
+              src="/images/clock-2.png"
+              alt="Jihou Bot Logo"
+              fill
+              className="object-contain"
+            />
           </div>
-          <CardTitle className="text-2xl font-bold tracking-tight">
-            Jihou Bot
-          </CardTitle>
-          <CardDescription>
-            ダッシュボードを利用するにはDiscordアカウントでログインしてください。
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form
-            action={async () => {
-              "use server";
-              try {
-                await signIn("discord", { redirectTo: "/dashboard" });
-              } catch (error) {
-                if (
-                  error instanceof Error &&
-                  error.message.includes("NEXT_REDIRECT")
-                ) {
-                  throw error;
-                }
-                // biome-ignore lint/suspicious/noConsole: ログインエラーはコンソールに出力する
-                console.error("Sign in error:", error);
+          <h1 className="text-2xl font-bold text-[#060607] dark:text-white tracking-tight">
+            ダッシュボードへようこそ
+          </h1>
+          <p className="text-[#4E5058] dark:text-[#B5BAC1] mt-2 text-sm">
+            ダッシュボードを利用するには、Discordアカウントでログインが必要です。
+          </p>
+        </div>
+
+        <form
+          action={async () => {
+            "use server";
+            try {
+              await signIn("discord", { redirectTo: "/dashboard" });
+            } catch (error) {
+              if (
+                error instanceof Error &&
+                error.message.includes("NEXT_REDIRECT")
+              ) {
+                throw error;
               }
-            }}
+              // biome-ignore lint/suspicious/noConsole: ログインエラーはコンソールに出力する
+              console.error("Sign in error:", error);
+            }
+          }}
+          className="w-full"
+        >
+          <Button
+            type="submit"
+            className="w-full h-12 bg-[#5865F2] hover:bg-[#4752C4] text-white font-semibold text-lg rounded-md transition-colors"
           >
-            <Button
-              type="submit"
-              className="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white"
-            >
-              <FaDiscord className="w-5 h-5 mr-3" />
-              Discordでログイン
-            </Button>
-          </form>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-2 pb-6">
-          <p className="text-xs text-muted-foreground w-full">
-            当サービスの
+            <FaDiscord className="w-6 h-6 mr-2" />
+            Discordでログイン
+          </Button>
+        </form>
+
+        <div className="mt-8 text-xs text-[#4E5058] dark:text-[#949BA4]">
+          <p>
+            ログインすることで、
             <a
               href="/legal/terms"
-              className="mx-1 underline underline-offset-4 hover:text-primary transition-colors"
+              className="text-[#006CE7] dark:text-[#00A8FC] hover:underline"
             >
               利用規約
             </a>
             および
             <a
               href="/legal/privacy-policy"
-              className="mx-1 underline underline-offset-4 hover:text-primary transition-colors"
+              className="text-[#006CE7] dark:text-[#00A8FC] hover:underline"
             >
               プライバシーポリシー
             </a>
-            に同意してログインします。
+            に同意したものとみなされます。
           </p>
-        </CardFooter>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
