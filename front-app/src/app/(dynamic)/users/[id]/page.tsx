@@ -13,8 +13,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { getGuild } from "@/lib/api/guilds";
+import { getUser } from "@/lib/api/users";
 import { auth } from "@/lib/auth";
-import { createApiClient } from "@/lib/rpc-client";
 
 export default async function UserDetailPage({
   params,
@@ -32,21 +33,16 @@ export default async function UserDetailPage({
     redirect("/dashboard");
   }
 
-  const client = await createApiClient();
+  const userData = await getUser(id, [
+    "scheduledmessage",
+    "omikuji",
+    "coinflip",
+    "janken",
+  ]);
 
-  const userResponse = await client.api.users[":userId"].$get({
-    param: { userId: id },
-    query: { includes: ["scheduledmessage", "omikuji", "coinflip", "janken"] },
-  });
-
-  if (!userResponse.ok) {
-    if (userResponse.status === 404) {
-      return notFound();
-    }
-    throw new Error("ユーザーデータの取得に失敗しました");
+  if (!userData) {
+    return notFound();
   }
-
-  const userData = await userResponse.json();
 
   if (!userData.data) {
     return notFound();
@@ -119,24 +115,6 @@ export default async function UserDetailPage({
     </span>
   );
 
-  const getGuildData = async (guildId: string) => {
-    const res = await client.api.guilds[":guildId"].$get({
-      param: { guildId },
-      query: { includes: ["channels"] },
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  };
-
-  const getUserData = async (userId: string) => {
-    const res = await client.api.users[":userId"].$get({
-      param: { userId },
-      query: {},
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  };
-
   return (
     <div className="p-4 md:p-8 space-y-4 md:space-y-6">
       <div className="flex items-center space-x-4">
@@ -200,7 +178,9 @@ export default async function UserDetailPage({
                       </TableRow>
                     ) : (
                       scheduledMessages.map(async (message) => {
-                        const guildData = await getGuildData(message.guildId);
+                        const guildData = await getGuild(message.guildId, [
+                          "channels",
+                        ]);
                         if (!guildData) {
                           return (
                             <TableRow key={message.id}>
@@ -539,7 +519,7 @@ export default async function UserDetailPage({
                         const myBet = isChallenger
                           ? (game.challengerBet ?? 0)
                           : (game.opponentBet ?? 0);
-                        const opponent = await getUserData(opponentId);
+                        const opponent = await getUser(opponentId);
                         if (!opponent) {
                           return (
                             <TableRow key={game.id}>

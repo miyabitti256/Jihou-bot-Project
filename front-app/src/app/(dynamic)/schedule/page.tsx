@@ -24,8 +24,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { getGuild, getGuildMembers } from "@/lib/api/guilds";
 import { auth } from "@/lib/auth";
-import { createApiClient } from "@/lib/rpc-client";
 import DeleteButton from "./_components/delete-button";
 
 export default async function SchedulePage() {
@@ -34,23 +34,13 @@ export default async function SchedulePage() {
     return null; // proxy.ts will catch this
   }
 
-  const client = await createApiClient();
-
-  const memberRes = await client.api.guilds.members[":userId"].$get({
-    param: { userId: session.user.id },
-  });
-  if (!memberRes.ok) {
+  const memberData = await getGuildMembers(session.user.id);
+  if (!memberData) {
     throw new Error("メンバー情報の取得に失敗しました");
   }
-  const memberJson = await memberRes.json();
-  const memberData = memberJson.data;
 
-  const guildPromises = memberData.map(async (member) => {
-    const res = await client.api.guilds[":guildId"].$get({
-      param: { guildId: member.guildId },
-      query: { includes: ["roles", "channels", "messages"] },
-    });
-    return res.json();
+  const guildPromises = memberData.data.map(async (member) => {
+    return await getGuild(member.guildId, ["roles", "channels", "messages"]);
   });
 
   const guildsData = await Promise.all(guildPromises);
@@ -61,7 +51,7 @@ export default async function SchedulePage() {
         <h1 className="text-3xl font-bold">時報設定</h1>
       </div>
       {guildsData.map((guild) => {
-        if ("error" in guild) return null;
+        if (!guild || "error" in guild) return null;
         const guildInfo = guild;
         return (
           <Card key={guildInfo.data.id} className="mb-8">

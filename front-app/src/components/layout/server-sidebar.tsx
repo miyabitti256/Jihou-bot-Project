@@ -1,16 +1,8 @@
 "use client";
 
-import { Menu } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 import {
   Tooltip,
   TooltipContent,
@@ -35,23 +27,6 @@ interface ServerSidebarProps {
 
 export function ServerSidebar({ items, bottomContent }: ServerSidebarProps) {
   const pathname = usePathname();
-  const [isMobile, setIsMobile] = useState(false);
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    const checkIsMobile = () => setIsMobile(window.innerWidth < 768);
-    checkIsMobile();
-    window.addEventListener("resize", checkIsMobile);
-    return () => window.removeEventListener("resize", checkIsMobile);
-  }, []);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: パス変更時にのみ実行したいため
-  useEffect(() => {
-    setOpen(false); // パス変更時にドロワーを閉じる
-  }, [pathname]);
-
-  // Root path handling
-  const currentPath = `/${pathname.split("/")[1]}`;
 
   const SidebarContent = () => (
     <div className="flex-1 w-full flex flex-col items-center gap-2 overflow-y-auto no-scrollbar py-3">
@@ -67,9 +42,21 @@ export function ServerSidebar({ items, bottomContent }: ServerSidebarProps) {
               );
             }
 
+            // ホームアイコンの場合は、/ 以下だけでなく関連する静的パスでもアクティブにする
+            const isStaticHomeRoute =
+              item.href === "/" &&
+              (pathname === "/" ||
+                pathname === "/about" ||
+                pathname === "/contact" ||
+                pathname === "/legal/terms" ||
+                pathname === "/legal/privacy-policy" ||
+                pathname === "/schedule" ||
+                pathname === "/minigame" ||
+                pathname === "/users");
+
             const isActive =
-              currentPath === item.href ||
-              (item.href !== "/" && currentPath.startsWith(item.href));
+              isStaticHomeRoute ||
+              (item.href !== "/" && pathname.startsWith(item.href));
 
             return (
               <div
@@ -107,6 +94,7 @@ export function ServerSidebar({ items, bottomContent }: ServerSidebarProps) {
                               src={item.iconUrl}
                               alt={item.name}
                               fill
+                              sizes="48px"
                               className="object-cover"
                             />
                           </div>
@@ -137,32 +125,8 @@ export function ServerSidebar({ items, bottomContent }: ServerSidebarProps) {
     </div>
   );
 
-  if (isMobile) {
-    return (
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <button
-            type="button"
-            className="fixed top-4 left-4 z-50 p-2 bg-gray-900 text-white rounded-full shadow-md md:hidden hover:bg-gray-800 transition-colors"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-        </SheetTrigger>
-        <SheetContent
-          side="left"
-          className="p-0 w-[72px] border-r-0 bg-transparent shadow-none"
-        >
-          <SheetTitle className="sr-only">ナビゲーションメニュー</SheetTitle>
-          <div className="h-full bg-gray-100 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 rounded-r-3xl overflow-hidden shadow-2xl">
-            <SidebarContent />
-          </div>
-        </SheetContent>
-      </Sheet>
-    );
-  }
-
   return (
-    <nav className="hidden md:flex h-screen w-[72px] shrink-0 z-50 bg-gray-100 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex-col items-center transition-colors">
+    <nav className="flex h-screen w-full flex-col items-center py-3 bg-gray-100 dark:bg-gray-900 border-none transition-colors">
       <SidebarContent />
     </nav>
   );

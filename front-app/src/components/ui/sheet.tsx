@@ -24,6 +24,12 @@ const SheetOverlay = React.forwardRef<
       "fixed inset-0 z-50 bg-black/80  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className,
     )}
+    style={
+      {
+        ...props.style,
+        viewTransitionName: "mobile-overlay",
+      } as React.CSSProperties
+    }
     {...props}
     ref={ref}
   />
@@ -62,6 +68,12 @@ const SheetContent = React.forwardRef<
     <SheetPrimitive.Content
       ref={ref}
       className={cn(sheetVariants({ side }), className)}
+      style={
+        {
+          ...props.style,
+          viewTransitionName: "mobile-drawer",
+        } as React.CSSProperties
+      }
       {...props}
     >
       {children}
@@ -128,13 +140,13 @@ SheetDescription.displayName = SheetPrimitive.Description.displayName;
 
 export {
   Sheet,
-  SheetPortal,
-  SheetOverlay,
-  SheetTrigger,
   SheetClose,
   SheetContent,
-  SheetHeader,
-  SheetFooter,
-  SheetTitle,
   SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetOverlay,
+  SheetPortal,
+  SheetTitle,
+  SheetTrigger,
 };

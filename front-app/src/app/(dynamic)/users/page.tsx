@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { FaUser } from "react-icons/fa";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
+import { getGuildUsers } from "@/lib/api/users";
 import { auth } from "@/lib/auth";
-import { createApiClient } from "@/lib/rpc-client";
 import UsersPagination from "./_components/users-pagination";
 import UsersSearchForm from "./_components/users-search-form";
 
@@ -23,25 +23,16 @@ export default async function UsersPage({
   const pageNumber = Number(page) || 1;
   const itemsPerPage = 12;
 
-  const client = await createApiClient();
-
-  const res = await client.api.users.guilds[":userId"].$get({
-    param: { userId: session.user.id },
-    query: {
-      page: pageNumber.toString(),
-      limit: itemsPerPage.toString(),
-      ...(search ? { search } : {}),
-    },
+  const data = await getGuildUsers(session.user.id, {
+    page: pageNumber.toString(),
+    limit: itemsPerPage.toString(),
+    ...(search ? { search } : {}),
   });
 
-  if (!res.ok) {
-    if (res.status === 404) {
-      return notFound();
-    }
-    throw new Error("ユーザー一覧の取得に失敗しました");
+  if (!data) {
+    return notFound();
   }
 
-  const data = await res.json();
   const { users, total } = data.data;
   const totalPages = Math.ceil(total / itemsPerPage);
 

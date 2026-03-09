@@ -29,7 +29,18 @@ export default function LoginPage() {
           <form
             action={async () => {
               "use server";
-              await signIn("discord", { redirectTo: "/dashboard" });
+              try {
+                await signIn("discord", { redirectTo: "/dashboard" });
+              } catch (error) {
+                if (
+                  error instanceof Error &&
+                  error.message.includes("NEXT_REDIRECT")
+                ) {
+                  throw error;
+                }
+                // biome-ignore lint/suspicious/noConsole: ログインエラーはコンソールに出力する
+                console.error("Sign in error:", error);
+              }
             }}
           >
             <Button

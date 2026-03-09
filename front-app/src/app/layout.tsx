@@ -1,7 +1,11 @@
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { M_PLUS_Rounded_1c } from "next/font/google";
+import { ViewTransition } from "react";
 import GlobalSidebar from "@/components/layout/global-sidebar";
+import { NavigationShell } from "@/components/layout/navigation-shell";
+import { ChannelProvider } from "@/components/provider/channel-context";
+
 import { Toaster } from "@/components/ui/sonner";
 import { env } from "@/lib/env";
 import { ThemeProvider } from "@/provider/theme-provider";
@@ -20,20 +24,24 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
+  sidebar,
 }: Readonly<{
   children: React.ReactNode;
+  sidebar: React.ReactNode;
 }>) {
   return (
     <html lang="ja" suppressHydrationWarning>
       <body className={`${m_plus_rounded_1c.className} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <Toaster position="top-center" />
-          <div className="flex h-screen overflow-hidden bg-background">
-            <GlobalSidebar />
-            <div className="flex-1 flex flex-col overflow-y-auto">
+          <Toaster position="bottom-right" />
+          <ChannelProvider>
+            <NavigationShell
+              globalSidebar={<GlobalSidebar />}
+              sidebar={<ViewTransition>{sidebar}</ViewTransition>}
+            >
               {children}
-            </div>
-          </div>
+            </NavigationShell>
+          </ChannelProvider>
         </ThemeProvider>
         {env.NODE_ENV === "production" && <Analytics />}
       </body>

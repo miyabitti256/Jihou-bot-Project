@@ -120,3 +120,31 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* View Transitions API - ページ遷移クロスフェードアニメーション */
+@keyframes viewFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes viewFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+::view-transition-old(root) {
+  animation: viewFadeOut 0.15s ease-in-out;
+}
+
+::view-transition-new(root) {
+  animation: viewFadeIn 0.2s ease-in-out;
+}
+
+/* モバイルドロワーがページ遷移アニメーション時に背面に回らないようにするためのz-index設定 */
+::view-transition-group(mobile-overlay) {
+  z-index: 999;
+}
+
+::view-transition-group(mobile-drawer) {
+  z-index: 1000;
+}

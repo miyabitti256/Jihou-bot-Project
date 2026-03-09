@@ -1,5 +1,5 @@
+import { getGuild, getScheduleDetails } from "@/lib/api/guilds";
 import { auth } from "@/lib/auth";
-import { createApiClient } from "@/lib/rpc-client";
 import { ScheduleForm } from "./_components/schedule-form";
 
 export default async function SchedulePage({
@@ -18,20 +18,15 @@ export default async function SchedulePage({
   const query = await searchParams;
   const isNew = id === "new";
 
-  const client = await createApiClient();
-
   let scheduleData = null;
   let guildId: string | null = null;
 
   if (!isNew) {
-    const res = await client.api.guilds.scheduledmessage.details[":id"].$get({
-      param: { id },
-    });
-    if (!res.ok) {
+    const scheduleResult = await getScheduleDetails(id);
+    if (!scheduleResult) {
       throw new Error("Failed to fetch schedule details");
     }
-    const json = await res.json();
-    scheduleData = json.data;
+    scheduleData = scheduleResult.data;
     guildId = scheduleData.guildId;
   } else {
     guildId = query.guildId;
@@ -41,16 +36,12 @@ export default async function SchedulePage({
   let channelData = null;
 
   if (guildId) {
-    const res = await client.api.guilds[":guildId"].$get({
-      param: { guildId },
-      query: { includes: ["channels"] },
-    });
-    if (!res.ok) {
+    const guildResult = await getGuild(guildId, ["channels"]);
+    if (!guildResult) {
       throw new Error("Failed to fetch guild data");
     }
-    const json = await res.json();
-    guildData = json.data;
-    channelData = json.data.guildChannels.filter(
+    guildData = guildResult.data;
+    channelData = guildResult.data.guildChannels.filter(
       (channel) => channel.type === "0",
     );
   }

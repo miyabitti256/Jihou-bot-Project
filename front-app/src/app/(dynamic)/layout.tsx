@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import Footer from "@/components/layout/footer";
 import { auth } from "@/lib/auth";
 
 export default async function DynamicLayout({
@@ -12,10 +11,5 @@ export default async function DynamicLayout({
     redirect("/login");
   }
 
-  return (
-    <>
-      <main className="flex-1">{children}</main>
-      <Footer />
-    </>
-  );
+  return <main className="flex-1">{children}</main>;
 }

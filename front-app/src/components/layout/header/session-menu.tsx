@@ -31,7 +31,7 @@ export default async function SessionMenu() {
                 className="relative flex items-center justify-center w-full group focus:outline-hidden"
               >
                 <div className="relative flex items-center justify-center w-12 h-12 transition-all duration-200 mx-auto overflow-hidden rounded-[24px] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 group-hover:rounded-[16px] group-hover:bg-indigo-500 group-hover:text-white shadow-sm dark:shadow-none">
-                  <LogIn className="w-6 h-6" />
+                  <LogIn className="w-6 h-6 text-green-300" />
                 </div>
               </button>
             </form>

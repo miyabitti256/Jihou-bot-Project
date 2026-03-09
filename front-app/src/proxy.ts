@@ -7,6 +7,12 @@ export const proxy = auth((req) => {
   if (!isLoggedIn) {
     return NextResponse.redirect(new URL("/unauthorized", req.url));
   }
+
+  // サーバーコンポーネントから現在のパスを取得できるように
+  // x-pathname ヘッダーを付与する
+  const response = NextResponse.next();
+  response.headers.set("x-pathname", req.nextUrl.pathname);
+  return response;
 });
 
 export const config = {
