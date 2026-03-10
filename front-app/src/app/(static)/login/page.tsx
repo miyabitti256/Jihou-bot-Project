@@ -1,9 +1,14 @@
 import Image from "next/image";
+import { redirect } from "next/navigation";
 import { FaDiscord } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
-import { signIn } from "@/lib/auth";
+import { auth, signIn } from "@/lib/auth";
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const session = await auth();
+  if (session) {
+    redirect("/dashboard");
+  }
   return (
     <div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center p-4 overflow-hidden">
       {/* Background styling similar to Discord's login page artwork/pattern */}
