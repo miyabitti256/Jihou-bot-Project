@@ -1,4 +1,4 @@
-import { unstable_cache } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { auth } from "@/lib/auth";
 import { createApiClient } from "@/lib/rpc-client";
 
@@ -14,23 +14,23 @@ import { createApiClient } from "@/lib/rpc-client";
  * 2. 内側の関数（例: `_getGuild`）は `unstable_cache` でラップし、外から渡された callerId を引数として受け取る。
  * 3. `createApiClient(callerId)` により、キャッシュ化されたスコープ内で依存なく認証済みクライアントを生成する。
  */
-const _getGuild = unstable_cache(
-  async (
-    guildId: string,
-    callerId: string,
-    includes?: ("roles" | "channels" | "messages" | "members")[],
-  ) => {
-    const client = await createApiClient(callerId);
-    const res = await client.api.guilds[":guildId"].$get({
-      param: { guildId },
-      query: includes ? { includes } : {},
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  },
-  ["guild-info"],
-  { revalidate: 60, tags: ["guild-info"] },
-);
+async function _getGuild(
+  guildId: string,
+  callerId: string,
+  includes?: ("roles" | "channels" | "messages" | "members")[],
+) {
+  "use cache";
+  cacheLife({ revalidate: 30 });
+  cacheTag("guild-info");
+
+  const client = await createApiClient(callerId);
+  const res = await client.api.guilds[":guildId"].$get({
+    param: { guildId },
+    query: includes ? { includes } : {},
+  });
+  if (!res.ok) return null;
+  return await res.json();
+}
 
 export const getGuild = async (
   guildId: string,
@@ -44,18 +44,18 @@ export const getGuild = async (
 /**
  * Discord ギルド情報を取得する
  */
-const _getGuildDiscord = unstable_cache(
-  async (guildId: string, callerId: string) => {
-    const client = await createApiClient(callerId);
-    const res = await client.api.guilds[":guildId"].discord.$get({
-      param: { guildId },
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  },
-  ["guild-discord-info"],
-  { revalidate: 60, tags: ["guild-discord-info"] },
-);
+async function _getGuildDiscord(guildId: string, callerId: string) {
+  "use cache";
+  cacheLife({ revalidate: 30 });
+  cacheTag("guild-discord-info");
+
+  const client = await createApiClient(callerId);
+  const res = await client.api.guilds[":guildId"].discord.$get({
+    param: { guildId },
+  });
+  if (!res.ok) return null;
+  return await res.json();
+}
 
 export const getGuildDiscord = async (guildId: string) => {
   const session = await auth();
@@ -66,18 +66,18 @@ export const getGuildDiscord = async (guildId: string) => {
 /**
  * ユーザーの所属ギルド一覧を取得する
  */
-const _getGuildMembers = unstable_cache(
-  async (userId: string, callerId: string) => {
-    const client = await createApiClient(callerId);
-    const res = await client.api.guilds.members[":userId"].$get({
-      param: { userId },
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  },
-  ["user-guilds"],
-  { revalidate: 60, tags: ["user-guilds"] },
-);
+async function _getGuildMembers(userId: string, callerId: string) {
+  "use cache";
+  cacheLife({ revalidate: 30 });
+  cacheTag("user-guilds");
+
+  const client = await createApiClient(callerId);
+  const res = await client.api.guilds.members[":userId"].$get({
+    param: { userId },
+  });
+  if (!res.ok) return null;
+  return await res.json();
+}
 
 export const getGuildMembers = async (userId: string) => {
   const session = await auth();
@@ -88,18 +88,18 @@ export const getGuildMembers = async (userId: string) => {
 /**
  * ギルドのチャンネル一覧を取得する
  */
-const _getGuildChannels = unstable_cache(
-  async (guildId: string, callerId: string) => {
-    const client = await createApiClient(callerId);
-    const res = await client.api.guilds[":guildId"].channels.$get({
-      param: { guildId },
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  },
-  ["guild-channels"],
-  { revalidate: 60, tags: ["guild-channels"] },
-);
+async function _getGuildChannels(guildId: string, callerId: string) {
+  "use cache";
+  cacheLife({ revalidate: 30 });
+  cacheTag("guild-channels");
+
+  const client = await createApiClient(callerId);
+  const res = await client.api.guilds[":guildId"].channels.$get({
+    param: { guildId },
+  });
+  if (!res.ok) return null;
+  return await res.json();
+}
 
 export const getGuildChannels = async (guildId: string) => {
   const session = await auth();
@@ -110,18 +110,18 @@ export const getGuildChannels = async (guildId: string) => {
 /**
  * スケジュール詳細を取得する
  */
-const _getScheduleDetails = unstable_cache(
-  async (id: string, callerId: string) => {
-    const client = await createApiClient(callerId);
-    const res = await client.api.guilds.scheduledmessage.details[":id"].$get({
-      param: { id },
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  },
-  ["schedule-details"],
-  { revalidate: 60, tags: ["schedule-details"] },
-);
+async function _getScheduleDetails(id: string, callerId: string) {
+  "use cache";
+  cacheLife({ revalidate: 30 });
+  cacheTag("schedule-details");
+
+  const client = await createApiClient(callerId);
+  const res = await client.api.guilds.scheduledmessage.details[":id"].$get({
+    param: { id },
+  });
+  if (!res.ok) return null;
+  return await res.json();
+}
 
 export const getScheduleDetails = async (id: string) => {
   const session = await auth();

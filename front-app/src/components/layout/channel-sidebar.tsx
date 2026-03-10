@@ -1,5 +1,7 @@
 import { Hash } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getGuildChannels, getGuildDiscord } from "@/lib/api/guilds";
 import { cn } from "@/lib/utils";
 
@@ -7,7 +9,7 @@ interface ChannelSidebarProps {
   guildId: string;
 }
 
-export async function ChannelSidebar({ guildId }: ChannelSidebarProps) {
+async function ChannelSidebarContent({ guildId }: ChannelSidebarProps) {
   let serverName = `サーバー ${guildId}`;
   let channels: { id: string; name: string }[] = [];
 
@@ -69,5 +71,44 @@ export async function ChannelSidebar({ guildId }: ChannelSidebarProps) {
         </div>
       </nav>
     </div>
+  );
+}
+
+function ChannelSidebarSkeleton() {
+  return (
+    <div className="flex w-full h-full flex-col bg-gray-50 dark:bg-[#2b2d31]">
+      <div className="flex h-12 items-center px-4 border-b border-gray-200 dark:border-gray-800 shadow-sm shadow-gray-200/50 dark:shadow-none">
+        <Skeleton className="w-24 h-4 rounded" />
+      </div>
+      <nav className="flex-1 overflow-y-auto w-full p-2">
+        <div className="px-2 pt-4 pb-1">
+          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            テキストチャンネル
+          </h3>
+        </div>
+        <div className="space-y-[2px]">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
+              key={i}
+              className="flex items-center gap-2 px-2 py-1.5"
+            >
+              <Hash className="w-5 h-5 opacity-30 text-gray-400 dark:text-gray-500 shrink-0" />
+              <div className="flex-1 flex items-center h-[22.5px] py-[3.25px]">
+                <Skeleton className="h-4 w-32 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </nav>
+    </div>
+  );
+}
+
+export async function ChannelSidebar({ guildId }: ChannelSidebarProps) {
+  return (
+    <Suspense fallback={<ChannelSidebarSkeleton />}>
+      <ChannelSidebarContent guildId={guildId} />
+    </Suspense>
   );
 }

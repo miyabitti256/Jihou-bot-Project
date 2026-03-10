@@ -1,27 +1,27 @@
-import { unstable_cache } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { auth } from "@/lib/auth";
 import { createApiClient } from "@/lib/rpc-client";
 
 /**
  * ユーザー情報を取得する
  */
-const _getUser = unstable_cache(
-  async (
-    userId: string,
-    callerId: string,
-    includes?: ("scheduledmessage" | "omikuji" | "coinflip" | "janken")[],
-  ) => {
-    const client = await createApiClient(callerId);
-    const res = await client.api.users[":userId"].$get({
-      param: { userId },
-      query: includes ? { includes } : {},
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  },
-  ["user-info"],
-  { revalidate: 60, tags: ["user-info"] },
-);
+async function _getUser(
+  userId: string,
+  callerId: string,
+  includes?: ("scheduledmessage" | "omikuji" | "coinflip" | "janken")[],
+) {
+  "use cache";
+  cacheLife({ revalidate: 60 });
+  cacheTag("user-info");
+
+  const client = await createApiClient(callerId);
+  const res = await client.api.users[":userId"].$get({
+    param: { userId },
+    query: includes ? { includes } : {},
+  });
+  if (!res.ok) return null;
+  return await res.json();
+}
 
 export const getUser = async (
   userId: string,
@@ -35,23 +35,23 @@ export const getUser = async (
 /**
  * 共有ギルドのユーザー一覧を取得する
  */
-const _getGuildUsers = unstable_cache(
-  async (
-    userId: string,
-    callerId: string,
-    query?: { page?: string; limit?: string; search?: string },
-  ) => {
-    const client = await createApiClient(callerId);
-    const res = await client.api.users.guilds[":userId"].$get({
-      param: { userId },
-      query: query ?? {},
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  },
-  ["guild-users"],
-  { revalidate: 60, tags: ["guild-users"] },
-);
+async function _getGuildUsers(
+  userId: string,
+  callerId: string,
+  query?: { page?: string; limit?: string; search?: string },
+) {
+  "use cache";
+  cacheLife({ revalidate: 60 });
+  cacheTag("guild-users");
+
+  const client = await createApiClient(callerId);
+  const res = await client.api.users.guilds[":userId"].$get({
+    param: { userId },
+    query: query ?? {},
+  });
+  if (!res.ok) return null;
+  return await res.json();
+}
 
 export const getGuildUsers = async (
   userId: string,

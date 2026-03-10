@@ -1,7 +1,7 @@
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { M_PLUS_Rounded_1c } from "next/font/google";
-import { ViewTransition } from "react";
+import { Suspense, ViewTransition } from "react";
 import GlobalSidebar from "@/components/layout/global-sidebar";
 import { NavigationShell } from "@/components/layout/navigation-shell";
 import { ChannelProvider } from "@/components/provider/channel-context";
@@ -35,12 +35,14 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Toaster position="bottom-right" />
           <ChannelProvider>
-            <NavigationShell
-              globalSidebar={<GlobalSidebar />}
-              sidebar={<ViewTransition>{sidebar}</ViewTransition>}
-            >
-              {children}
-            </NavigationShell>
+            <Suspense fallback={null}>
+              <NavigationShell
+                globalSidebar={<GlobalSidebar />}
+                sidebar={<ViewTransition>{sidebar}</ViewTransition>}
+              >
+                {children}
+              </NavigationShell>
+            </Suspense>
           </ChannelProvider>
         </ThemeProvider>
         {env.NODE_ENV === "production" && <Analytics />}

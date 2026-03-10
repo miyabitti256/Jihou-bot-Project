@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
+const currentYear = new Date().getFullYear();
+
 export default function Footer() {
   return (
     <footer className="w-full bg-[#F2F3F5] dark:bg-[#1E1F22] border-t border-gray-200 dark:border-white/5 transition-colors">
@@ -42,7 +44,7 @@ export default function Footer() {
 
         <div className="mt-12 pt-8 border-t border-[#E3E5E8] dark:border-[#2B2D31] flex justify-between items-center flex-col md:flex-row gap-4">
           <p className="text-sm font-medium text-[#4E5058] dark:text-[#949BA4]">
-            © {new Date().getFullYear()} miyabitti. All rights reserved.
+            © {currentYear} miyabitti. All rights reserved.
           </p>
         </div>
       </div>

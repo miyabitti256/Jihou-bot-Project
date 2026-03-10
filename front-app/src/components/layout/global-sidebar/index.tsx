@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import {
   type ServerIconItem,
   ServerSidebar,
@@ -7,7 +8,7 @@ import { auth } from "@/lib/auth";
 import SessionMenu from "./session-menu";
 import ToggleTheme from "./toggle-theme";
 
-export default async function GlobalSidebar() {
+async function GlobalSidebarContent() {
   const session = await auth();
 
   let guildItems: ServerIconItem[] = [];
@@ -67,5 +68,74 @@ export default async function GlobalSidebar() {
         </>
       }
     />
+  );
+}
+
+function GlobalSidebarSkeleton() {
+  const skeletonItems: ServerIconItem[] = [
+    {
+      id: "home",
+      name: "ホーム",
+      href: "/",
+      iconUrl: "/images/clock-2.png",
+    },
+    { id: "sep1", name: "sep", href: "", isSeparator: true },
+    {
+      id: "skel1",
+      name: "読み込み中...",
+      href: "#",
+      icon: (
+        <div className="w-12 h-12 bg-gray-200 dark:bg-gray-800 rounded-[24px] animate-pulse" />
+      ),
+    },
+    {
+      id: "skel2",
+      name: "読み込み中...",
+      href: "#",
+      icon: (
+        <div className="w-12 h-12 bg-gray-200 dark:bg-gray-800 rounded-[24px] animate-pulse" />
+      ),
+    },
+    {
+      id: "skel3",
+      name: "読み込み中...",
+      href: "#",
+      icon: (
+        <div className="w-12 h-12 bg-gray-200 dark:bg-gray-800 rounded-[24px] animate-pulse" />
+      ),
+    },
+    { id: "sep2", name: "sep", href: "", isSeparator: true },
+    {
+      id: "add-bot",
+      name: "時報Botをサーバーに追加",
+      href: "#",
+      icon: (
+        <div className="text-2xl font-light text-green-500 group-hover:text-white transition-colors">
+          +
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <ServerSidebar
+      items={skeletonItems}
+      bottomContent={
+        <>
+          <ToggleTheme />
+          <div className="w-12 h-12 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 animate-pulse" />
+          </div>
+        </>
+      }
+    />
+  );
+}
+
+export default function GlobalSidebar() {
+  return (
+    <Suspense fallback={<GlobalSidebarSkeleton />}>
+      <GlobalSidebarContent />
+    </Suspense>
   );
 }
