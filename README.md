@@ -71,10 +71,23 @@ graph TD
 // rpc-client.ts
 import type { AppType } from "@jihou/shared-types";
 import { hc } from "hono/client";
-import { env } from "./env"; // Zodでバリデーション済みの環境変数
+import { env } from "./env";
+import { getAuthHeaders } from "./auth-api";
 
-export async function createApiClient() {
-  const headers = await getAuthHeaders();
+export async function createApiClient(explicitUserId?: string | null) {
+  let headers: Record<string, string>;
+  if (explicitUserId !== undefined) {
+    headers = {
+      "X-API-Key": env.API_KEY,
+      "Content-Type": "application/json",
+    };
+    if (explicitUserId) {
+      headers["X-User-Id"] = explicitUserId;
+    }
+  } else {
+    headers = await getAuthHeaders();
+  }
+
   return hc<AppType>(env.API_URL, { headers });
 }
 ```
@@ -84,15 +97,28 @@ export async function createApiClient() {
 Server Component / Server Action から RPC クライアントを使うと、パスパラメータ・クエリパラメータ・レスポンスの型がすべて自動推論される。
 
 ```typescript
-// Server Component での使用例
-const client = await createApiClient();
-const res = await client.api.users[":userId"].$get({
-  param: { userId: id },                    // ← パスパラメータも型チェック
-  query: { includes: ["scheduledmessage"] }, // ← クエリも型チェック
-});
-if (!res.ok) throw new Error("...");
-const data = await res.json();  // ← 推論型: { data: { id, username, scheduledMessages_createdUserId[], ... } }
-//                                   手動キャスト不要！
+// Server Component / Server Action での使用パターン
+// 1. 動的関数(auth)はキャッシュの外で呼ぶ
+export const getUserData = async (id: string) => {
+  const session = await auth();
+  const callerId = session?.user?.id || "";
+  return _getUserData(id, callerId);
+};
+
+// 2. キャッシュ層の中で callerId を用いてクライアントを生成
+const _getUserData = unstable_cache(
+  async (userId: string, callerId: string) => {
+    const client = await createApiClient(callerId);
+    const res = await client.api.users[":userId"].$get({
+      param: { userId }, // ← パスパラメータも型チェック
+      query: { includes: ["scheduledmessage"] }, // ← クエリも型チェック
+    });
+    if (!res.ok) throw new Error("...");
+    return await res.json(); // ← 推論型: { data: { id, username, scheduledMessages_createdUserId[], ... } }
+  },
+  ["user-data"],
+  { revalidate: 60, tags: ["user-data"] }
+);
 ```
 
 #### 認証ヘッダー
