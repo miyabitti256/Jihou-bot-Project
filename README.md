@@ -88,37 +88,46 @@ export async function createApiClient(explicitUserId?: string | null) {
     headers = await getAuthHeaders();
   }
 
-  return hc<AppType>(env.API_URL, { headers });
+  const client = hc<AppType>(env.API_URL, {
+    headers,
+  });
+
+  return client;
 }
 ```
 
-#### 型安全な呼び出し
+#### 型安全な呼び出しとキャッシュ制御
 
 Server Component / Server Action から RPC クライアントを使うと、パスパラメータ・クエリパラメータ・レスポンスの型がすべて自動推論される。
+また、Next.js 16 の `"use cache"` ディレクティブと `cacheLife`、`cacheTag` を用いて、関数単位で柔軟なキャッシュ制御を行っている。
+
+キャッシュは、フロントエンドで頻繁にページ遷移すると都度リクエストが飛んでしまい、レートリミットに引っかかってしまう対策として取り入れている。
 
 ```typescript
+import { cacheLife, cacheTag } from "next/cache";
+
 // Server Component / Server Action での使用パターン
-// 1. 動的関数(auth)はキャッシュの外で呼ぶ
+// 1. 動的情報(auth)はキャッシュ対象の外(呼び出し元)で呼ぶ
 export const getUserData = async (id: string) => {
   const session = await auth();
   const callerId = session?.user?.id || "";
   return _getUserData(id, callerId);
 };
 
-// 2. キャッシュ層の中で callerId を用いてクライアントを生成
-const _getUserData = unstable_cache(
-  async (userId: string, callerId: string) => {
-    const client = await createApiClient(callerId);
-    const res = await client.api.users[":userId"].$get({
-      param: { userId }, // ← パスパラメータも型チェック
-      query: { includes: ["scheduledmessage"] }, // ← クエリも型チェック
-    });
-    if (!res.ok) throw new Error("...");
-    return await res.json(); // ← 推論型: { data: { id, username, scheduledMessages_createdUserId[], ... } }
-  },
-  ["user-data"],
-  { revalidate: 60, tags: ["user-data"] }
-);
+// 2. 内部関数で callerId を用いてクライアントを生成し、"use cache" で関数単位のキャッシュを有効化
+async function _getUserData(userId: string, callerId: string) {
+  "use cache";
+  cacheLife({ revalidate: 30 });
+  cacheTag("user-data");
+
+  const client = await createApiClient(callerId);
+  const res = await client.api.users[":userId"].$get({
+    param: { userId }, // ← パスパラメータも型チェック
+    query: { includes: ["scheduledmessage"] }, // ← クエリも型チェック
+  });
+  if (!res.ok) throw new Error("...");
+  return await res.json(); // ← 推論型: { data: { id, username, scheduledMessages_createdUserId[], ... } }
+}
 ```
 
 #### 認証ヘッダー
@@ -128,11 +137,18 @@ const _getUserData = unstable_cache(
 ```typescript
 // auth-api.ts （"use server" スコープ）
 export async function getAuthHeaders(): Promise<Record<string, string>> {
-  const session = await auth();        // NextAuth セッション取得
-  return {
-    "X-API-Key": process.env.API_KEY,  // サーバー環境変数のみ
-    "X-User-Id": session?.user?.id,    // 認証済みユーザーID
+  const session = await auth();
+
+  const headers: Record<string, string> = {
+    "X-API-Key": env.API_KEY,          // env.tsでパース済みの環境変数
+    "Content-Type": "application/json",
   };
+
+  if (session?.user?.id) {
+    headers["X-User-Id"] = session.user.id; // 認証済みユーザーID
+  }
+
+  return headers;
 }
 ```
 
@@ -232,7 +248,9 @@ export function createDatabaseClient(connectionString: string) {
     max: 3,                  // デフォルト10 → 3に削減
     idleTimeoutMillis: 10000 // アイドル接続を早期解放
   });
-  return { db: drizzle(pool, { schema }) };
+  const db = drizzle(pool, { schema: { ...schema, ...relations } });
+
+  return { db, pool };
 }
 ```
 
