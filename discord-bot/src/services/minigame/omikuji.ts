@@ -1,8 +1,10 @@
 import { db } from "@bot/lib/db";
+import { generateText } from "@bot/lib/gemini-client";
+import { logger } from "@bot/lib/logger";
 import { getTokyoDate, hasDrawnToday } from "@bot/lib/utils";
 import { omikuji, users } from "@jihou/database";
 import { createId } from "@paralleldrive/cuid2";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 export interface OmikujiTypes {
   NUBEKICHI: string;
@@ -31,6 +33,7 @@ export const OMIKUJI_TYPES: OmikujiTypes = {
 export type OmikujiType = (typeof OMIKUJI_TYPES)[keyof typeof OMIKUJI_TYPES];
 
 export interface OmikujiResult {
+  id?: string;
   result: OmikujiType;
   money: number;
 }
@@ -87,12 +90,98 @@ export async function drawOmikuji(userId: string): Promise<OmikujiResult> {
   const money = Math.max(0, user.money + result.money);
 
   // データベース更新
-  await updateUserAndCreateResult(userId, money, now, result.result);
+  const omikujiId = await updateUserAndCreateResult(
+    userId,
+    money,
+    now,
+    result.result,
+  );
 
   return {
+    id: omikujiId,
     result: result.result,
     money,
   };
+}
+
+/**
+ * AIによるおみくじの解説文を生成・取得する
+ * @param omikujiId おみくじ結果ID
+ * @param userId ユーザーID
+ * @returns AIによる解説文
+ * @throws {OmikujiError} おみくじが見つからない場合や、所有者が違う場合
+ */
+export async function generateOmikujiAIText(
+  omikujiId: string,
+  userId: string,
+): Promise<string> {
+  const record = await db.query.omikuji.findFirst({
+    where: and(eq(omikuji.id, omikujiId), eq(omikuji.userId, userId)),
+  });
+
+  if (!record) {
+    throw new OmikujiError("OMIKUJI_NOT_FOUND");
+  }
+
+  if (record.withText && record.aiText) {
+    return record.aiText;
+  }
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+  });
+
+  if (!user) {
+    throw new OmikujiError("USER_NOT_FOUND");
+  }
+
+  const prompt = createFortunePrompt(record.result, user.username);
+
+  try {
+    const aiText = await generateText(prompt);
+
+    await db
+      .update(omikuji)
+      .set({ withText: true, aiText })
+      .where(eq(omikuji.id, omikujiId));
+
+    return aiText;
+  } catch (error) {
+    logger.error(`[omikuji] AI text generation error: ${error}`);
+    throw new OmikujiError("AI_GENERATION_FAILED");
+  }
+}
+
+/**
+ * 運勢に応じたAIへのプロンプトを作成する
+ */
+export function createFortunePrompt(fortune: string, username: string): string {
+  return `あなたは神社の占い師です。ユーザー「${username}」さんがおみくじを引いたところ「${fortune}」という結果が出ました。
+以下の厳密なフォーマットに従って、関西弁で楽しく前向きなおみくじ結果を生成してください。
+
+===フォーマット===
+【今日の運勢】${fortune}
+【アドバイス】
+(ここに2～3行の関西弁での前向きなアドバイスを書いてください)
+
+【運気】
+・総合運：(★1～5つで表現)
+・金運：(★1～5つで表現)
+・恋愛運：(★1～5つで表現)
+・健康運：(★1～5つで表現)
+
+【ラッキーアイテム】
+(1つだけ具体的なアイテムを書いてください)
+
+【ひとこと】
+(ここに関西弁で一言メッセージを書いてください。絵文字を1～2個使用)
+=============
+
+※ 必ず上記フォーマットを守ってください。各セクションの間に余計な行を入れないでください。
+※ ===フォーマット=== と ============= は入れないでください。
+※ 必ず関西弁で書いてください。例:「〜です」→「〜やで」「〜だよ」→「〜やで」「〜ですね」→「〜やな」など
+※ 「${fortune}」という運勢に合った内容にしてください。
+※ 全体で200～300文字程度に収めてください。`;
 }
 
 /**
@@ -140,16 +229,18 @@ async function updateUserAndCreateResult(
   money: number,
   date: Date,
   result: OmikujiType,
-) {
-  return db.transaction(async (tx) => {
+): Promise<string> {
+  const id = createId();
+  await db.transaction(async (tx) => {
     await tx
       .update(users)
       .set({ money, lastDraw: date, updatedAt: new Date() })
       .where(eq(users.id, userId));
     await tx.insert(omikuji).values({
-      id: createId(),
+      id,
       userId,
       result,
     });
   });
+  return id;
 }

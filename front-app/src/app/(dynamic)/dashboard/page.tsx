@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getGuild } from "@/lib/api/guilds";
 import { getUser } from "@/lib/api/users";
 import { auth } from "@/lib/auth";
+import { OmikujiHistoryList } from "./_components/omikuji-history-list";
 
 export default async function Dashboard() {
   const session = await auth();
@@ -298,30 +299,15 @@ export default async function Dashboard() {
             </h2>
           </div>
           <div className="p-0 overflow-y-auto max-h-[350px]">
-            {omikuji.length === 0 ? (
-              <div className="p-8 text-center text-gray-500 dark:text-[#949BA4]">
-                まだおみくじを引いたことがありません
-              </div>
-            ) : (
-              <div className="flex flex-col">
-                {omikuji.map((result) => (
-                  <div
-                    key={result.id}
-                    className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-[#313338] transition-colors"
-                  >
-                    <span className="font-bold text-base text-gray-900 dark:text-white">
-                      {result.result}
-                    </span>
-                    <span className="text-xs text-gray-500 dark:text-[#949BA4]">
-                      {formatDistance(new Date(result.createdAt), new Date(), {
-                        addSuffix: true,
-                        locale: ja,
-                      })}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+            <OmikujiHistoryList
+              omikuji={omikuji.map((item) => ({
+                id: item.id,
+                result: item.result,
+                createdAt: item.createdAt,
+                withText: item.withText,
+                aiText: item.aiText,
+              }))}
+            />
           </div>
         </div>
 

@@ -1,9 +1,18 @@
-import { generateText } from "@bot/lib/gemini-client";
 import { logger } from "@bot/lib/logger";
-import { drawOmikuji, OmikujiError } from "@bot/services/minigame/omikuji";
 import {
+  drawOmikuji,
+  generateOmikujiAIText,
+  getOmikujiHistory,
+  OmikujiError,
+} from "@bot/services/minigame/omikuji";
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
   type ChatInputCommandInteraction,
+  ComponentType,
   EmbedBuilder,
+  MessageFlags,
   SlashCommandBuilder,
 } from "discord.js";
 
@@ -38,13 +47,13 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     // AIによるテキスト生成が有効な場合
     let embed: EmbedBuilder | null = null;
 
-    if (withAIText) {
+    if (withAIText && result.id) {
       try {
-        // 運勢に応じたプロンプトを作成
-        const prompt = createFortunePrompt(fortune, interaction.user.username);
-
         // AIでテキスト生成
-        const aiText = await generateText(prompt);
+        const aiText = await generateOmikujiAIText(
+          result.id,
+          interaction.user.id,
+        );
 
         // 結果をEmbedで表示
         embed = new EmbedBuilder()
@@ -76,48 +85,118 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     logger.error(`[omikuji] Error executing command: ${error}`);
     let errorMessage = "おみくじの処理中にエラーが発生しました。";
 
+    if (error instanceof OmikujiError && error.message === "ALREADY_DRAWN") {
+      try {
+        const history = await getOmikujiHistory(interaction.user.id, 1);
+        const today = history[0];
+
+        if (today) {
+          const fortune = today.result;
+          const alreadyReply = `今日の運勢は既に引いています。\n結果は「${fortune}」です！`;
+
+          if (today.withText && today.aiText) {
+            const embed = new EmbedBuilder()
+              .setTitle(`${interaction.user.username}さんの運勢: ${fortune}`)
+              .setDescription(today.aiText)
+              .setColor(getFortuneColor(fortune))
+              .setFooter({ text: "今日の運勢" })
+              .setTimestamp();
+            await interaction.editReply({
+              content: alreadyReply,
+              embeds: [embed],
+            });
+            return;
+          } else {
+            const generateButton = new ButtonBuilder()
+              .setCustomId(`generate_omikuji_text_${today.id}`)
+              .setLabel("AI解説を生成する")
+              .setStyle(ButtonStyle.Primary);
+
+            const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+              generateButton,
+            );
+            const message = await interaction.editReply({
+              content: alreadyReply,
+              components: [row],
+            });
+
+            const collector = message.createMessageComponentCollector({
+              componentType: ComponentType.Button,
+              time: 15 * 60 * 1000, // 15分でタイムアウト
+            });
+
+            collector.on("collect", async (i) => {
+              if (i.user.id !== interaction.user.id) {
+                await i.reply({
+                  content: "他人の解説は生成できません。",
+                  flags: MessageFlags.Ephemeral,
+                });
+                return;
+              }
+
+              if (i.customId === `generate_omikuji_text_${today.id}`) {
+                await i.deferUpdate();
+                try {
+                  const newAiText = await generateOmikujiAIText(
+                    today.id,
+                    interaction.user.id,
+                  );
+                  const newEmbed = new EmbedBuilder()
+                    .setTitle(
+                      `${interaction.user.username}さんの運勢: ${fortune}`,
+                    )
+                    .setDescription(newAiText)
+                    .setColor(getFortuneColor(fortune))
+                    .setFooter({ text: "今日の運勢" })
+                    .setTimestamp();
+                  await interaction.editReply({
+                    content: alreadyReply,
+                    embeds: [newEmbed],
+                    components: [],
+                  });
+                } catch (aiError) {
+                  logger.error(
+                    `[omikuji] interactive AI text generation error: ${aiError}`,
+                  );
+                  await i.followUp({
+                    content: "解説の生成に失敗しました。",
+                    flags: 64,
+                  });
+                }
+              }
+            });
+
+            collector.on("end", async () => {
+              try {
+                const expiredRow =
+                  new ActionRowBuilder<ButtonBuilder>().addComponents(
+                    ButtonBuilder.from(generateButton).setDisabled(true),
+                  );
+                await interaction.editReply({ components: [expiredRow] });
+              } catch {
+                // message may be deleted or inaccessible
+              }
+            });
+            return;
+          }
+        }
+      } catch (innerError) {
+        logger.error(
+          `[omikuji] Interactive ALREADY_DRAWN handling error: ${innerError}`,
+        );
+      }
+    }
+
     if (error instanceof OmikujiError) {
       if (error.message === "USER_NOT_FOUND") {
         errorMessage = "ユーザーデータが見つかりません。";
       } else if (error.message === "ALREADY_DRAWN") {
-        errorMessage = "おみくじは一日に一度しか引けません";
+        errorMessage = "おみくじは一日に一度しか引けません"; // fallback
       }
     }
 
     await interaction.editReply(errorMessage);
   }
-}
-
-/**
- * 運勢に応じたAIへのプロンプトを作成する
- */
-function createFortunePrompt(fortune: string, username: string): string {
-  return `あなたは神社の占い師です。ユーザー「${username}」さんがおみくじを引いたところ「${fortune}」という結果が出ました。
-以下の厳密なフォーマットに従って、関西弁で楽しく前向きなおみくじ結果を生成してください。
-
-===フォーマット===
-【今日の運勢】${fortune}
-【アドバイス】
-(ここに2～3行の関西弁での前向きなアドバイスを書いてください)
-
-【運気】
-・総合運：(★1～5つで表現)
-・金運：(★1～5つで表現)
-・恋愛運：(★1～5つで表現)
-・健康運：(★1～5つで表現)
-
-【ラッキーアイテム】
-(1つだけ具体的なアイテムを書いてください)
-
-【ひとこと】
-(ここに関西弁で一言メッセージを書いてください。絵文字を1～2個使用)
-=============
-
-※ 必ず上記フォーマットを守ってください。各セクションの間に余計な行を入れないでください。
-※ ===フォーマット=== と ============= は入れないでください。
-※ 必ず関西弁で書いてください。例:「〜です」→「〜やで」「〜だよ」→「〜やで」「〜ですね」→「〜やな」など
-※ 「${fortune}」という運勢に合った内容にしてください。
-※ 全体で200～300文字程度に収めてください。`;
 }
 
 /**

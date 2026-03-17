@@ -235,6 +235,8 @@ export const omikuji = pgTable(
     createdAt: timestamp({ precision: 3, mode: "date" })
       .default(sql`CURRENT_TIMESTAMP`)
       .notNull(),
+    withText: boolean().default(false).notNull(),
+    aiText: text(),
   },
   (table) => [
     uniqueIndex("omikuji_id_key").using(
