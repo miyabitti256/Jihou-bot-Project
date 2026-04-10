@@ -176,7 +176,7 @@ export async function execute(
       components: buttons,
     });
 
-    if (!interaction.channel || !interaction.channel.isTextBased()) {
+    if (!interaction.channel?.isTextBased()) {
       await interaction.reply({
         content: "このコマンドはテキストチャンネルでのみ使用できます",
         flags: MessageFlags.Ephemeral,
