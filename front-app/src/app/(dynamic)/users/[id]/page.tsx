@@ -33,7 +33,7 @@ export default async function UserDetailPage({
     "janken",
   ]);
 
-  if (!userData || !userData.data) {
+  if (!userData?.data) {
     return <NotFound />;
   }
 
