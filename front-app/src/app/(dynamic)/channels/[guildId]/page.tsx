@@ -1,4 +1,5 @@
 import { MessageSquare } from "lucide-react";
+import { notFound } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getGuild } from "@/lib/api/guilds";
 
@@ -12,6 +13,9 @@ export default async function GuildPage({ params }: GuildPageProps) {
   const { guildId } = await params;
 
   const guildData = await getGuild(guildId);
+  if (!guildData) {
+    notFound();
+  }
 
   const guildName = guildData?.data.name ?? `サーバー ${guildId}`;
   const guildIconUrl = guildData?.data.iconUrl ?? null;

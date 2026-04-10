@@ -1,4 +1,5 @@
 import { Clock, Hash, Search } from "lucide-react";
+import { notFound } from "next/navigation";
 import { ChannelNameUpdater } from "@/components/provider/channel-name-updater";
 import { getGuild, getGuildChannels } from "@/lib/api/guilds";
 import { auth } from "@/lib/auth";
@@ -22,13 +23,15 @@ export default async function ChannelPage({ params }: ChannelPageProps) {
   // チャンネル名を取得
   try {
     const channelsData = await getGuildChannels(guildId);
-    if (channelsData) {
-      const channel = channelsData.data.find((c) => c.id === channelId);
-      if (channel?.name) {
-        channelName = channel.name;
-      }
+    if (!channelsData) {
+      notFound();
+    }
+    const channel = channelsData.data.find((c) => c.id === channelId);
+    if (channel?.name) {
+      channelName = channel.name;
     }
   } catch (error) {
+    if ((error as Error).message === "NEXT_NOT_FOUND") throw error;
     // biome-ignore lint/suspicious/noConsole: エラー出力
     console.error("[ChannelPage] Channel API error:", error);
   }
@@ -46,12 +49,16 @@ export default async function ChannelPage({ params }: ChannelPageProps) {
 
   try {
     const guildData = await getGuild(guildId, ["messages", "channels"]);
-    if (guildData?.data.scheduledMessages) {
+    if (!guildData) {
+      notFound();
+    }
+    if (guildData.data.scheduledMessages) {
       scheduledMessages = guildData.data.scheduledMessages
         .filter((msg) => msg.channelId === channelId)
         .sort((a, b) => a.scheduleTime.localeCompare(b.scheduleTime));
     }
   } catch (error) {
+    if ((error as Error).message === "NEXT_NOT_FOUND") throw error;
     // biome-ignore lint/suspicious/noConsole: エラー出力
     console.error("[ChannelPage] Guild API error:", error);
   }

@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { getGuild, getScheduleDetails } from "@/lib/api/guilds";
 import { auth } from "@/lib/auth";
 import { ScheduleForm } from "./_components/schedule-form";
@@ -24,7 +25,7 @@ export default async function SchedulePage({
   if (!isNew) {
     const scheduleResult = await getScheduleDetails(id);
     if (!scheduleResult) {
-      throw new Error("Failed to fetch schedule details");
+      notFound();
     }
     scheduleData = scheduleResult.data;
     guildId = scheduleData.guildId;
@@ -38,7 +39,7 @@ export default async function SchedulePage({
   if (guildId) {
     const guildResult = await getGuild(guildId, ["channels"]);
     if (!guildResult) {
-      throw new Error("Failed to fetch guild data");
+      notFound();
     }
     guildData = guildResult.data;
     channelData = guildResult.data.guildChannels.filter(

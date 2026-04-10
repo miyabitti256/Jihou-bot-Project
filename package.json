@@ -1,16 +1,15 @@
 {
   "name": "jihou-bot-project",
-  "private": true,
-  "workspaces": [
-    "discord-bot",
-    "front-app",
-    "packages/*"
-  ],
   "devDependencies": {
-    "@biomejs/biome": "^2.4.4",
+    "@biomejs/biome": "^2.4.11",
     "husky": "^9.1.7",
-    "ts-analyzer": "^1.0.0"
+    "ts-analyzer": "^1.3.7"
   },
+  "overrides": {
+    "hono": "^4.12.1",
+    "zod": "^4.3.6"
+  },
+  "private": true,
   "scripts": {
     "dev": "bun run --filter discord-bot dev",
     "dev:front": "bun run --filter front-app dev",
@@ -22,8 +21,12 @@
     "prepare": "husky",
     "deploy:bot": "fly deploy --config discord-bot/fly.toml"
   },
-  "overrides": {
-    "hono": "^4.12.1",
-    "zod": "^4.3.6"
+  "workspaces": [
+    "discord-bot",
+    "front-app",
+    "packages/*"
+  ],
+  "dependencies": {
+    "biome": "^0.3.3"
   }
 }
