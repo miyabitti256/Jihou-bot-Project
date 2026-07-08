@@ -1,4 +1,11 @@
-import { Bot, Coins, Gamepad2, Terminal } from "lucide-react";
+import {
+  Bot,
+  Coins,
+  Gamepad2,
+  MessageSquare,
+  ShoppingBag,
+  Terminal,
+} from "lucide-react";
 
 export default function About() {
   return (
@@ -198,7 +205,7 @@ export default function About() {
                   <p className="text-[#4E5058] dark:text-[#DBDEE1] mb-4">
                     おみくじを引いて運試し！結果によってゲーム内通貨が増減します。
                   </p>
-                  <div className="bg-white dark:bg-[#1E1F22] rounded-lg p-4 border border-gray-100 dark:border-white/5">
+                  <div className="bg-white dark:bg-[#1E1F22] rounded-lg p-4 border border-gray-100 dark:border-white/5 space-y-4">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                       <div className="flex flex-col">
                         <span className="font-bold text-[#57F287]">
@@ -232,6 +239,34 @@ export default function About() {
                           -50円〜-100円
                         </span>
                       </div>
+                    </div>
+
+                    <div className="border-t border-gray-100 dark:border-white/5 pt-3">
+                      <h4 className="text-xs font-bold text-[#4E5058] dark:text-[#949BA4] uppercase tracking-wider mb-2">
+                        オプション
+                      </h4>
+                      <ul className="space-y-2 text-sm text-[#060607] dark:text-[#DBDEE1]">
+                        <li className="flex items-start gap-2">
+                          <span className="font-mono text-[#006CE7] dark:text-[#00A8FC] shrink-0 mt-0.5">
+                            text
+                          </span>
+                          <span>
+                            <span className="text-[#4E5058] dark:text-[#B5BAC1] text-xs font-bold mr-1">
+                              任意
+                            </span>{" "}
+                            AIによる関西弁の運勢解説文を生成します（真偽値）。
+                          </span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="border-t border-gray-100 dark:border-white/5 pt-3">
+                      <h4 className="text-xs font-bold text-[#4E5058] dark:text-[#949BA4] uppercase tracking-wider mb-2">
+                        おみくじの引き直し（Redraw）
+                      </h4>
+                      <p className="text-xs text-[#4E5058] dark:text-[#949BA4] leading-relaxed">
+                        すでに当日おみくじを引いている場合でも、所持品に「おみくじ券」があれば、引き直し用のボタンが表示され、おみくじ券を消費して再度おみくじを引くことができます。引き直しの際は、3秒間のハラハラするアニメーション演出が行われます。
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -297,6 +332,73 @@ export default function About() {
                   </div>
                   <p className="text-[#4E5058] dark:text-[#DBDEE1]">
                     時報Bot相手にじゃんけんを挑みます。負けると煽られます。
+                  </p>
+                </div>
+              </div>
+
+              {/* Shop Section */}
+              <div className="flex items-center gap-2 mt-12 mb-6 pt-8 border-t border-gray-200 dark:border-white/10">
+                <ShoppingBag className="w-6 h-6 text-[#FEE75C]" />
+                <h2 className="text-2xl font-bold text-[#060607] dark:text-white">
+                  よろず屋ショップ
+                </h2>
+              </div>
+
+              {/* Command: buy */}
+              <div className="bg-[#F2F3F5] dark:bg-[#2B2D31] rounded-xl border border-gray-200 dark:border-white/5 overflow-hidden transition-colors hover:border-[#5865F2]/30">
+                <div className="p-5">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="font-bold text-lg text-[#060607] dark:text-white">
+                      /buy
+                    </span>
+                    <span className="text-xs font-semibold px-2 py-1 rounded-md bg-[#FEE75C]/10 text-[#FEE75C] dark:text-[#FEE75C]">
+                      ショップ
+                    </span>
+                  </div>
+                  <p className="text-[#4E5058] dark:text-[#DBDEE1]">
+                    よろず屋（ショップ）を開きます。貯めたお金を使って「おみくじ券」などの便利アイテムを対話的に購入することができます。
+                  </p>
+                </div>
+              </div>
+
+              {/* Command: inventory */}
+              <div className="bg-[#F2F3F5] dark:bg-[#2B2D31] rounded-xl border border-gray-200 dark:border-white/5 overflow-hidden transition-colors hover:border-[#5865F2]/30">
+                <div className="p-5">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="font-bold text-lg text-[#060607] dark:text-white">
+                      /inventory
+                    </span>
+                    <span className="text-xs font-semibold px-2 py-1 rounded-md bg-[#FEE75C]/10 text-[#FEE75C] dark:text-[#FEE75C]">
+                      ショップ
+                    </span>
+                  </div>
+                  <p className="text-[#4E5058] dark:text-[#DBDEE1]">
+                    所持している未使用のアイテムの一覧と個数を確認します。
+                  </p>
+                </div>
+              </div>
+
+              {/* AI Chat Section */}
+              <div className="flex items-center gap-2 mt-12 mb-6 pt-8 border-t border-gray-200 dark:border-white/10">
+                <MessageSquare className="w-6 h-6 text-[#5865F2]" />
+                <h2 className="text-2xl font-bold text-[#060607] dark:text-white">
+                  AIチャット
+                </h2>
+              </div>
+
+              {/* Command: chat */}
+              <div className="bg-[#F2F3F5] dark:bg-[#2B2D31] rounded-xl border border-gray-200 dark:border-white/5 overflow-hidden transition-colors hover:border-[#5865F2]/30">
+                <div className="p-5">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="font-bold text-lg text-[#060607] dark:text-white">
+                      /chat
+                    </span>
+                    <span className="text-xs font-semibold px-2 py-1 rounded-md bg-[#5865F2]/10 text-[#5865F2]">
+                      AI機能
+                    </span>
+                  </div>
+                  <p className="text-[#4E5058] dark:text-[#DBDEE1]">
+                    AIと対話するための専用スレッドを現在のテキストチャンネル内に新規に作成します。
                   </p>
                 </div>
               </div>
