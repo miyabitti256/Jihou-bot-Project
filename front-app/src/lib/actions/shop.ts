@@ -33,6 +33,7 @@ export async function consumeItemAction(userItemId: string) {
       revalidateTag("omikuji-results", "max");
       revalidateTag("user-info", "max");
       revalidatePath("/dashboard");
+      revalidatePath("/minigame/omikuji");
     }
 
     return result;

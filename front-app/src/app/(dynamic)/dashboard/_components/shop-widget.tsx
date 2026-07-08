@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
@@ -12,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { consumeItemAction, purchaseItemAction } from "@/lib/actions/shop";
+import { purchaseItemAction } from "@/lib/actions/shop";
 
 // JST の午前5時基準の本日の日付を取得するヘルパー
 function getTokyoDate(dateInput?: Date | string | number): Date {
@@ -104,29 +103,6 @@ export function ShopWidget({
     });
   };
 
-  // アイテム使用処理
-  const handleUse = (userItemId: string) => {
-    startTransition(async () => {
-      const res = await consumeItemAction(userItemId);
-      if (res.success) {
-        toast.success(
-          <div className="flex flex-col gap-1">
-            <span>おみくじ券を使用しました！</span>
-            <Link
-              href="/minigame/omikuji"
-              className="text-xs font-bold text-[#5865F2] hover:underline"
-            >
-              👉 おみくじを引きに行く
-            </Link>
-          </div>,
-        );
-        router.refresh();
-      } else {
-        toast.error(res.error || "使用に失敗しました");
-      }
-    });
-  };
-
   // インベントリから未使用のおみくじ券を抽出
   const ticketsInInventory = initialInventory.filter(
     (item) => item.itemId === "omikuji_ticket",
@@ -182,40 +158,33 @@ export function ShopWidget({
         {/* 所持アイテム */}
         <div className="space-y-3">
           <h3 className="font-bold text-sm text-gray-700 dark:text-gray-300">
-            所持アイテム（未使用: {ticketsInInventory.length}個）
+            所持アイテム
           </h3>
-          {ticketsInInventory.length === 0 ? (
-            <div className="p-4 text-center text-xs text-gray-500 dark:text-[#949BA4] bg-gray-50/50 dark:bg-[#1E1F22]/50 rounded-xl border border-dashed border-gray-200 dark:border-white/5">
-              使用可能なおみくじ券はありません
+          <div className="p-4 bg-gray-50 dark:bg-[#1E1F22] rounded-xl border border-gray-100 dark:border-white/5 flex items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-gray-900 dark:text-white text-sm">
+                  おみくじ券 🎫
+                </span>
+                <span className="text-xs bg-gray-100 dark:bg-white/5 text-gray-800 dark:text-gray-300 font-bold px-2 py-0.5 rounded">
+                  所持数: {ticketsInInventory.length}個
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-[#949BA4] mt-1">
+                おみくじを引き直すことができるチケットです
+              </p>
             </div>
-          ) : (
-            <div className="max-h-45 overflow-y-auto space-y-2">
-              {ticketsInInventory.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between p-3 bg-white dark:bg-[#313338] border border-gray-100 dark:border-white/5 rounded-xl"
-                >
-                  <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-gray-900 dark:text-white">
-                      おみくじ券
-                    </span>
-                    <span className="text-[10px] text-gray-400 dark:text-[#5C5E66]">
-                      ID: {item.id.substring(0, 8)}...
-                    </span>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={isPending}
-                    onClick={() => handleUse(item.id)}
-                    className="h-8 border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-[#383A40] text-xs font-semibold"
-                  >
-                    使用する
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
+
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={ticketsInInventory.length === 0}
+              onClick={() => router.push("/minigame/omikuji")}
+              className="shrink-0 h-8 border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-[#383A40] text-xs font-semibold"
+            >
+              使用する
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
