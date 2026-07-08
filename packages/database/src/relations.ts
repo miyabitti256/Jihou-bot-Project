@@ -15,7 +15,9 @@ import {
   guilds,
   janken,
   omikuji,
+  purchaseHistory,
   scheduledMessages,
+  userItems,
   userSettings,
   users,
 } from "./schema";
@@ -38,6 +40,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   omikujis: many(omikuji),
   chatThreads: many(chatThreads),
   guildMembers: many(guildMembers),
+  purchaseHistories: many(purchaseHistory),
+  userItems: many(userItems),
 }));
 
 export const guildsRelations = relations(guilds, ({ many }) => ({
@@ -146,5 +150,27 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
   thread: one(chatThreads, {
     fields: [chatMessages.threadId],
     references: [chatThreads.id],
+  }),
+}));
+
+export const purchaseHistoryRelations = relations(
+  purchaseHistory,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [purchaseHistory.userId],
+      references: [users.id],
+    }),
+    userItems: many(userItems),
+  }),
+);
+
+export const userItemsRelations = relations(userItems, ({ one }) => ({
+  user: one(users, {
+    fields: [userItems.userId],
+    references: [users.id],
+  }),
+  purchase: one(purchaseHistory, {
+    fields: [userItems.purchaseId],
+    references: [purchaseHistory.id],
   }),
 }));

@@ -5,6 +5,8 @@ import {
   getOmikujiHistory,
   OmikujiError,
 } from "@bot/services/minigame/omikuji";
+import { useItem } from "@bot/services/shop/item-effects";
+import { getUserInventory } from "@bot/services/shop/shop";
 import {
   ActionRowBuilder,
   ButtonBuilder,
@@ -94,91 +96,234 @@ export async function execute(interaction: ChatInputCommandInteraction) {
           const fortune = today.result;
           const alreadyReply = `今日の運勢は既に引いています。\n結果は「${fortune}」です！`;
 
+          // チケットの所持状態をチェック
+          const inventory = await getUserInventory(interaction.user.id);
+          const ticket = inventory.find(
+            (item) => item.itemId === "omikuji_ticket",
+          );
+          const hasTicket = !!ticket;
+
+          const buttons: ButtonBuilder[] = [];
+
+          // AIテキストがまだ生成されていない場合、生成ボタンを追加
+          const needsAIText = !(today.withText && today.aiText);
+          let generateButton: ButtonBuilder | null = null;
+          if (needsAIText) {
+            generateButton = new ButtonBuilder()
+              .setCustomId(`generate_omikuji_text_${today.id}`)
+              .setLabel("AI解説を生成する")
+              .setStyle(ButtonStyle.Primary);
+            buttons.push(generateButton);
+          }
+
+          // チケットを持っている場合、もう一度引くボタンを追加
+          let redrawButton: ButtonBuilder | null = null;
+          if (hasTicket) {
+            redrawButton = new ButtonBuilder()
+              .setCustomId("use_omikuji_ticket_redraw")
+              .setLabel("おみくじ券を使用してもう一度引く")
+              .setStyle(ButtonStyle.Primary);
+            buttons.push(redrawButton);
+          }
+
+          // 初期表示のEmbed
+          let initialEmbed: EmbedBuilder | null = null;
           if (today.withText && today.aiText) {
-            const embed = new EmbedBuilder()
+            initialEmbed = new EmbedBuilder()
               .setTitle(`${interaction.user.username}さんの運勢: ${fortune}`)
               .setDescription(today.aiText)
               .setColor(getFortuneColor(fortune))
               .setFooter({ text: "今日の運勢" })
               .setTimestamp();
-            await interaction.editReply({
-              content: alreadyReply,
-              embeds: [embed],
-            });
-            return;
-          } else {
-            const generateButton = new ButtonBuilder()
-              .setCustomId(`generate_omikuji_text_${today.id}`)
-              .setLabel("AI解説を生成する")
-              .setStyle(ButtonStyle.Primary);
+          }
 
-            const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-              generateButton,
-            );
-            const message = await interaction.editReply({
-              content: alreadyReply,
-              components: [row],
-            });
+          const getRow = () => {
+            const activeButtons = [];
+            if (generateButton) activeButtons.push(generateButton);
+            if (redrawButton) activeButtons.push(redrawButton);
 
-            const collector = message.createMessageComponentCollector({
-              componentType: ComponentType.Button,
-              time: 15 * 60 * 1000, // 15分でタイムアウト
-            });
+            return activeButtons.length > 0
+              ? new ActionRowBuilder<ButtonBuilder>().addComponents(
+                  activeButtons,
+                )
+              : null;
+          };
 
-            collector.on("collect", async (i) => {
-              if (i.user.id !== interaction.user.id) {
-                await i.reply({
-                  content: "他人の解説は生成できません。",
-                  flags: MessageFlags.Ephemeral,
-                });
-                return;
-              }
+          const row = getRow();
 
-              if (i.customId === `generate_omikuji_text_${today.id}`) {
-                await i.deferUpdate();
-                try {
-                  const newAiText = await generateOmikujiAIText(
-                    today.id,
-                    interaction.user.id,
-                  );
-                  const newEmbed = new EmbedBuilder()
-                    .setTitle(
-                      `${interaction.user.username}さんの運勢: ${fortune}`,
-                    )
-                    .setDescription(newAiText)
-                    .setColor(getFortuneColor(fortune))
-                    .setFooter({ text: "今日の運勢" })
-                    .setTimestamp();
-                  await interaction.editReply({
-                    content: alreadyReply,
-                    embeds: [newEmbed],
-                    components: [],
-                  });
-                } catch (aiError) {
-                  logger.error(
-                    `[omikuji] interactive AI text generation error: ${aiError}`,
-                  );
-                  await i.followUp({
-                    content: "解説の生成に失敗しました。",
-                    flags: 64,
-                  });
-                }
-              }
-            });
+          const message = await interaction.editReply({
+            content: alreadyReply,
+            embeds: initialEmbed ? [initialEmbed] : [],
+            components: row ? [row] : [],
+          });
 
-            collector.on("end", async () => {
-              try {
-                const expiredRow =
-                  new ActionRowBuilder<ButtonBuilder>().addComponents(
-                    ButtonBuilder.from(generateButton).setDisabled(true),
-                  );
-                await interaction.editReply({ components: [expiredRow] });
-              } catch {
-                // message may be deleted or inaccessible
-              }
-            });
+          if (!row) {
+            // ボタンが一つもなければ終了
             return;
           }
+
+          const collector = message.createMessageComponentCollector({
+            componentType: ComponentType.Button,
+            time: 15 * 60 * 1000, // 15分でタイムアウト
+          });
+
+          collector.on("collect", async (i) => {
+            if (i.user.id !== interaction.user.id) {
+              await i.reply({
+                content: "このボタンは操作できません。",
+                flags: MessageFlags.Ephemeral,
+              });
+              return;
+            }
+
+            if (i.customId === `generate_omikuji_text_${today.id}`) {
+              await i.deferUpdate();
+              try {
+                const newAiText = await generateOmikujiAIText(
+                  today.id,
+                  interaction.user.id,
+                );
+                const newEmbed = new EmbedBuilder()
+                  .setTitle(
+                    `${interaction.user.username}さんの運勢: ${fortune}`,
+                  )
+                  .setDescription(newAiText)
+                  .setColor(getFortuneColor(fortune))
+                  .setFooter({ text: "今日の運勢" })
+                  .setTimestamp();
+
+                // 生成ボタンは不要になったので null にする
+                generateButton = null;
+                const nextRow = getRow();
+
+                await interaction.editReply({
+                  content: alreadyReply,
+                  embeds: [newEmbed],
+                  components: nextRow ? [nextRow] : [],
+                });
+
+                if (!nextRow) {
+                  collector.stop();
+                }
+              } catch (aiError) {
+                logger.error(
+                  `[omikuji] interactive AI text generation error: ${aiError}`,
+                );
+                await i.followUp({
+                  content: "解説の生成に失敗しました。",
+                  flags: MessageFlags.Ephemeral,
+                });
+              }
+            } else if (i.customId === "use_omikuji_ticket_redraw") {
+              await i.deferUpdate();
+              const redrawStartTime = Date.now();
+              try {
+                // 最新のチケットを検索して使用
+                const currentInventory = await getUserInventory(
+                  interaction.user.id,
+                );
+                const currentTicket = currentInventory.find(
+                  (item) => item.itemId === "omikuji_ticket",
+                );
+                if (!currentTicket) {
+                  await i.followUp({
+                    content: "おみくじ券が見つかりません。",
+                    flags: MessageFlags.Ephemeral,
+                  });
+                  return;
+                }
+
+                await useItem(interaction.user.id, currentTicket.id);
+
+                // 新しくおみくじを引く
+                const redrawResult = await drawOmikuji(interaction.user.id);
+                const newFortune = redrawResult.result;
+                let newReply = `おみくじ券を使用しました！\nおみくじの結果は「${newFortune}」です！`;
+
+                if (
+                  newFortune === "ぬべ吉" ||
+                  newFortune === "ヌベキチ└(՞ةڼ◔)」"
+                ) {
+                  newReply += await assignRole(interaction, newFortune);
+                }
+
+                let newEmbed: EmbedBuilder | null = null;
+                if (withAIText && redrawResult.id) {
+                  try {
+                    const aiText = await generateOmikujiAIText(
+                      redrawResult.id,
+                      interaction.user.id,
+                    );
+                    newEmbed = new EmbedBuilder()
+                      .setTitle(
+                        `${interaction.user.username}さんの運勢: ${newFortune}`,
+                      )
+                      .setDescription(aiText)
+                      .setColor(getFortuneColor(newFortune))
+                      .setFooter({ text: "今日の運勢" })
+                      .setTimestamp();
+                  } catch (aiError) {
+                    logger.error(
+                      `[omikuji] Redraw AI text generation error: ${aiError}`,
+                    );
+                    newReply += "\n\n※ 解説の生成に失敗しました。";
+                  }
+                }
+
+                // 最低3秒間は待機する
+                const redrawElapsedTime = Date.now() - redrawStartTime;
+                if (redrawElapsedTime < 3000) {
+                  await new Promise((resolve) =>
+                    setTimeout(resolve, 3000 - redrawElapsedTime),
+                  );
+                }
+
+                // 引き直したので、ボタンをすべて削除して完了
+                await interaction.editReply({
+                  content: newReply,
+                  embeds: newEmbed ? [newEmbed] : [],
+                  components: [],
+                });
+
+                collector.stop();
+              } catch (redrawError) {
+                logger.error(`[omikuji] Redraw error: ${redrawError}`);
+                await i.followUp({
+                  content: "おみくじの引き直し中にエラーが発生しました。",
+                  flags: MessageFlags.Ephemeral,
+                });
+              }
+            }
+          });
+
+          collector.on("end", async () => {
+            try {
+              const currentMsg = await interaction.fetchReply();
+              if (currentMsg.components.length > 0) {
+                const disabledButtons = [];
+                if (generateButton) {
+                  disabledButtons.push(
+                    ButtonBuilder.from(generateButton).setDisabled(true),
+                  );
+                }
+                if (redrawButton) {
+                  disabledButtons.push(
+                    ButtonBuilder.from(redrawButton).setDisabled(true),
+                  );
+                }
+                if (disabledButtons.length > 0) {
+                  const expiredRow =
+                    new ActionRowBuilder<ButtonBuilder>().addComponents(
+                      disabledButtons,
+                    );
+                  await interaction.editReply({ components: [expiredRow] });
+                }
+              }
+            } catch {
+              // message may be deleted or already updated with no components
+            }
+          });
+          return;
         }
       } catch (innerError) {
         logger.error(

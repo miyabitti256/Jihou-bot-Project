@@ -1,6 +1,7 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
+    "ignoreDeprecations": "5.0",
     "lib": ["ESNext", "DOM"],
     "jsx": "react-jsx",
     "noUnusedLocals": false,

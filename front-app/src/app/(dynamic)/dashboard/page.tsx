@@ -5,9 +5,15 @@ import { FaDiscord } from "react-icons/fa";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getGuild } from "@/lib/api/guilds";
+import {
+  getPurchaseHistory,
+  getShopItems,
+  getUserInventory,
+} from "@/lib/api/shop";
 import { getUser } from "@/lib/api/users";
 import { auth } from "@/lib/auth";
 import { OmikujiHistoryList } from "./_components/omikuji-history-list";
+import { ShopWidget } from "./_components/shop-widget";
 
 export default async function Dashboard() {
   const session = await auth();
@@ -16,15 +22,26 @@ export default async function Dashboard() {
     return null; // proxy.ts will catch this
   }
 
-  const userData = await getUser(session.user.id, [
-    "scheduledmessage",
-    "omikuji",
-    "coinflip",
-    "janken",
-  ]);
+  const [userData, shopItems, userInventory, purchaseHistory] =
+    await Promise.all([
+      getUser(session.user.id, [
+        "scheduledmessage",
+        "omikuji",
+        "coinflip",
+        "janken",
+      ]),
+      getShopItems(),
+      getUserInventory(session.user.id),
+      getPurchaseHistory(session.user.id),
+    ]);
+
   if (!userData) {
     return <div>User data not found</div>;
   }
+
+  const items = shopItems?.data ?? [];
+  const inventory = userInventory?.data ?? [];
+  const history = purchaseHistory?.data ?? [];
 
   const scheduledMessages = userData.data.scheduledMessages_createdUserId ?? [];
   const omikuji = userData.data.omikujis ?? [];
@@ -291,6 +308,17 @@ export default async function Dashboard() {
           </div>
         </div>
 
+        {/* Shop Widget */}
+        <div className="col-span-1">
+          <ShopWidget
+            userId={session.user.id}
+            userMoney={userData.data.money}
+            initialInventory={inventory}
+            initialHistory={history}
+            shopItems={items}
+          />
+        </div>
+
         {/* Omikuji History */}
         <div className="col-span-1 bg-white dark:bg-[#2B2D31] rounded-2xl shadow-sm border border-gray-200 dark:border-white/5 overflow-hidden flex flex-col">
           <div className="bg-[#F2F3F5] dark:bg-[#1E1F22] px-6 py-4 border-b border-gray-200 dark:border-black/20 shrink-0">
@@ -312,7 +340,7 @@ export default async function Dashboard() {
         </div>
 
         {/* Coin Flip History */}
-        <div className="col-span-1 lg:col-span-2 bg-white dark:bg-[#2B2D31] rounded-2xl shadow-sm border border-gray-200 dark:border-white/5 overflow-hidden flex flex-col">
+        <div className="col-span-1 bg-white dark:bg-[#2B2D31] rounded-2xl shadow-sm border border-gray-200 dark:border-white/5 overflow-hidden flex flex-col">
           <div className="bg-[#F2F3F5] dark:bg-[#1E1F22] px-6 py-4 border-b border-gray-200 dark:border-black/20 shrink-0">
             <h2 className="font-bold text-lg text-gray-900 dark:text-gray-100">
               最近のコインフリップ履歴

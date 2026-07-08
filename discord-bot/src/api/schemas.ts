@@ -157,3 +157,13 @@ export const scheduledMessageDeleteSchema = z.object({
   id: z.string().min(1),
   guildId: z.string().min(1),
 });
+
+// === ショップ ===
+
+export const purchaseItemSchema = z.object({
+  itemId: z.string().min(1),
+});
+
+export const useItemSchema = z.object({
+  userItemId: z.string().min(1),
+});

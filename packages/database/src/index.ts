@@ -19,8 +19,10 @@ export {
   guilds,
   janken,
   omikuji,
+  purchaseHistory,
   scheduledMessages,
   themeEnum,
+  userItems,
   userSettings,
   users,
 } from "./schema";
@@ -36,7 +38,9 @@ import type {
   guilds,
   janken,
   omikuji,
+  purchaseHistory,
   scheduledMessages,
+  userItems,
   userSettings,
   users,
 } from "./schema";
@@ -53,6 +57,8 @@ export type CoinFlip = typeof coinFlip.$inferSelect;
 export type Janken = typeof janken.$inferSelect;
 export type ChatThread = typeof chatThreads.$inferSelect;
 export type ChatMessage = typeof chatMessages.$inferSelect;
+export type PurchaseHistory = typeof purchaseHistory.$inferSelect;
+export type UserItem = typeof userItems.$inferSelect;
 
 // ─── Enum 値オブジェクト（既存コードとの互換性維持） ─────
 

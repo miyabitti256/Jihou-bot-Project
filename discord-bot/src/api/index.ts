@@ -5,6 +5,7 @@ import { defaultRateLimiter, mutationRateLimiter } from "../lib/rate-limiter";
 import type { AppEnv } from "./env";
 import { guilds } from "./routes/guilds";
 import { minigame } from "./routes/minigame";
+import { shop } from "./routes/shop";
 import { users } from "./routes/users";
 
 const app = new Hono<AppEnv>().basePath("/api");
@@ -43,13 +44,15 @@ app.use("/*", apiKeyWithUserAuthMiddleware);
 app.use("/minigame/*", defaultRateLimiter);
 app.use("/users/*", defaultRateLimiter);
 app.use("/guilds/*", mutationRateLimiter);
+app.use("/shop/*", defaultRateLimiter);
 
 // ルートマウントをチェーン化して型をキャプチャ
 const routes = app
   .get("/health", (c) => c.json({ status: "ok" }))
   .route("/guilds", guilds)
   .route("/users", users)
-  .route("/minigame", minigame);
+  .route("/minigame", minigame)
+  .route("/shop", shop);
 
 export type AppType = typeof routes;
 export default app;

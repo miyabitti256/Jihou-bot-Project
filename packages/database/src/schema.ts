@@ -389,3 +389,65 @@ export const chatMessages = pgTable(
       .onDelete("cascade"),
   ],
 );
+
+// ─── Shop & Item Tables ──────────────────────────────────
+
+export const purchaseHistory = pgTable(
+  "purchase_history",
+  {
+    id: text().primaryKey().notNull(),
+    userId: text().notNull(),
+    itemId: text().notNull(),
+    price: integer().notNull(),
+    createdAt: timestamp({ precision: 3, mode: "date" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("purchase_history_id_key").using(
+      "btree",
+      table.id.asc().nullsLast().op("text_ops"),
+    ),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: "purchase_history_userId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("restrict"),
+  ],
+);
+
+export const userItems = pgTable(
+  "user_items",
+  {
+    id: text().primaryKey().notNull(),
+    userId: text().notNull(),
+    itemId: text().notNull(),
+    purchaseId: text().notNull(),
+    usedAt: timestamp({ precision: 3, mode: "date" }),
+    createdAt: timestamp({ precision: 3, mode: "date" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("user_items_id_key").using(
+      "btree",
+      table.id.asc().nullsLast().op("text_ops"),
+    ),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: "user_items_userId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("restrict"),
+    foreignKey({
+      columns: [table.purchaseId],
+      foreignColumns: [purchaseHistory.id],
+      name: "user_items_purchaseId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("restrict"),
+  ],
+);
