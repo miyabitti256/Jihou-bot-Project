@@ -216,6 +216,11 @@ export async function execute(interaction: ChatInputCommandInteraction) {
               }
             } else if (i.customId === "use_omikuji_ticket_redraw") {
               await i.deferUpdate();
+              await interaction.editReply({
+                content: "おみくじを引き直し中... 🔮",
+                embeds: [],
+                components: [],
+              });
               const redrawStartTime = Date.now();
               try {
                 // 最新のチケットを検索して使用

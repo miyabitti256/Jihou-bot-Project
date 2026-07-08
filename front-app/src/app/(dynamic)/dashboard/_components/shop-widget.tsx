@@ -189,7 +189,7 @@ export function ShopWidget({
               使用可能なおみくじ券はありません
             </div>
           ) : (
-            <div className="max-h-[180px] overflow-y-auto space-y-2">
+            <div className="max-h-45 overflow-y-auto space-y-2">
               {ticketsInInventory.map((item) => (
                 <div
                   key={item.id}

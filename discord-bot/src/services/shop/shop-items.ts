@@ -13,8 +13,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: "omikuji_ticket",
     name: "おみくじ券",
-    description:
-      "おみくじをもう一度引くことができるチケット",
+    description: "おみくじをもう一度引くことができるチケット",
     price: 1500,
     category: "item",
     effect: "omikuji_redraw",
