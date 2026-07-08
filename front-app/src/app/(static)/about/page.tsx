@@ -206,38 +206,103 @@ export default function About() {
                     おみくじを引いて運試し！結果によってゲーム内通貨が増減します。
                   </p>
                   <div className="bg-white dark:bg-[#1E1F22] rounded-lg p-4 border border-gray-100 dark:border-white/5 space-y-4">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-[#57F287]">
-                          大吉 (8%)
-                        </span>
-                        <span className="text-xs text-[#4E5058] dark:text-[#949BA4]">
-                          +1000円
-                        </span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-bold text-[#57F287]">
-                          吉 (12%)
-                        </span>
-                        <span className="text-xs text-[#4E5058] dark:text-[#949BA4]">
-                          +500円
-                        </span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-bold text-[#FEE75C]">
-                          中吉/小吉/末吉
-                        </span>
-                        <span className="text-xs text-[#4E5058] dark:text-[#949BA4]">
-                          +100円〜300円
-                        </span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-bold text-[#ED4245]">
-                          凶/大凶
-                        </span>
-                        <span className="text-xs text-[#4E5058] dark:text-[#949BA4]">
-                          -50円〜-100円
-                        </span>
+                    <div>
+                      <h4 className="text-xs font-bold text-[#4E5058] dark:text-[#949BA4] uppercase tracking-wider mb-3">
+                        運勢一覧
+                      </h4>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200 dark:divide-white/5 text-sm text-left">
+                          <thead>
+                            <tr className="text-xs font-bold text-[#4E5058] dark:text-[#949BA4] uppercase">
+                              <th className="pb-2 pr-4">運勢</th>
+                              <th className="pb-2 pr-4">確率</th>
+                              <th className="pb-2 text-right">所持金の変化</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 dark:divide-white/5 text-[#060607] dark:text-[#DBDEE1]">
+                            <tr>
+                              <td className="py-2 pr-4 font-semibold text-[#57F287]">
+                                ぬべ吉
+                              </td>
+                              <td className="py-2 pr-4">1%</td>
+                              <td className="py-2 text-right font-mono text-[#57F287]">
+                                +20,000円
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="py-2 pr-4 font-semibold text-[#57F287]">
+                                大吉
+                              </td>
+                              <td className="py-2 pr-4">8%</td>
+                              <td className="py-2 text-right font-mono text-[#57F287]">
+                                +1,000円
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="py-2 pr-4 font-semibold text-[#57F287]">
+                                吉
+                              </td>
+                              <td className="py-2 pr-4">12%</td>
+                              <td className="py-2 text-right font-mono text-[#57F287]">
+                                +500円
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="py-2 pr-4 font-semibold text-[#FEE75C]">
+                                中吉
+                              </td>
+                              <td className="py-2 pr-4">16%</td>
+                              <td className="py-2 text-right font-mono text-[#FEE75C]">
+                                +300円
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="py-2 pr-4 font-semibold text-[#FEE75C]">
+                                小吉
+                              </td>
+                              <td className="py-2 pr-4">22%</td>
+                              <td className="py-2 text-right font-mono text-[#FEE75C]">
+                                +200円
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="py-2 pr-4 font-semibold text-[#FEE75C]">
+                                末吉
+                              </td>
+                              <td className="py-2 pr-4">22%</td>
+                              <td className="py-2 text-right font-mono text-[#FEE75C]">
+                                +100円
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="py-2 pr-4 font-semibold text-[#ED4245]">
+                                凶
+                              </td>
+                              <td className="py-2 pr-4">12%</td>
+                              <td className="py-2 text-right font-mono text-[#ED4245]">
+                                -50円
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="py-2 pr-4 font-semibold text-[#ED4245]">
+                                大凶
+                              </td>
+                              <td className="py-2 pr-4">5%</td>
+                              <td className="py-2 text-right font-mono text-[#ED4245]">
+                                -100円
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="py-2 pr-4 font-semibold text-[#ED4245]">
+                                ヌベキチ└(՞ةڼ◔)」
+                              </td>
+                              <td className="py-2 pr-4">2%</td>
+                              <td className="py-2 text-right font-mono text-[#ED4245]">
+                                -300円
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
                       </div>
                     </div>
 
@@ -340,7 +405,7 @@ export default function About() {
               <div className="flex items-center gap-2 mt-12 mb-6 pt-8 border-t border-gray-200 dark:border-white/10">
                 <ShoppingBag className="w-6 h-6 text-[#FEE75C]" />
                 <h2 className="text-2xl font-bold text-[#060607] dark:text-white">
-                  よろず屋ショップ
+                  ショップ
                 </h2>
               </div>
 
@@ -356,7 +421,7 @@ export default function About() {
                     </span>
                   </div>
                   <p className="text-[#4E5058] dark:text-[#DBDEE1]">
-                    よろず屋（ショップ）を開きます。貯めたお金を使って「おみくじ券」などの便利アイテムを対話的に購入することができます。
+                    ショップを開きます。貯めたお金を使って「おみくじ券」などの便利アイテムを対話的に購入することができます。
                   </p>
                 </div>
               </div>
@@ -397,9 +462,40 @@ export default function About() {
                       AI機能
                     </span>
                   </div>
-                  <p className="text-[#4E5058] dark:text-[#DBDEE1]">
-                    AIと対話するための専用スレッドを現在のテキストチャンネル内に新規に作成します。
+                  <p className="text-[#4E5058] dark:text-[#DBDEE1] mb-4">
+                    AIと対話を行います。
                   </p>
+                  <div className="bg-white dark:bg-[#1E1F22] rounded-lg p-4 border border-gray-100 dark:border-white/5">
+                    <h4 className="text-xs font-bold text-[#4E5058] dark:text-[#949BA4] uppercase tracking-wider mb-2">
+                      オプション
+                    </h4>
+                    <ul className="space-y-2 text-sm text-[#060607] dark:text-[#DBDEE1]">
+                      <li className="flex items-start gap-2">
+                        <span className="font-mono text-[#006CE7] dark:text-[#00A8FC] shrink-0 mt-0.5">
+                          contents
+                        </span>
+                        <span>
+                          <span className="text-[#ED4245] text-xs font-bold mr-1">
+                            必須
+                          </span>{" "}
+                          AIに送信するチャットメッセージ。
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="font-mono text-[#006CE7] dark:text-[#00A8FC] shrink-0 mt-0.5">
+                          save_history
+                        </span>
+                        <span>
+                          <span className="text-[#4E5058] dark:text-[#B5BAC1] text-xs font-bold mr-1">
+                            任意 (デフォルト: false)
+                          </span>{" "}
+                          `true`
+                          にすると、サーバー内に専用の会話スレッドを開始し（または現在のスレッド/DMを使用）、データベースにメッセージ履歴を保存して継続的な会話を可能にします。`false`
+                          の場合は、履歴を保存せずにワンショットのクエリとして応答します。
+                        </span>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
