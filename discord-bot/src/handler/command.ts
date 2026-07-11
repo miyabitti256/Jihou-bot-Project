@@ -15,7 +15,7 @@ interface Command {
 export const commands = new Collection<string, Command>();
 
 export const loadCommands = async () => {
-  const commandsPath = path.join("./src/commands");
+  const commandsPath = path.resolve("./src/commands");
   const commandFiles = readdirSync(commandsPath).filter((file) =>
     file.endsWith(".ts"),
   );

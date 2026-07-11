@@ -122,7 +122,7 @@ export function JihouInputBar({
             "text-[15px] text-gray-800 dark:text-gray-200",
             "placeholder:text-gray-400 dark:placeholder:text-gray-500",
             "focus:outline-none",
-            "min-h-[24px] max-h-[200px]",
+            "min-h-6 max-h-50",
           )}
           style={{
             height: "auto",

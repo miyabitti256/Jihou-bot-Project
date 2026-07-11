@@ -56,7 +56,7 @@ export default function BotJanken() {
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto my-4 h-[600px] flex flex-col bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-800">
+    <Card className="w-full max-w-2xl mx-auto my-4 h-150 flex flex-col bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-800">
       <div className="bg-gray-100 dark:bg-slate-800 p-4 rounded-t-lg border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">
           時報とじゃんけん！

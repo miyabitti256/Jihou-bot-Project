@@ -39,7 +39,7 @@ export default function CoinflipGame() {
 
     try {
       const data = await flipCoin(bet, choice);
-      if ("data" in data) {
+      if ("data" in data && data.data) {
         setIsFlipping(true);
         setTimeout(() => {
           setResult(data.data);
@@ -57,7 +57,7 @@ export default function CoinflipGame() {
   };
 
   return (
-    <div className="min-h-[820px] p-8">
+    <div className="min-h-205 p-8">
       <div className="max-w-md mx-auto">
         <h1 className="text-4xl font-bold text-center mb-8">
           コイントスゲーム

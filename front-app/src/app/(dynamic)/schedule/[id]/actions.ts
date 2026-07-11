@@ -30,7 +30,7 @@ type ActionState = {
 export async function createSchedule(
   _prevState: ActionState,
   formData: FormData,
-) {
+): Promise<ActionState> {
   try {
     const parsed = createScheduleSchema.safeParse(
       Object.fromEntries(formData.entries()),
@@ -60,7 +60,15 @@ export async function createSchedule(
     }
 
     revalidatePath("/schedule");
-    return data;
+    if ("data" in data && data.data) {
+      return {
+        data: {
+          message: data.data.message,
+          scheduledMessage: data.data.scheduledMessage,
+        },
+      };
+    }
+    return null;
   } catch (error) {
     return {
       error: {
@@ -75,7 +83,7 @@ export async function createSchedule(
 export async function updateSchedule(
   _prevState: ActionState,
   formData: FormData,
-) {
+): Promise<ActionState> {
   try {
     const parsed = updateScheduleSchema.safeParse(
       Object.fromEntries(formData.entries()),
@@ -113,7 +121,15 @@ export async function updateSchedule(
     }
 
     revalidatePath("/schedule");
-    return data;
+    if ("data" in data && data.data) {
+      return {
+        data: {
+          message: data.data.message,
+          scheduledMessage: data.data.scheduledMessage,
+        },
+      };
+    }
+    return null;
   } catch (error) {
     return {
       error: {

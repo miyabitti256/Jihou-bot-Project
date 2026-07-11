@@ -153,7 +153,7 @@ export function ScheduleForm({
   }, [channels, searchQuery]);
 
   return (
-    <Card className="w-full max-w-[95vw] sm:max-w-[600px] mx-auto">
+    <Card className="w-full max-w-[95vw] sm:max-w-150 mx-auto">
       <CardHeader className="space-y-4 sm:space-y-6">
         <div className="flex flex-col items-center space-y-2 sm:space-y-4">
           <CardTitle className="text-xl sm:text-2xl font-bold text-center">
@@ -252,7 +252,7 @@ export function ScheduleForm({
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[400px] p-0">
+                    <PopoverContent className="w-100 p-0">
                       <div className="flex flex-col">
                         <div className="p-2">
                           <div className="relative">
@@ -273,7 +273,7 @@ export function ScheduleForm({
                             )}
                           </div>
                         </div>
-                        <div className="max-h-[300px] overflow-y-auto">
+                        <div className="max-h-75 overflow-y-auto">
                           {filteredChannels && filteredChannels.length > 0 ? (
                             <div className="p-1">
                               {filteredChannels

@@ -99,7 +99,7 @@ export function NavigationShell({
               onClick={handleSidebarClick}
             >
               {/* 第1階層：サーバー一覧 */}
-              <div className="w-[72px] shrink-0 border-r border-gray-200 dark:border-gray-800">
+              <div className="w-18 shrink-0 border-r border-gray-200 dark:border-gray-800">
                 {globalSidebar}
               </div>
               {/* 第2階層：DM、もしくはチャンネル一覧 */}
@@ -152,7 +152,7 @@ export function NavigationShell({
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Desktop Layout: 3-column architecture */}
-      <div className="w-[72px] shrink-0 border-r border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 border-none">
+      <div className="w-18 shrink-0 border-r border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 border-none">
         {globalSidebar}
       </div>
       {sidebar && (

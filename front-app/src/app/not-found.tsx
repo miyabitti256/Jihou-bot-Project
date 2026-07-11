@@ -23,13 +23,13 @@ export default function NotFoundPage() {
         <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
           <Link
             href="/"
-            className="bg-[#5865F2] hover:bg-[#4752C4] text-white font-semibold py-3 px-8 rounded-[4px] transition-colors shadow-md text-base"
+            className="bg-[#5865F2] hover:bg-[#4752C4] text-white font-semibold py-3 px-8 rounded-lg transition-colors shadow-md text-base"
           >
             ホームへ戻る
           </Link>
           <Link
             href="/dashboard"
-            className="bg-transparent hover:bg-gray-100 dark:hover:bg-[#2B2D31] text-gray-700 dark:text-[#DBDEE1] font-semibold py-3 px-8 rounded-[4px] transition-colors text-base"
+            className="bg-transparent hover:bg-gray-100 dark:hover:bg-[#2B2D31] text-gray-700 dark:text-[#DBDEE1] font-semibold py-3 px-8 rounded-lg transition-colors text-base"
           >
             ダッシュボードへ
           </Link>

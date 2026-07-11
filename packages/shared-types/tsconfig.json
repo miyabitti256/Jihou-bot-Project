@@ -1,7 +1,6 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
       "@bot/*": ["../../discord-bot/src/*"],
       "@jihou/database": ["../database/src/index.ts"],
