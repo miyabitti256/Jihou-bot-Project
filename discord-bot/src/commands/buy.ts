@@ -1,4 +1,3 @@
-import { db } from "@bot/lib/db";
 import { logger } from "@bot/lib/logger";
 import {
   getPurchaseCountToday,
@@ -7,8 +6,7 @@ import {
   ShopError,
 } from "@bot/services/shop/shop";
 import { SHOP_ITEMS } from "@bot/services/shop/shop-items";
-import { ensureUserExists } from "@bot/services/users/user";
-import { users } from "@jihou/database";
+import { ensureUserExists, getUserData } from "@bot/services/users/user";
 import {
   ActionRowBuilder,
   type ChatInputCommandInteraction,
@@ -17,7 +15,6 @@ import {
   SlashCommandBuilder,
   StringSelectMenuBuilder,
 } from "discord.js";
-import { eq } from "drizzle-orm";
 
 export const data = new SlashCommandBuilder()
   .setName("buy")
@@ -32,12 +29,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   // 初回データ取得とUI構築用の関数
   const getShopState = async () => {
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
-    if (!user) {
-      throw new Error("User not found");
-    }
+    const user = await getUserData(userId);
 
     const inventory = await getUserInventory(userId);
 
