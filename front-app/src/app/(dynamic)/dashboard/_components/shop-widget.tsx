@@ -12,13 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { purchaseItemAction } from "@/lib/actions/shop";
-
-// JST の午前5時基準の本日の日付を取得するヘルパー
-function getTokyoDate(dateInput?: Date | string | number): Date {
-  const base = dateInput ? new Date(dateInput) : new Date();
-  const now = new Date(base.getTime() - 5 * 60 * 60 * 1000);
-  return new Date(now.toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo" }));
-}
+import { getTokyoDate } from "@/lib/utils";
 
 interface ShopItem {
   id: string;

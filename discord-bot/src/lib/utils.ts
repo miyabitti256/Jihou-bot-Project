@@ -191,8 +191,12 @@ export function formatChatHistoryForGemini(
 }
 
 export function getTokyoDate(): Date {
-  const now = new Date(Date.now() - 5 * 60 * 60 * 1000);
-  return new Date(now.toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo" }));
+  // JST 05:00 リセット: 5時間引いてからJST日付を求める
+  const shifted = new Date(Date.now() - 5 * 60 * 60 * 1000);
+  const jstDateStr = shifted.toLocaleDateString("en-CA", {
+    timeZone: "Asia/Tokyo",
+  });
+  return new Date(`${jstDateStr}T00:00:00+09:00`);
 }
 
 export function hasDrawnToday(now: Date, lastDrawDate: Date): boolean {

@@ -137,10 +137,18 @@ async function sendScheduledMessage(
  * JST基準の "HH:MM" 形式の時刻文字列を生成する
  */
 function toJstTimeString(date: Date): string {
-  const jst = new Date(
-    date.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }),
-  );
-  return `${jst.getHours().toString().padStart(2, "0")}:${jst.getMinutes().toString().padStart(2, "0")}`;
+  const hours = date
+    .toLocaleString("en-US", {
+      timeZone: "Asia/Tokyo",
+      hour: "2-digit",
+      hour12: false,
+    })
+    .replace(/^24$/, "00");
+  const minutes = date.toLocaleString("en-US", {
+    timeZone: "Asia/Tokyo",
+    minute: "2-digit",
+  });
+  return `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`;
 }
 
 /**
@@ -154,21 +162,13 @@ async function dispatchMessages(): Promise<void> {
   const targetTimes = new Set<string>([currentTime]);
 
   if (lastDispatchTime) {
-    const lastJst = new Date(
-      lastDispatchTime.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }),
-    );
-    const cursor = new Date(lastJst);
-    cursor.setSeconds(0, 0);
-    cursor.setMinutes(cursor.getMinutes() + 1);
+    // 前回と現在の差分を分単位で計算して missed tick を列挙
+    const diffMs = now.getTime() - lastDispatchTime.getTime();
+    const diffMinutes = Math.floor(diffMs / 60_000);
 
-    const jstNow = new Date(
-      now.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }),
-    );
-    while (cursor <= jstNow) {
-      targetTimes.add(
-        `${cursor.getHours().toString().padStart(2, "0")}:${cursor.getMinutes().toString().padStart(2, "0")}`,
-      );
-      cursor.setMinutes(cursor.getMinutes() + 1);
+    for (let i = 1; i < diffMinutes; i++) {
+      const missed = new Date(lastDispatchTime.getTime() + i * 60_000);
+      targetTimes.add(toJstTimeString(missed));
     }
 
     if (targetTimes.size > 1) {
