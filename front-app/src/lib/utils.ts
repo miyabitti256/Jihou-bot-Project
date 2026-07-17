@@ -16,9 +16,8 @@ export function getTokyoDate(dateInput?: Date | string | number): Date {
 }
 
 export function hasDrawnToday(now: Date, lastDraw: Date): boolean {
-  return (
-    now.getFullYear() === lastDraw.getFullYear() &&
-    now.getMonth() === lastDraw.getMonth() &&
-    now.getDate() === lastDraw.getDate()
-  );
+  const getJstDateString = (d: Date) =>
+    d.toLocaleDateString("en-CA", { timeZone: "Asia/Tokyo" });
+
+  return getJstDateString(now) === getJstDateString(lastDraw);
 }
